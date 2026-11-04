@@ -1,0 +1,16 @@
+ENDLESS DRIFT V11 CHANGELOG
+===========================
+
+- Added SHOP page with Drift Coin cosmetic purchases.
+- Refreshed UI with bolder buttons, cleaner tabs/cards, and stronger panels.
+- Moved drift score popup higher for better visibility.
+- Improved garage car thumbnails.
+- Increased visible rim/wheel detail on 3D car models.
+- Raised overall stock acceleration feel.
+- Reduced starter Sakura S13 stock top speed to 80 MPH.
+- Smoothed steering transitions to reduce snap when flicking left/right.
+- Made drift initiation/control easier.
+- Added reactive synthesized engine audio tied to RPM and upgrades.
+- Added official website helper files: manifest, sitemap, robots, CNAME,
+  _headers, _redirects, and deployment notes.
+- Updated README and PAYMENT-SETUP docs.

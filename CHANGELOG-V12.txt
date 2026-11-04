@@ -1,0 +1,20 @@
+ENDLESS DRIFT V12
+=================
+- The GARAGE tuning flow now defaults to the Performance tab for owned cars.
+- Every performance upgrade has VIEW STATS and BUY buttons.
+- BUY first opens the comparison/confirmation panel so no coins are deducted
+  accidentally before the player confirms.
+- 3D wheel rims moved onto the tire face, with spokes and hubs rotating in
+  the same wheel group.
+- Drift score popups moved to the very top of the view.
+- Easier drift initiation and smoother left/right steering transitions.
+- Police pursuit triggers at 100 KM/H (approx 62.14 MPH), not 100 MPH.
+- Added COINS page with three example real-money Drift Coin packs.
+  Payments are DISABLED until server-verified checkout and coin ledger work.
+- Added ACCOUNT page with optional Supabase email/password auth.
+- Added READ-ONLY global XP and coins-spent rankings from secure database.
+  Client-side raw XP cannot update official rankings.
+- Added backend/supabase-setup.sql and setup guides for accounts, ranks,
+  payment provider, domain and online deployment.
+- Preserved prior garage, cars, shop cosmetics, Drift Pass, police chase
+  features, save key, tuning, levels, and local Drift Coin economy.

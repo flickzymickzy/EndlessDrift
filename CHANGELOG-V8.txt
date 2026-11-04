@@ -1,0 +1,12 @@
+ENDLESS DRIFT V8 — NOVEMBER 4, 2026
+
+Garage tuning moved to bottom-left of garage, removed from global top navigation.
+Two-step car purchase and body/performance previews before committing XP.
+Color theme cascade extended to previously hard-coded mint highlights.
+Custom key bindings, calm/chase original instrumental soundtrack, radio dispatch.
+Barrier scrapes no XP loss; crashes with vehicles lose 25% run XP.
+Wanted-level pursuit 3-blockades with gaps, 4-helicopter, 5-SWAT/tire effects.
+Escapes now possible through speed; police speed targets reduced.
+More engine/driveline/cooling/transmission upgrade options.
+Expanded procedural car geometry and closer chase camera.
+Previous 24 cars, battle-pass, save format and content retained.

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://endless-drift.com/sitemap.xml

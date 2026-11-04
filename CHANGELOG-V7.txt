@@ -1,0 +1,12 @@
+ENDLESS DRIFT V7 — SHOWROOM / AERO / CRASH FX
+- Retains previous 24 cars, traffic, police, XP, Battle Pass and upgrades.
+- Persistent local car part ownership and active style selection.
+- Rotating Three.js showroom preview per car with drag controls.
+- Garage part previews reflect previously purchased customization.
+- Performance and appearance tabs in owned-car Tuning Studio.
+- Aero geometry for spoiler, diffuser, splitter, skirts, hood, exhaust,
+  window tint, and redesigned wheel options.
+- Revised crash animation: parts debris, impact jolt, expanded car tumble.
+- XP amount is deducted for each car/part purchase; cannot buy unaffordable parts.
+- Browser save export/import to migrate from localhost to a domain.
+- Direct upload static website ZIP and custom domain guidance.

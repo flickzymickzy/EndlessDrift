@@ -1,0 +1,24 @@
+ENDLESS DRIFT V12 — PUBLISHING STATIC WEBSITE
+============================================
+
+1. Test the full game on localhost first.
+2. Get the separate ENDLESS_DRIFT_V12_WEBSITE_UPLOAD.zip file.
+   It contains index.html at its ROOT, not nested inside a folder.
+3. Go to https://dash.cloudflare.com and select Workers & Pages.
+4. Create a Pages project using Direct Upload.
+5. Upload the ZIP or unzipped folder of website assets.
+6. Deploy it and test the your-project.pages.dev address.
+7. Buy/register your desired domain if available, e.g. endless-drift.com.
+8. In the Pages project open Custom domains > Set up a domain and follow the
+   DNS/nameserver setup shown by Cloudflare.
+9. If connecting Supabase Auth, configure your site URL and allowed redirect
+   URLs in the Supabase dashboard for the final domain.
+10. Keep your merchant payment secrets server-side in Workers/Functions,
+    NOT in static files. Currency buying requires backend development.
+
+Cloudflare guide:
+https://developers.cloudflare.com/pages/get-started/direct-upload/
+https://developers.cloudflare.com/pages/configuration/custom-domains/
+
+Note: the public static game still stores gameplay progress in browser
+localStorage. Cloud saves are not included yet.

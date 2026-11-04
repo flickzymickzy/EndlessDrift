@@ -1,0 +1,45 @@
+ENDLESS DRIFT V12: REAL-MONEY DRIFT COIN PURCHASES
+===================================================
+
+The COINS page currently contains product previews only, NOT live checkout.
+Do not ask for or enter bank/card numbers into the game files or ChatGPT.
+
+FOR A PUBLIC WEBSITE:
+
+1. Create a verified business account with Stripe or another supported payment
+   provider. If you are under 18, follow the provider's requirements for a
+   legal guardian / adult account owner. Use a verified BUSINESS payout bank
+   account in your payment provider dashboard.
+
+2. Create the products/prices for coin packs in the provider dashboard.
+   The prices shown in V12 are UI example prices only; no money is charged.
+
+3. Host backend code, e.g. Cloudflare Workers / Pages Functions:
+     POST /api/checkout/create
+       - require authenticated player JWT
+       - validate requested pack ID against server-side catalogue
+       - create Stripe Checkout Session with secret key kept server-side
+       - attach unique player ID + SKU to metadata
+       - return ONLY the hosted checkout URL
+
+     POST /api/stripe/webhook
+       - verify Stripe webhook signature against raw request body
+       - process only valid successful payments
+       - deduplicate events / payment IDs
+       - credit coin balance in a secure server transaction/ledger
+       - record refunds/chargebacks and reconcile inventory
+
+4. Use a dedicated authoritative wallet table in Supabase (or other DB).
+   The browser's localStorage coin count must NOT be used to prove a purchase.
+   Never unlock coins because the browser visited a success URL.
+
+5. After webhooks and cloud wallet work, update the COINS button to call your
+   actual checkout endpoint. V12 intentionally does not grant paid coins yet.
+
+6. Test with Stripe's test mode and test cards supplied by Stripe before
+   enabling live mode. Do not send real payment details to ChatGPT.
+
+Relevant docs:
+  https://docs.stripe.com/checkout/quickstart
+  https://docs.stripe.com/webhooks
+  https://stripe.com/ae

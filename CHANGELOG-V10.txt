@@ -1,0 +1,11 @@
+ENDLESS DRIFT V10 / 2026-11-04
+- 30 FREE + 30 PREMIUM Drift Pass cosmetics in two rows; premium locked.
+- Full 3D preview of both reward types; no pretend real-money charges.
+- Slow economy: 5 XP for 1 Drift Coin after banking; preserve older balance.
+- Reduced drift and near-miss earnings.
+- Rebuilt forgiving arcade drift model; slower acceleration and actual shift-delay power cut.
+- Performance comparison from real physics formulas for every upgrade.
+- Improved visible wheel materials/colored rims in 3D cars.
+- Moved run XP and driver level HUD higher on desktop.
+- Kept 24 cars, garage, tuning, police, crash penalties and music.
+- Payment setup instructions in PAYMENT-SETUP.txt.

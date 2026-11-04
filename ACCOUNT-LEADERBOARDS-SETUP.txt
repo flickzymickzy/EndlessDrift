@@ -1,0 +1,88 @@
+ENDLESS DRIFT V12: ACCOUNTS + GLOBAL LEADERBOARDS
+=================================================
+
+V12 supports OPTIONAL email/password signup and sign-in through Supabase
+Auth. Global leaderboards can READ verified scores from your Supabase database.
+The game will NOT submit a player's browser XP as an authoritative score.
+
+1. GO TO SUPABASE
+
+   Open https://supabase.com and create a free project.
+   Choose a secure database password. Never place this password in game files.
+
+2. CONFIGURE EMAIL AUTHENTICATION
+
+   Supabase Dashboard > Authentication > Providers > Email.
+   Enable email sign-ups. Enable confirmation emails in production.
+   Under Authentication > URL Configuration set your Site URL to your final
+   website domain, e.g. https://endless-drift.com, and add redirect URLs for
+   the hosted website and localhost development, e.g.
+      http://localhost:5173/**
+      https://endless-drift.com/**
+   Follow Supabase's dashboard guidance for allowed redirect URL patterns.
+
+3. CREATE DATABASE TABLES
+
+   Supabase Dashboard > SQL Editor > New query.
+   Open backend/supabase-setup.sql in your game's folder and paste its entire
+   contents. Run the query.
+   It creates:
+      public.driver_profiles
+      public.verified_scores
+      public.leaderboard_public (read-only view)
+   Users are allowed to view usernames and verified totals. They CANNOT
+   insert/update XP, money or rankings from the browser.
+
+4. ADD PUBLIC PROJECT CONFIG
+
+   Supabase Dashboard > Project Settings > API Keys.
+   Find the Project URL and the PUBLISHABLE key.
+   Open cloud-config.js in your game's folder. Replace the two empty values:
+
+     export const CLOUD_CONFIG = {
+       url: 'https://YOUR-PROJECT.supabase.co',
+       publishableKey: 'sb_publishable_...'
+     };
+
+   Do NOT put your project service_role / secret key here.
+   Only the public URL and publishable key are safe for client code.
+
+5. TRY THE ACCOUNT PAGE
+
+   Start local game: node server.js
+   Open http://localhost:5173/
+   Click ACCOUNT > CREATE ACCOUNT.
+   Enter a unique username, email address and password.
+   Confirm the email if Supabase requires it, then LOG IN.
+   Supabase stores the login identity. The game still keeps its saved cars,
+   XP and Drift Coins in your browser only.
+
+6. OPEN RANKS
+
+   Click RANKS to view GLOBAL RANKS.
+   The verified_scores table starts at zero for new accounts.
+   You may see zero-score users only until a secure backend posts records.
+
+7. MAKING A REAL FAIR LEADERBOARD (PRODUCTION REQUIREMENT)
+
+   Add a TRUSTED SERVER or Cloudflare Worker that validates gameplay events.
+   A browser can be modified by anyone, so do not accept raw XP or spending
+   numbers sent directly by client JavaScript. Give only your trusted server
+   credentials that can update verified_scores. Use RLS, rate limiting,
+   validation, deduplication, and audit logs. Do not expose secret keys.
+
+8. CLOUD SAVES / PURCHASES
+
+   Account identity is connected after step 5, but the local car save is not
+   yet synced to Supabase. Cloud saves require server-validated purchases,
+   inventory records and anti-cheat logic. Export a local save in SETTINGS.
+
+PRIVACY NOTES
+
+   Use reasonable age gates, account terms, and privacy notices when your
+   game becomes public. Do not collect sensitive card information in the app.
+
+DOCUMENTATION
+
+   https://supabase.com/docs/guides/auth
+   https://supabase.com/docs/guides/database/postgres/row-level-security

@@ -1,0 +1,21 @@
+ENDLESS DRIFT V5 — NEAR MISS & LEVEL UPDATE
+
+NEW
+- Near miss scoring for close safe passes at 45+ MPH while overtaking traffic.
+- Perfect passes pay more; streak multiplier increases for consecutive close passes.
+- Near miss run XP obeys the same 50% crash penalty as drift XP.
+- Level progression from lifetime XP earned, independent of money spent.
+- Driver rank names, XP progress bars, level-up popups and level cash rewards.
+- Near miss and level statistics in RANKS.
+- Better procedural 3D vehicle details and sloped roof geometry.
+- Asphalt grain and wear, bright lane reflectors, overhead signs and gradient sky.
+- More polished home screen, HUD and garage UI details.
+
+PRESERVED FROM V4
+- 24 cars, garage, buying, paint and drift colors.
+- Garage themes and full tuning/upgrades.
+- Drifting, XP cash, crash penalty, traffic, police and 100 MPH chases.
+- Camera controls, FPS/graphics/UI settings, local save.
+
+The game still uses the same local storage key: endless-drift-save-v3.
+It is a standalone offline-friendly browser prototype, not a finished AAA sim.

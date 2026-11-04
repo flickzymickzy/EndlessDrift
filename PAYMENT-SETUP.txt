@@ -1,0 +1,74 @@
+ENDLESS DRIFT V11 — HOW TO CONNECT PAYMENTS SAFELY
+==================================================
+
+SHORT ANSWER TO "HOW DO I LINK MY CARD ACCOUNT?"
+
+You should NOT directly link a personal credit/debit card inside the game.
+For a real website you usually do this instead:
+
+1. Create a verified Stripe BUSINESS account.
+2. Add your PAYOUT BANK ACCOUNT inside Stripe Dashboard.
+3. Create a Premium Pass product/price in Stripe.
+4. Send players to Stripe Checkout.
+5. Let Stripe handle the card form securely.
+6. Your backend verifies the payment webhook.
+7. Your backend marks that player account as Premium.
+8. The game reads premium status from your backend.
+
+So the safe answer is: connect Stripe (or a similar payment provider), then
+connect your business payout bank account inside the provider dashboard.
+Do not collect or store raw card details in your site code.
+
+RECOMMENDED PATH FOR A UAE-BASED CREATOR
+
+1. Prepare a legitimate UAE business and supporting verification documents.
+   Stripe UAE generally requests current business documents and identity checks.
+
+2. Open and verify a Stripe UAE account:
+   https://stripe.com/ae
+
+3. Add your payout bank account in Stripe Dashboard.
+   Your earnings are paid out there. The customer's card is NOT your payout
+   destination.
+
+4. Create a Stripe product called:
+   Endless Drift Premium Pass
+
+5. Use Stripe Checkout with a secure backend.
+   Required server flow:
+   - Player clicks Buy Premium.
+   - Your backend creates a Checkout Session using the SECRET key.
+   - Player pays on Stripe-hosted checkout.
+   - Stripe sends checkout.session.completed to your webhook.
+   - Your backend verifies the webhook signature.
+   - Your backend stores premium=true for that user account.
+   - Your frontend loads premium status after login.
+
+6. Add login/accounts BEFORE selling premium unlocks.
+   Otherwise users can lose purchases when changing device/browser.
+
+WHAT NOT TO DO
+
+- Do not ask users to type card numbers into your game UI.
+- Do not put Stripe secret keys in front-end JavaScript.
+- Do not unlock premium from a success URL alone.
+- Do not store paid status only in localStorage.
+- Do not share bank or card details in ChatGPT.
+
+USEFUL LINKS
+
+Stripe UAE:
+https://stripe.com/ae
+
+Stripe Checkout quickstart:
+https://docs.stripe.com/checkout/quickstart
+
+Stripe webhook docs:
+https://docs.stripe.com/webhooks
+
+If you want, the next step after this can be a V12 backend-ready version with:
+- account login/register UI
+- fake/demo Stripe button replaced with a real checkout hook
+- backend API placeholders
+- premium entitlement system
+- cloud leaderboard/database hooks

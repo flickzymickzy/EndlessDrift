@@ -1,0 +1,30 @@
+ENDLESS DRIFT V6 | WRECK + COSMETIC PASS
+
+NEW
+- Crash/death cinematic with sparks, camera shake, slow spin, impact flash,
+  XP breakdown, wreck overlay, and respawn button (also R).
+- 24 distinctly styled car silhouettes. Retro coupes, boxy street cars,
+  fastbacks, sedan, wagon, muscle, roadster, track, super and hypercars.
+- More detailed headlights, wheels, grille variants, mirrors, roof profiles,
+  rear light clusters, spoilers, air intakes, reflections and bodywork.
+- Free 30-tier battle pass. Each level from 2 to 31 unlocks one cosmetic:
+  paints, drift smoke, rim colors or neon underglow.
+- Garage cosmetic selection and equip controls. Locked items display level.
+- Settings: UI theme, HUD layouts, speedometer style, HUD opacity, HUD scale,
+  render resolution, shadows, smoke particles, view distance, traffic density
+  and camera shake intensity.
+- Saved cosmetics and settings remain after restarting the browser.
+
+PRESERVED
+- 24 cars, garage and dealership, vehicle purchasing
+- Engine/turbo/supercharger, tires, suspension, brakes and steering upgrades
+- Near misses, drift scoring, level rewards, police above 100 MPH
+- Custom garage styles, offline records and existing keybinds
+- XP equals money, purchases reduce wallet without reducing lifetime XP
+- Crash takes 50% of the current unbanked run XP only
+
+LIMITATIONS
+- Models are original detailed procedural 3D cars, not licensed photorealistic
+  vehicle assets. Real car models need suitable GLB/GLTF files with licensing.
+- XP and purchases are local-only, not server-authoritative.
+- Worldwide multiplayer leaderboard and accounts are NOT implemented.

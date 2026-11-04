@@ -1,0 +1,13 @@
+ENDLESS DRIFT V9 — 2026-11-04
+
+- Cosmetic previews directly on the showroom car. Locked Drift Pass colors
+  can be viewed before unlocking. Preview first, equip separately.
+- Enhanced Drift Pass showroom featuring 30 selectable visual rewards.
+- New Drift Coins (DC) labels and a separate XP progression explanation.
+- Drift and near-miss scoring lowered; level reward coins lowered.
+- Smooth deterministic steering/slide model with Street/Arcade/Pro presets.
+- Perfect-angle HUD feedback and control-oriented drift angle meter.
+- Barrier wrecks: 50% current-run XP penalty. Vehicle wrecks: 25% penalty.
+- Existing 24 cars, 16 upgrade categories, police, traffic, music, settings,
+  save format and other V8 content preserved.
+- V9 tests: node --check src/*.js and npm test.
