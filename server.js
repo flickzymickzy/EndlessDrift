@@ -17,7 +17,7 @@ http.createServer(async(req,res)=>{
   res.writeHead(200,{'Content-Type':mime[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache'});
   res.end(buffer);
  }catch(e){res.writeHead(404,{'Content-Type':'text/plain'});res.end('File not found');}
-}).listen(port,'127.0.0.1',()=>{
+}).listen(port,'0.0.0.0',()=>{
  console.log('\n  ENDLESS DRIFT IS RUNNING\n');
  console.log('  Open in Safari: http://localhost:'+port+'/\n');
  console.log('  Keep Terminal open. Press Control+C to stop.\n');
