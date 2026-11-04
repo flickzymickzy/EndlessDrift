@@ -427,3 +427,10 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 .leaderboard-table{color:#bdcfdb;padding-top:15px;font-size:13px}
 @media(max-width:1150px){.topbar{flex-wrap:wrap;height:auto;min-height:110px;padding:8px}.toplinks{order:4;max-width:100%;width:100%;margin-left:0}.panescreen{padding-top:125px}.hero{padding-top:110px}.hud-top{top:126px}.hud-top-right{top:126px}.drift-notice{top:122px}}
 @media(max-width:700px){.drift-notice{top:154px;max-width:66vw;padding:5px}.drift-notice .score{font-size:36px}.drift-meter{width:56vw}.coin-pack-grid,.account-layout,.ranks-grid{grid-template-columns:1fr}.coin-pack{min-height:220px}.upgrade-actions{flex-wrap:wrap}.near-miss-flash{top:25%}}
+
+/* ENDLESS DRIFT V12.1 Google account button */
+.oauth-divider{display:flex;align-items:center;gap:14px;color:#9fb0c2;font-size:11px;font-weight:900;letter-spacing:.18em;margin:20px 0 12px}
+.oauth-divider:before,.oauth-divider:after{content:'';height:1px;flex:1;background:#ffffff22}
+.google-login{display:flex;align-items:center;justify-content:center;gap:13px;width:100%;background:#f5f7fc!important;color:#142033!important;border:1px solid #d0d9e2!important;font-weight:900;font-size:14px;box-shadow:0 8px 20px #0004}
+.google-login:hover{background:#fff!important;transform:translateY(-2px)}
+.google-login svg{flex:none}

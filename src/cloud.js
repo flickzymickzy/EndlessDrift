@@ -8,6 +8,29 @@ const root=(CLOUD_CONFIG.url||'').replace(/\/$/,'');
 export const cloudConfigured=()=>/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(root)&&CLOUD_CONFIG.publishableKey.length>=20;
 let session=null;
 try{session=JSON.parse(sessionStorage.getItem(STORAGE)||'null');}catch{}
+// Supabase's browser OAuth flow returns short-lived credentials in the URL fragment.
+// Import them into the existing auth session, then immediately clear the URL.
+export let googleOAuthReturned=false;
+try{
+  if(typeof window==='undefined')throw new Error('Browser-only OAuth return check');
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  if(hash.get('access_token') && hash.get('refresh_token')){
+    const lifetime=Math.max(60,Number(hash.get('expires_in'))||3600);
+    session={
+      access_token:hash.get('access_token'),
+      refresh_token:hash.get('refresh_token'),
+      token_type:hash.get('token_type')||'bearer',
+      expires_in:lifetime,
+      expires_at:Math.floor(Date.now()/1000)+lifetime
+    };
+    sessionStorage.setItem(STORAGE,JSON.stringify(session));
+    googleOAuthReturned=true;
+    history.replaceState(null,'',window.location.pathname);
+  } else if(new URLSearchParams(window.location.search).get('auth')==='google'){
+    googleOAuthReturned=true;
+    history.replaceState(null,'',window.location.pathname);
+  }
+}catch(err){if(typeof window!=='undefined')console.warn('OAuth return could not be processed',err);}
 const basic=()=>({'apikey':CLOUD_CONFIG.publishableKey,'Content-Type':'application/json'});
 async function request(path,{method='GET',body,token}={}){
   if(!cloudConfigured())throw new Error('Add your Supabase URL and publishable key to cloud-config.js');
@@ -22,6 +45,16 @@ async function token(){
  if(!session.expires_at||Date.now()/1000<session.expires_at-60)return session.access_token;
  if(!session.refresh_token){remember(null);return null;}
  try{const data=await request('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:session.refresh_token}});remember(data);return data.access_token;}catch{remember(null);return null;}
+}
+// Google OAuth is deliberately initiated by a user click, never automatically.
+// The Supabase callback handles the provider secret on the server side.
+export function cloudSignInGoogle(){
+ if(!cloudConfigured())throw new Error('Connect your Supabase Project URL and publishable key in cloud-config.js first');
+ const redirectTo=window.location.origin+'/?auth=google';
+ const authorize=new URL(`${root}/auth/v1/authorize`);
+ authorize.searchParams.set('provider','google');
+ authorize.searchParams.set('redirect_to',redirectTo);
+ window.location.assign(authorize.toString());
 }
 export async function cloudSignUp(email,password,username){
  if(!/^[a-zA-Z0-9_]{3,24}$/.test(username))throw new Error('Username must have 3–24 letters, numbers or underscores');
