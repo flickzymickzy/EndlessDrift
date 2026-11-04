@@ -3,6 +3,6 @@
 // NEVER put a Supabase service_role/secret key, Stripe secret key, bank
 // details, or passwords in a browser file.
 export const CLOUD_CONFIG = {
-  url: '', // e.g. https://your-project.supabase.co
-  publishableKey: '', // publishable key from Supabase dashboard
+  url: 'https://vblnezimlhbnjwusuamb.supabase.co', // e.g. https://your-project.supabase.co
+  publishableKey: 'sb_publishable_iXs4cSHqpFeKWKALtl1lWQ_NKLMR20K', // publishable key from Supabase dashboard
 };
