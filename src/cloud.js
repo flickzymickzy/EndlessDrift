@@ -39,7 +39,7 @@ async function request(path,{method='GET',body,token}={}){
   if(!res.ok)throw new Error(String(data.msg||data.error_description||data.message||data.error||`HTTP ${res.status}`).slice(0,280));
   return data;
 }
-function remember(next){session=next||null;try{if(session)sessionStorage.setItem(STORAGE,JSON.stringify(session));else sessionStorage.removeItem(STORAGE);}catch{}}
+function remember(next){session=next||null;if(session?.expires_in&&!session.expires_at)session.expires_at=Math.floor(Date.now()/1000)+Number(session.expires_in);try{if(session)sessionStorage.setItem(STORAGE,JSON.stringify(session));else sessionStorage.removeItem(STORAGE);}catch{}}
 async function token(){
  if(!session)return null;
  if(!session.expires_at||Date.now()/1000<session.expires_at-60)return session.access_token;
@@ -69,3 +69,6 @@ export async function cloudBoard(key='lifetime_xp'){
  const rows=await request(`/rest/v1/leaderboard_public?select=username,lifetime_xp,coins_spent&order=${col}.desc&limit=100`);
  if(!Array.isArray(rows))throw new Error('Invalid leaderboard response');return rows;
 }
+
+// A short-lived user JWT for the SAME-ORIGIN payment server. Never a Supabase secret key.
+export async function cloudAccessToken(){return await token();}
