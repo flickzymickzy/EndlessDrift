@@ -1061,15 +1061,17 @@ class DriftGame{
 
  tick(dt){
   const p=this.player,stats=this.currentStats(),carTune=carSave().tune;
+  if(this.adminFrozen){this.player.vx=this.player.vz=this.player.speed=0;return;}
   this.elapsed+=dt;this.invulnerable=Math.max(0,this.invulnerable-dt);
+  if(this.adminGodMode)this.invulnerable=Math.max(this.invulnerable,1);
   const throttle=pressed('accelerate'),brake=pressed('brake'),handbrake=pressed('handbrake');
   const steer=(Number(pressed('right'))-Number(pressed('left')));
   const fw=Math.sin(p.heading),fz=Math.cos(p.heading),rightX=Math.cos(p.heading),rightZ=-Math.sin(p.heading);
   let longitudinal=p.vx*fw+p.vz*fz,lateral=p.vx*rightX+p.vz*rightZ;
-  const topSpeed=stats.top/2.23694;
+  const topSpeed=stats.top/2.23694*(this.adminSpeedMultiplier||1);
   // Enough power to reach highway speeds while keeping acceleration smooth.
   // Upgrades increase the actual force applied rather than just the HUD number.
-  const maxAccel=stats.acceleration*(1-this.tireDamage*.25);
+  const maxAccel=stats.acceleration*(1-this.tireDamage*.25)*(this.adminSpeedMultiplier||1);
   const estimatedGear=Math.max(1,Math.min(6,Math.floor(Math.abs(mph(longitudinal))/32)+1));
   if(p.lastGear&&estimatedGear>p.lastGear)p.shiftTimer=stats.shiftTime;
   p.lastGear=estimatedGear;
