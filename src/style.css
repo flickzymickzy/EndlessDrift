@@ -434,3 +434,18 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 .google-login{display:flex;align-items:center;justify-content:center;gap:13px;width:100%;background:#f5f7fc!important;color:#142033!important;border:1px solid #d0d9e2!important;font-weight:900;font-size:14px;box-shadow:0 8px 20px #0004}
 .google-login:hover{background:#fff!important;transform:translateY(-2px)}
 .google-login svg{flex:none}
+
+/* V13 — responsive, focus-safe pause overlay */
+.pause-screen{position:absolute;inset:0;z-index:35;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(ellipse at center,rgba(5,19,31,.74),rgba(2,6,13,.95));backdrop-filter:blur(14px);pointer-events:auto!important}
+.pause-card{width:min(540px,96vw);max-height:93vh;overflow:auto;border:1px solid #6af9cc70;border-radius:23px;padding:clamp(23px,4vw,40px);background:linear-gradient(140deg,#173144f5,#091521f8);box-shadow:0 0 72px #27f4c02a,0 22px 80px #000d}
+.pause-kicker{font-size:10px;letter-spacing:.28em;color:var(--mint);font-weight:900}
+.pause-card h2{font-size:clamp(60px,10vw,86px);margin:12px 0 15px;letter-spacing:.045em}.pause-card h2 span{color:var(--mint)}
+.pause-card p{color:#aec8d4;font-size:14px;line-height:1.65;margin-bottom:16px}
+.pause-status{border-block:1px solid #ffffff21;padding:13px 0;margin:17px 0;display:flex;align-items:center;justify-content:space-between;gap:8px;color:#d5f9ed;font-size:11px;letter-spacing:.12em;font-weight:800}
+.pause-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pause-buttons .btn{min-width:0}.pause-buttons .btn:first-child{grid-column:1/-1;font-size:14px;padding:16px}.pause-card>small{display:block;margin-top:20px;color:#88a9b9;font-size:10px;line-height:1.6;letter-spacing:.07em}
+.dispatch-message{position:absolute;top:160px;right:30px;width:min(325px,45vw);padding:12px 15px;background:#142238ea;border:1px solid #5e90a38a;border-left:3px solid #ff826a;border-radius:10px;box-shadow:0 9px 24px #0007;pointer-events:none!important;animation:dispatchIn .23s ease-out}
+.dispatch-message small{display:block;font-size:9px;letter-spacing:.19em;color:#ffa17a;font-weight:900;margin-bottom:5px}.dispatch-message strong{display:block;color:#e2eff6;font-size:12px;line-height:1.6;font-weight:700}
+@keyframes dispatchIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+.username-panel{margin:15px 0;border:1px solid #5df2cc40;border-radius:14px;background:#0c2531bf;padding:17px}.username-panel h3{margin:8px 0 5px;color:#9effdc;overflow-wrap:anywhere}.username-panel .muted{font-size:12px;line-height:1.7}.username-panel .notice{margin-top:12px}
+.username-form{margin-top:15px}.username-form label{display:block;font-size:11px;font-weight:850;letter-spacing:.09em;margin-bottom:8px}.username-input-row{display:flex;flex-wrap:wrap;gap:8px}.username-input-row input{flex:1;min-width:170px;background:#06141e;border:1px solid #4d717a;color:white;border-radius:8px;padding:12px}.username-input-row .btn{flex:0 0 auto}
+@media(max-width:650px){.pause-buttons{grid-template-columns:1fr}.pause-buttons .btn:first-child{grid-column:auto}.dispatch-message{top:175px;right:12px;width:min(280px,70vw)}}

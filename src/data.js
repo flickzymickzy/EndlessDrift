@@ -23,7 +23,19 @@ export const CARS = [
   {id:'cobra-gt',name:'Cobra GT',type:'Supercharged Muscle',price:49000,hp:760,top:204,handling:73,weight:1780,kind:'coupe',color:'#42bcca',length:4.82,width:1.94},
   {id:'raven-911',name:'Raven 911',type:'Rear Engine Sports',price:78000,hp:535,top:196,handling:94,weight:1515,kind:'sports',color:'#d5edf0',length:4.55,width:1.85},
   {id:'comet-c8',name:'Comet C8',type:'Mid Engine Supercar',price:125000,hp:700,top:221,handling:93,weight:1590,kind:'super',color:'#eea943',length:4.63,width:1.93},
-  {id:'nebula-x',name:'Nebula X',type:'Hypercar',price:145000,hp:950,top:273,handling:95,weight:1350,kind:'hyper',color:'#32d7c8',length:4.68,width:2.04}
+  {id:'nebula-x',name:'Nebula X',type:'Hypercar',price:145000,hp:950,top:273,handling:95,weight:1350,kind:'hyper',color:'#32d7c8',length:4.68,width:2.04},
+  {id:'dusk-200sx',name:'Dusk 200SX',type:'Old School Slider',price:6600,hp:255,top:160,handling:88,weight:1195,kind:'coupe',color:'#ff915e',length:4.32,width:1.75},
+  {id:'storm-evo',name:'Storm Evo IX',type:'Rally Street Sedan',price:18500,hp:390,top:187,handling:89,weight:1485,kind:'sedan',color:'#368be8',length:4.50,width:1.77},
+  {id:'tidal-rx8',name:'Tidal RX-8',type:'Rotary Four Door',price:11900,hp:310,top:178,handling:91,weight:1370,kind:'sports',color:'#ed4061',length:4.44,width:1.78},
+  {id:'mirage-a90',name:'Mirage A90',type:'Modern Turbo Coupe',price:38500,hp:505,top:208,handling:88,weight:1505,kind:'sports',color:'#e4f7ff',length:4.38,width:1.86},
+  {id:'lynx-gti',name:'Lynx GTI',type:'Hot Hatch',price:9800,hp:295,top:167,handling:89,weight:1325,kind:'coupe',color:'#f5c34e',length:4.28,width:1.80},
+  {id:'obsidian-srt',name:'Obsidian SRT',type:'American Street Muscle',price:44500,hp:650,top:211,handling:72,weight:1920,kind:'sedan',color:'#6e5a89',length:5.03,width:1.98},
+  {id:'velocity-gt3',name:'Velocity GT3',type:'Circuit Special',price:115000,hp:590,top:215,handling:97,weight:1310,kind:'super',color:'#73eeab',length:4.56,width:1.96},
+  {id:'cyber-volt',name:'Cyber Volt',type:'Electric Performance',price:82000,hp:730,top:205,handling:90,weight:1980,kind:'sedan',color:'#87d8e6',length:4.90,width:1.96},
+  {id:'zenith-nsx',name:'Zenith NSX',type:'Mid Engine Hybrid',price:90500,hp:610,top:222,handling:94,weight:1665,kind:'super',color:'#d2d5e4',length:4.48,width:1.94},
+  {id:'crimson-m5',name:'Crimson M5',type:'Executive Drift Sedan',price:67000,hp:625,top:215,handling:82,weight:1815,kind:'sedan',color:'#dc364e',length:4.96,width:1.92},
+  {id:'nebula-gt',name:'Nebula GT',type:'All Wheel Hyper Coupe',price:132000,hp:850,top:244,handling:93,weight:1600,kind:'super',color:'#a98afd',length:4.68,width:1.98},
+  {id:'solaris-xx',name:'Solaris XX',type:'Track Hypercar',price:185000,hp:1050,top:285,handling:96,weight:1320,kind:'hyper',color:'#ff6045',length:4.72,width:2.00}
 ];
 
 export const UPGRADES = [

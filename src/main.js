@@ -7,8 +7,10 @@ import {createCar,setCarPaint,setCarCosmetics,animateWheels} from './car.js';
 import {Showroom} from './showroom.js';
 import {Soundtrack} from './audio.js';
 import {driftStep} from './driftPhysics.js';
+import {crashMultiplier} from './penalties.js';
+import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
 import {performanceStats,upgradePreview,PERFORMANCE_FIELDS} from './performance.js';
-import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,googleOAuthReturned} from './cloud.js';
+import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned} from './cloud.js';
 import {purchased,clearPurchased,refreshPurchased,beginCheckout,spendPurchased} from './payments.js';
 
 const app=document.querySelector('#app');
@@ -35,23 +37,40 @@ app.innerHTML=`
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
       <div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
-    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 12.0 • SHOWROOM / STUDIO</div>
+    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 13.0 • SHOWROOM / STUDIO</div>
   </section>
   <section id="screen" class="panescreen hidden" aria-live="polite"></section>
   <div id="hud" class="hud hidden">
     <div class="hud-top"><div class="tag featured-tag"><small>RUN XP • 5 XP = 1 DC <span class="live-dot"></span></small><b id="runScore">0 XP</b></div><div class="tag"><small>COMBO</small><b id="combo">×1.0</b></div><div class="tag"><small>TOTAL NEAR MISSES</small><b id="nearMissCount">0</b></div><div class="tag car-tag"><small>CAR</small><b id="hudCar">SAKURA S13</b></div></div>
     <div class="level-mini"><span id="hudLevel">LEVEL 1</span><div><b id="hudLevelBar"></b></div><small id="hudLevelProgress">0 / 1500 XP</small></div>
     <div id="nearMissFlash" class="near-miss-flash hidden"><strong id="nearMissTitle">NEAR MISS</strong><span id="nearMissValue">+300 XP</span><small id="nearMissStreak">STREAK ×1</small></div>
-    <div class="hud-top-right"><div id="wanted" class="wanted hidden"><small>POLICE PURSUIT</small><span id="stars">★</span></div><button class="btn small ghost" id="customFromHud">CUSTOMIZE</button></div>
+    <div id="dispatchMessage" class="dispatch-message hidden" aria-live="polite"><small>POLICE DISPATCH</small><strong id="dispatchText"></strong></div>
+    <div class="hud-top-right"><div id="wanted" class="wanted hidden"><small>POLICE PURSUIT</small><span id="stars">☆☆☆☆☆</span></div><button class="btn small ghost" id="customFromHud">CUSTOMIZE</button></div>
     <div class="drift-notice hidden" id="driftNotice"><div class="drift-rating" id="driftRating">CLEAN DRIFT</div><div class="score" id="driftSplash">DRIFT!</div><div class="combo" id="driftAngle">SUSTAIN YOUR DRIFT</div><div class="drift-meter"><i id="driftMeterFill"></i><b id="driftMeterPin"></b></div><small class="drift-meter-note">STEER SMOOTHLY • HOLD A / D TO SLIDE</small></div>
-    <div class="hud-bottom-left"><button class="btn" data-page="garage">GARAGE</button><button class="btn" data-page="home">MENU / PAUSE</button></div>
+    <div class="hud-bottom-left"><button class="btn" id="pauseHud">PAUSE / MENU</button><button class="btn" data-page="garage">GARAGE</button></div>
     <div class="speed"><div class="speed-number" id="speedNumber">0</div><div class="unit" id="speedUnit">MPH</div><div class="speed-track"><b id="rpmLine"></b></div><div class="speed-bottom"><div><span>GEAR</span> <b id="gear">N</b></div><div><span>RPM</span> <b id="rpm">800</b></div><div><span>BOOST</span> <b id="boost">0%</b></div></div></div>
+  </div>
+  <div id="pauseScreen" class="pause-screen hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <div class="pause-card">
+      <div class="pause-kicker">ENDLESS DRIFT // GAME STOPPED</div>
+      <h2 id="pauseTitle">PAUSED<span> / /</span></h2>
+      <p id="pauseReason">Your run is frozen. Resume whenever you're ready.</p>
+      <div class="pause-status"><span id="pauseCar">CURRENT RIDE</span><span id="pauseXP">0 RUN XP</span></div>
+      <div class="pause-buttons">
+        <button class="btn primary" id="resumeGame">▶ RESUME DRIVING</button>
+        <button class="btn" id="restartGame">↻ RESTART / BANK XP</button>
+        <button class="btn ghost" data-pause-page="garage">GARAGE</button>
+        <button class="btn ghost" data-pause-page="settings">SETTINGS</button>
+        <button class="btn ghost" data-pause-page="home">MAIN MENU</button>
+      </div>
+      <small>ESC TO RESUME · TAB SWITCH OR WINDOW BLUR AUTO-PAUSES</small>
+    </div>
   </div>
   <div id="crashFlash" class="crash-flash hidden"></div>
   <div id="wreckScreen" class="wreck-screen hidden" aria-live="assertive">
     <div class="wreck-card"><div class="wreck-kicker">DRIVE ENDED // CRASH DETECTED</div><h2>YOU <span>WRECKED</span></h2><div class="wreck-reason" id="wreckReason">HIGH SPEED COLLISION</div>
     <div class="wreck-breakdown"><div><small>RUN XP</small><strong id="wreckTotal">0</strong></div><div><small>XP LOST</small><strong class="negative" id="wreckLost">−0</strong></div><div><small>XP BANKED</small><strong id="wreckBanked">+0</strong></div></div>
-    <p>Traffic / police collisions lose 25% run XP. Highway barriers lose 50%. Previously banked XP and Drift Coins stay safe.</p>
+    <p>Traffic / police collisions lose 25% run XP. Highway barriers lose 0%. Previously banked XP and Drift Coins stay safe.</p>
     <div class="wreck-actions"><button class="btn primary" id="respawnBtn">↻ RESPAWN</button><button class="btn ghost" data-page="garage">GO TO GARAGE</button></div>
     <small class="wreck-hint">Press R to respawn</small></div>
   </div>
@@ -60,7 +79,7 @@ app.innerHTML=`
 </div>`;
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
-let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let pauseActive=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function cashRefresh(){
@@ -112,6 +131,23 @@ function earnedXP(result){
  clearTimeout(levelUpTimeout);levelUpTimeout=setTimeout(()=>popup.classList.add('hidden'),3600);
 }
 function notify(message){const e=$('toast');e.textContent=message;e.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.add('hidden'),3400);}
+function pauseGame(reason='manual'){
+ if(mode!=='game'||!game?.playing||game.crashState||pauseActive)return;
+ pauseActive=true;
+ Object.keys(keys).forEach(key=>keys[key]=false);
+ $('pauseCar').textContent=getSelected().name.toUpperCase();
+ $('pauseXP').textContent=fmt(game.run.score)+' RUN XP';
+ $('pauseReason').textContent=reason==='focus'?'Window focus lost. Your run was paused automatically.':'Your run is frozen. Resume whenever you are ready.';
+ $('pauseScreen').classList.remove('hidden');
+ game.audio?.suspend?.();
+}
+function resumeGame(){
+ if(!pauseActive)return;
+ pauseActive=false;$('pauseScreen').classList.add('hidden');
+ Object.keys(keys).forEach(key=>keys[key]=false);
+ game?.resetTiming();game?.audio?.unlock();
+}
+function clearPause(){pauseActive=false;$('pauseScreen').classList.add('hidden');Object.keys(keys).forEach(key=>keys[key]=false);}
 function errorScreen(err){console.error('Endless Drift error:',err);const msg=String(err?.stack||err?.message||err);
  let old=document.getElementById('fatal-error');if(old)return;
  const el=document.createElement('div');el.className='error';el.id='fatal-error';el.innerHTML=`<div class="error-panel"><div class="kicker">GAME STARTUP ERROR</div><h2>Something went wrong</h2><p style="margin:17px 0;line-height:1.8">The game couldn't load. Refresh your website or check the deployment logs in Render. If this continues, copy the error below into ChatGPT.</p><pre></pre><button class="btn primary" onclick="location.reload()">RELOAD GAME</button></div>`;
@@ -131,6 +167,7 @@ function applyUI(){
 function applyGarageTheme(){const theme=GARAGE_THEMES.find(t=>t.id===state.garageTheme)||GARAGE_THEMES[0];document.documentElement.style.setProperty('--garage-wall',theme.wall);document.documentElement.style.setProperty('--garage-floor',theme.floor);document.documentElement.style.setProperty('--garage-accent',theme.accent);}
 
 function renderPage(page){
+  if(page!=='game'&&pauseActive)clearPause();
   if(page!=='game'&&game?.playing){
     if(game.crashState)game.respawn();else game.endRun(false);
   }
@@ -306,12 +343,13 @@ function renderCoins(){
  <div class="notice">A Stripe webhook must be configured on Render to award paid coins. Purchasing only works while logged in. Offline-earned coins and car saves remain browser-local until cloud saves are developed.</div>`;
 }
 async function renderAccount(){
- let user=null;let error='';
- if(cloudConfigured()){try{user=await cloudUser();}catch(e){error=e.message;}}
+ let user=null;let profile=null;let error='';
+ if(cloudConfigured()){try{user=await cloudUser();if(user)profile=await cloudProfile();}catch(e){error=e.message;}}
+ activeUsername=profile?.username||'';
  if(mode!=='account')return;
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Local game saves remain on this browser until secure cloud saving is developed.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
- ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
+ ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">SAVE USERNAME</button></div></form><p class="notice">Run backend/usernames-v13.sql in Supabase first. Usernames must be unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
  ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Your paid Drift Coin balance and Drift Pass ownership are stored securely online. Locally earned XP, car purchases, and local saves are still browser-based.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
@@ -382,6 +420,10 @@ function updateSettings(){save();applyUI();game?.applyQuality();game?.resetTimin
 // Event delegation keeps controls working after each panel is regenerated.
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
+ if(t.id==='pauseHud'){pauseGame();return;}
+ if(t.id==='resumeGame'){resumeGame();return;}
+ if(t.id==='restartGame'){resumeGame();game?.recover();return;}
+ if(t.dataset.pausePage){clearPause();renderPage(t.dataset.pausePage);return;}
  if(t.dataset.close!==undefined){closeModal();return;}
  if(t.dataset.page){closeModal();if(t.dataset.page==='tune'){tuningCar=state.selected;tuneTab='performance';}renderPage(t.dataset.page);return;}
  if(t.dataset.saveExport!==undefined){const blob=new Blob([exportSave()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='EndlessDrift-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('SAVE BACKUP DOWNLOADED');return;}
@@ -460,6 +502,12 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('submit',async e=>{
+ if(e.target.id==='usernameForm'){
+  e.preventDefault();const form=e.target,button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
+  try{const username=String(new FormData(form).get('username')||'').trim();await cloudUpdateUsername(username);activeUsername=username;notify('USERNAME SAVED • @'+username);await renderAccount();}
+  catch(err){notify('USERNAME: '+String(err.message||err));if(button)button.disabled=false;}
+  return;
+ }
  if(e.target.id!=='accountForm')return;e.preventDefault();
  const f=e.target,form=new FormData(f),email=String(form.get('email')||'').trim(),password=String(form.get('password')||''),username=String(form.get('username')||'').trim();
  for(const b of f.querySelectorAll('button'))b.disabled=true;
@@ -485,12 +533,14 @@ window.addEventListener('keydown',e=>{
  if(mode==='game'&&['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',...Object.values(state.settings.controls)].includes(code))e.preventDefault();
  if(e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;
  keys[code]=true;if(e.repeat)return;
- if(bound('pause',code)){if(modalKind)closeModal();else if(mode==='game')renderPage('home');else renderPage('game');}
+ if(bound('pause',code)){if(modalKind)closeModal();else if(mode==='game'){if(pauseActive)resumeGame();else pauseGame();}else renderPage('game');return;}
+ if(pauseActive)return;
  if(bound('camera',code)&&mode==='game')game?.changeCamera();
  if(bound('recover',code)&&mode==='game'){if(game?.crashState)game.respawn();else game?.recover();}
 });
 window.addEventListener('keyup',e=>{keys[e.code]=false;});
-window.addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);});
+window.addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);pauseGame('focus');});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame('focus');});
 
 class DriftGame{
  constructor(){
@@ -505,7 +555,7 @@ class DriftGame{
   this.world=createWorld(this.scene);
   this.player={x:0,z:0,vx:0,vz:0,heading:0,yaw:0,steer:0,driftBlend:0,speed:0,angle:0};
   this.run={score:0,active:false,grace:0,combo:1,seconds:0,nearMisses:0,nearMissXP:0};
-  this.elapsed=0;this.nearMissStreak=0;this.lastNearMiss=-100;this.nearMissFlashUntil=0;this.invulnerable=1;this.wanted=0;this.chaseTime=0;this.searchTimer=0;this.bustTimer=0;this.maxSpeed=0;this.crashState=null;this.crashSparks=[];this.crashDebris=[];
+  this.elapsed=0;this.nearMissStreak=0;this.lastNearMiss=-100;this.nearMissFlashUntil=0;this.invulnerable=1;this.wanted=0;this.chaseTime=0;this.wantedTimer=0;this.dispatchUntil=0;this.searchTimer=0;this.bustTimer=0;this.maxSpeed=0;this.crashState=null;this.crashSparks=[];this.crashDebris=[];
   this.police=[];this.traffic=[];this.blockade=[];this.blockadeNext=0;this.helicopter=null;this.heliLamp=null;this.heliRotor=null;this.radioTimer=0;this.tireDamage=0;this.fasterEscape=0;this.smokePool=[];this.smokeHead=0;this.smokeTimer=0;this.skids=[];this.skidHead=0;
   this.setPlayerCar();this.setupTraffic();this.setupSmoke();this.setupSkids();this.setupCrashEffects();this.applyQuality();
   this.camera.position.set(6,4.3,-12);this.camera.lookAt(0,1,2);
@@ -638,15 +688,30 @@ class DriftGame{
   if(swat){const shield=new THREE.Mesh(new THREE.BoxGeometry(1.25,.32,.09),new THREE.MeshStandardMaterial({color:'#132335',roughness:.35}));shield.position.set(0,.94,-c.length*.5-.13);mesh.add(shield);}
   this.scene.add(mesh);return {mesh,x:0,z:0,heading:0,speed:0,lights:[a,b],police:true,swat};
  }
- startPolice(){if(this.wanted)return;this.wanted=1;this.chaseTime=0;this.searchTimer=0;this.bustTimer=0;this.fasterEscape=0;
+ startPolice(){if(this.wanted)return;this.wanted=1;this.chaseTime=0;this.wantedTimer=0;this.searchTimer=0;this.bustTimer=0;this.fasterEscape=0;
   for(let i=0;i<2;i++){const p=this.createPolice();p.x=[-8,8][i];p.z=this.player.z-85-i*20;p.heading=this.player.heading;p.mesh.position.set(p.x,0,p.z);this.police.push(p);}
-  this.audio?.radio(this.wanted,true);notify('POLICE PURSUIT • SPEED EXCEEDED 100 MPH');
+  this.dispatchPolice();notify('POLICE PURSUIT • SPEED EXCEEDED 100 KM/H');
+ }
+ dispatchPolice(){
+  const phrase=this.audio?.radio(this.wanted)||`Police alert level ${this.wanted}`;
+  $('dispatchText').textContent=phrase;
+  $('dispatchMessage').classList.remove('hidden');this.dispatchUntil=this.elapsed+5;
+ }
+ increaseWanted(){
+  if(this.wanted>=5)return;
+  this.wanted++;this.wantedTimer=0;
+  const add=this.createPolice(this.wanted>=5);add.x=this.player.x+8;add.z=this.player.z-120;add.mesh.position.set(add.x,0,add.z);this.police.push(add);
+  if(this.wanted===3)this.blockadeNext=this.elapsed+4;
+  if(this.wanted===4)this.createHelicopter();
+  if(this.wanted===5){for(let i=0;i<2;i++){const sw=this.createPolice(true);sw.x=[-10,10][i];sw.z=this.player.z-150-i*25;sw.mesh.position.set(sw.x,0,sw.z);this.police.push(sw);}notify('5 STARS • SWAT INTERCEPT UNITS');}
+  this.dispatchPolice();notify(`WANTED LEVEL ${this.wanted} / 5`);
  }
  endPolice(escaped){
+  this.audio?.cancelRadio?.();$('dispatchMessage').classList.add('hidden');
   this.police.forEach(p=>this.scene.remove(p.mesh));this.police.length=0;
   this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;
   if(this.helicopter){this.scene.remove(this.helicopter);this.helicopter=null;this.heliRotor=null;}
-  this.wanted=0;this.chaseTime=0;this.bustTimer=0;this.searchTimer=0;this.blockadeNext=0;this.fasterEscape=0;this.tireDamage=0;
+  this.wanted=0;this.chaseTime=0;this.wantedTimer=0;this.bustTimer=0;this.searchTimer=0;this.blockadeNext=0;this.fasterEscape=0;this.tireDamage=0;
   if(escaped){state.escapes++;const result=award(45+(this.maxSpeed*.3|0));this.maxSpeed=0;earnedXP(result);notify('POLICE LOST YOU • ESCAPE BONUS + XP');}
  }
  createBlockade(){
@@ -699,6 +764,7 @@ class DriftGame{
  updateSmoke(dt){for(const o of this.smokePool){if(o.life<=0)continue;o.life-=dt;if(o.life<=0){o.s.visible=false;continue;}o.s.position.y+=dt*.46;o.s.scale.setScalar(1+(.5*(o.max-o.life))*2.6);o.s.material.opacity=.43*Math.pow(Math.max(0,o.life/o.max),1.5);}}
  frame(now){const fps=Number(state.settings.fps||60);if(fps>0&&now-this.lastRender<1000/fps*.93)return;this.lastRender=now;
   let dt=Math.min(this.clock.getDelta(),.05);if(!Number.isFinite(dt)||dt<=0)dt=.016;
+  if(pauseActive&&mode==='game'){this.renderer.render(this.scene,this.camera);return;}
   if(this.playing&&!modalKind){
    if(this.crashState){this.updateCrash(dt);this.accum=0;}
    else{this.accum+=dt;const STEP=1/90;let n=0;while(this.accum>=STEP&&n++<6){this.tick(STEP);this.accum-=STEP;if(this.crashState)break;}if(n>5)this.accum=0;}
@@ -812,8 +878,7 @@ class DriftGame{
  }
  endRun(crashed){
   const score=Math.max(0,Math.round(this.run.score));
-  const barrier=typeof crashed==='string'&&crashed.includes('BARRIER');
-  const multiplier=barrier?.50:crashed?.75:1;
+  const multiplier=crashMultiplier(crashed);
   const received=Math.floor(score*multiplier);
   const breakdown={total:score,banked:received,lost:score-received,penalty:Math.round((1-multiplier)*100)};
   if(this.run.active&&score>0){
@@ -841,13 +906,11 @@ class DriftGame{
  updatePoliceLights(){for(const p of this.police){p.lights[0].visible=Math.sin(this.elapsed*17)>0;p.lights[1].visible=!p.lights[0].visible;}}
  updatePolice(dt){if(!this.wanted)return;
   this.chaseTime+=dt;
-  if(this.chaseTime>25&&this.wanted<5){this.wanted++;this.chaseTime=0;
-   const add=this.createPolice(this.wanted>=5);add.x=this.player.x+8;add.z=this.player.z-120;add.mesh.position.set(add.x,0,add.z);this.police.push(add);
-   if(this.wanted===3)this.blockadeNext=this.elapsed+4;
-   if(this.wanted===4)this.createHelicopter();
-   if(this.wanted===5){for(let i=0;i<2;i++){const sw=this.createPolice(true);sw.x=[-10,10][i];sw.z=this.player.z-150-i*25;this.police.push(sw);}notify('5 STARS • SWAT INTERCEPT UNITS');}
-   this.audio?.radio(this.wanted,true);notify(`WANTED LEVEL ${this.wanted}`);
-  }
+  // Wanted stars rise from sustained dangerous driving, not only long chases.
+  // The old 25-second timer combined with instant escapes hid levels 3–5.
+  const velocity=kph(this.player.speed);
+  this.wantedTimer+=dt*wantedHeatRate(velocity,this.player.angle);
+  if(nextWantedLevel(this.wanted,this.wantedTimer)>this.wanted)this.increaseWanted();
   const p=this.player,fast=mph(p.speed)>135;
   let closest=Infinity,visible=0;
   for(let i=0;i<this.police.length;i++){
@@ -868,7 +931,7 @@ class DriftGame{
      if(dist<18){this.tireDamage=Math.min(1,this.tireDamage+.25);notify('SWAT TIRE HIT • HANDLING REDUCED');this.audio?.impact();}
    }
   }
-  this.updatePoliceLights();this.audio?.radio(this.wanted);
+  this.updatePoliceLights();
   if(closest<4.5&&p.speed<13)this.bustTimer+=dt;else this.bustTimer=Math.max(0,this.bustTimer-dt*2);
   if(this.bustTimer>2.7){this.crash('BUSTED BY POLICE');return;}
   // Outrunning patrols is an actual escape method, even with a helicopter.
@@ -876,7 +939,7 @@ class DriftGame{
   if(closest>120)this.searchTimer+=dt;else this.searchTimer=Math.max(0,this.searchTimer-dt*1.6);
   const fastThreshold=this.wanted>=4?9:5;
   const distanceThreshold=this.wanted>=4?15:10;
-  if(this.fasterEscape>fastThreshold||this.searchTimer>distanceThreshold)this.endPolice(true);
+  if(this.chaseTime>20&&(this.fasterEscape>fastThreshold+8||this.searchTimer>distanceThreshold+6))this.endPolice(true);
  }
  updateCamera(dt){const p=this.player;let dx,dy,dz,lookX,lookY,lookZ;const h=p.heading;
   if(mode!=='game'){
@@ -911,7 +974,7 @@ class DriftGame{
   $('driftMeterFill').style.width=Math.min(100,p.angle/75*100)+'%';
   $('driftMeterPin').style.left=Math.min(100,p.angle/75*100)+'%';
   $('driftAngle').textContent=`${p.angle>=24&&p.angle<=46?'PERFECT SLIDE':p.angle>46?'WIDE ANGLE':'CLEAN DRIFT'} • ${Math.round(p.angle)}° • ${this.run.combo.toFixed(1)}× COMBO`;
-  $('wanted').classList.toggle('hidden',!this.wanted);$('stars').textContent='★'.repeat(this.wanted);
+  $('wanted').classList.toggle('hidden',!this.wanted);$('stars').textContent='★'.repeat(this.wanted)+'☆'.repeat(Math.max(0,5-this.wanted));if(this.elapsed>this.dispatchUntil)$('dispatchMessage').classList.add('hidden');
  }
 }
 

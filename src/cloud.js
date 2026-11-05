@@ -72,3 +72,19 @@ export async function cloudBoard(key='lifetime_xp'){
 
 // A short-lived user JWT for the SAME-ORIGIN payment server. Never a Supabase secret key.
 export async function cloudAccessToken(){return await token();}
+
+// Public display handle for signed-in users. Existing Google accounts receive a
+// generated driver_ name until the player chooses their own.
+export async function cloudProfile(){
+ const access=await token();if(!access)return null;
+ const user=await cloudUser();if(!user?.id)return null;
+ const rows=await request(`/rest/v1/driver_profiles?select=id,username&id=eq.${encodeURIComponent(user.id)}&limit=1`,{token:access});
+ return Array.isArray(rows)?(rows[0]||null):null;
+}
+export async function cloudUpdateUsername(username){
+ const desired=String(username||'').trim();
+ if(!/^[A-Za-z0-9_]{3,24}$/.test(desired))throw new Error('Use 3–24 letters, numbers or underscores');
+ const access=await token();if(!access)throw new Error('Sign in before choosing a username');
+ try{return await request('/rest/v1/rpc/ed_set_username',{method:'POST',body:{p_username:desired},token:access});}
+ catch(err){if(/duplicate key|unique constraint|already taken/i.test(err.message))throw new Error('Username already taken. Try another.');throw err;}
+}
