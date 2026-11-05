@@ -913,13 +913,14 @@ class DriftGame{
  endPolice(escaped){
   this.audio?.cancelRadio?.();$('dispatchMessage').classList.add('hidden');
   this.police.forEach(p=>this.scene.remove(p.mesh));this.police.length=0;
-  this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;
+  this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;if(this.blockadeRamp){this.scene.remove(this.blockadeRamp);this.blockadeRamp=null;}
   if(this.helicopter){this.scene.remove(this.helicopter);this.helicopter=null;this.heliRotor=null;}if(this.heliSpotTarget)this.scene.remove(this.heliSpotTarget);if(this.heliLightCircle)this.scene.remove(this.heliLightCircle);this.heliSpot=null;this.heliSpotTarget=null;this.heliLightCircle=null;
   this.wanted=0;this.chaseTime=0;this.wantedTimer=0;this.bustTimer=0;this.searchTimer=0;this.blockadeNext=0;this.fasterEscape=0;this.tireDamage=0;
   if(escaped){state.escapes++;const result=award(45+(this.maxSpeed*.3|0));this.maxSpeed=0;earnedXP(result);notify('POLICE LOST YOU • ESCAPE BONUS + XP');}
  }
  createBlockade(){
   this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;
+  if(this.blockadeRamp)this.scene.remove(this.blockadeRamp);this.blockadeRamp=null;
   // Stationary police vans. Three lanes blocked; rightmost lane (+12) is OPEN.
   for(const x of [-12,-4,4]){
    const c=CARS[8],mesh=createCar(c,'#17243a',{traffic:true});mesh.rotation.y=Math.PI/2;
@@ -927,12 +928,16 @@ class DriftGame{
    const light=new THREE.Mesh(new THREE.BoxGeometry(.78,.10,.25),new THREE.MeshBasicMaterial({color:0x558bff,emissive:0x2269ff,emissiveIntensity:1.4}));light.position.set(0,2.12,-.3);mesh.add(light);
    const vehicle={mesh,x,z:this.player.z+190,speed:0,heading:Math.PI/2,police:true,blockade:true};mesh.position.set(vehicle.x,0,vehicle.z);this.scene.add(mesh);this.blockade.push(vehicle);
   }
-  this.blockadeNext=this.elapsed+27;notify('STATIONARY VAN ROADBLOCK • RIGHT LANE OPEN');
+  const ramp=new THREE.Group(),rmat=new THREE.MeshStandardMaterial({color:0xf9b64a,metalness:.4,roughness:.5});
+  const wedge=new THREE.Mesh(new THREE.BoxGeometry(3.4,.32,6),rmat);wedge.position.y=.21;wedge.rotation.x=-.10;ramp.add(wedge);
+  const stripe=new THREE.Mesh(new THREE.BoxGeometry(2.6,.05,.45),new THREE.MeshBasicMaterial({color:0x15273a}));stripe.position.set(0,.47,1.2);ramp.add(stripe);
+  ramp.position.set(-4,0,this.player.z+173);this.scene.add(ramp);this.blockadeRamp=ramp;
+  this.blockadeNext=this.elapsed+27;notify('POLICE ROADBLOCK • JUMP THE VANS OR TAKE RIGHT LANE');
  }
  updateBlockade(dt){
   if(!this.wanted||this.wanted<3)return;
   if(!this.blockade.length&&this.elapsed>this.blockadeNext)this.createBlockade();
-  if(this.blockade.length&&this.blockade[0].z<this.player.z-35){this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;this.blockadeNext=this.elapsed+26;}
+  if(this.blockade.length&&this.blockade[0].z<this.player.z-35){this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;if(this.blockadeRamp)this.scene.remove(this.blockadeRamp);this.blockadeRamp=null;this.blockadeNext=this.elapsed+26;}
  }
  createHelicopter(){if(this.helicopter)return;
   const g=new THREE.Group(),hull=new THREE.MeshStandardMaterial({color:0x15202e,metalness:.6,roughness:.38});
@@ -1081,7 +1086,8 @@ class DriftGame{
   const boost=feature('boost','lastBoostCell');
   if(boost!==null){this.lastBoostCell=boost;this.boostTimer=3.4;const forward=new THREE.Vector2(Math.sin(p.heading),Math.cos(p.heading));p.vx+=forward.x*13;p.vz+=forward.y*13;this.run.active=true;this.run.grace=2.6;this.run.score+=85;this.showFeature('BOOST PAD  +85 XP',2.8);}
   const ramp=feature('ramp','lastRampCell');
-  if(ramp!==null){this.lastRampCell=ramp;this.airDuration=1.15;this.airTimer=this.airDuration;this.run.active=true;this.run.grace=2.6;this.run.score+=120;this.showFeature('RAMP JUMP  +120 XP',2.8);}
+  if(ramp!==null){this.lastRampCell=ramp;this.airDuration=1.15*(this.adminJumpMultiplier||1);this.airTimer=this.airDuration;this.run.active=true;this.run.grace=2.6;this.run.score+=120;this.showFeature('RAMP JUMP  +120 XP',2.8);}
+  if(this.blockadeRamp&&Math.abs(p.z-this.blockadeRamp.position.z)<3&&Math.abs(p.x-this.blockadeRamp.position.x)<2.7&&this.airTimer<=0){this.airDuration=2.4*(this.adminJumpMultiplier||1);this.airTimer=this.airDuration;this.invulnerable=Math.max(this.invulnerable,this.airDuration);this.showFeature('ROADBLOCK JUMP • CLEAR THE VANS',3.2);}
  }
  showFeature(text,duration=2){$('featureNotice').textContent=text;$('featureNotice').classList.remove('hidden');this.featureUntil=this.elapsed+duration;}
  checkNearMisses(previousPlayerZ){
