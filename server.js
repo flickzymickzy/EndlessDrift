@@ -13,6 +13,8 @@ const sb=(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const publicKey=process.env.SUPABASE_PUBLISHABLE_KEY||'';
 const secretKey=process.env.SUPABASE_SECRET_KEY||'';
 const stripeSecret=process.env.STRIPE_SECRET_KEY||'';
+const liveStripe= stripeSecret.startsWith('sk_live_');
+const checkoutPrice=(key,sandbox)=>process.env['STRIPE_PRICE_'+key]||(liveStripe?'':sandbox);
 const webhookSecret=process.env.STRIPE_WEBHOOK_SECRET||'';
 const adminUserId=process.env.ADMIN_USER_ID||''; // Optional account UUID.
 const inviteCode=process.env.ED_ADMIN_ACTIVATION_CODE||'';
@@ -22,15 +24,15 @@ const adminPending=new Map(),adminAttempts=new Map();
 
 const stripe=stripeSecret?new Stripe(stripeSecret):null;
 const products={
- starter:{price:'price_1UY6jRAWFsqe6FrwLwaZRtsw',amount:999,coins:1500},
- street:{price:'price_1UY6ojAWFsqe6FrwRHZXoJmQ',amount:2499,coins:5000},
- legend:{price:'price_1UY6miAWFsqe6FrwQI19MxEW',amount:4999,coins:12000},
- drift_pass:{price:'price_1UY6qwAWFsqe6FrwBIrhFnWB',amount:3499,coins:0}
+ starter:{price:checkoutPrice('STARTER','price_1UY6jRAWFsqe6FrwLwaZRtsw'),amount:999,coins:1500},
+ street:{price:checkoutPrice('STREET','price_1UY6ojAWFsqe6FrwRHZXoJmQ'),amount:2499,coins:5000},
+ legend:{price:checkoutPrice('LEGEND','price_1UY6miAWFsqe6FrwQI19MxEW'),amount:4999,coins:12000},
+ drift_pass:{price:checkoutPrice('DRIFT_PASS','price_1UY6qwAWFsqe6FrwBIrhFnWB'),amount:3499,coins:0}
 };
 const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));};
 async function body(req,limit=16000){const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>limit)throw new Error('Request body is too large');chunks.push(c);}return Buffer.concat(chunks);}
 const bad=(res,e,status=400)=>json(res,status,{error:String(e.message||e).slice(0,200)});
-function requireConfig(){if(!stripe||!webhookSecret||!sb||!publicKey||!secretKey)throw new Error('Payment server is not fully configured in Render Environment');}
+function requireConfig(){if(!stripe||!webhookSecret||!sb||!publicKey||!secretKey)throw new Error('Payment server is not fully configured in Render Environment');if(liveStripe&&process.env.STRIPE_LIVE_CHECKOUT_ENABLED!=='true')throw new Error('Live Stripe Checkout is disabled until launch verification is complete');if(Object.values(products).some(p=>!p.price))throw new Error('Missing live Stripe price IDs in Render Environment');}
 async function supabase(resource,{method='GET',payload,admin=true,token}={}){
  const headers={'apikey':admin?secretKey:publicKey,'Accept':'application/json'};
  if(token)headers.Authorization=`Bearer ${token}`;
@@ -271,7 +273,12 @@ async function api(req,res,route){
   if(route==='/api/payment-status'&&req.method==='GET'){
    const required=['STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','SUPABASE_SECRET_KEY','SITE_URL'];
    const missing=required.filter(name=>!process.env[name]);
-   return json(res,missing.length?503:200,{paymentServer:'v17',status:missing.length?'configuration_missing':'ready',missing});
+   if(liveStripe){
+    for(const name of ['STRIPE_PRICE_STARTER','STRIPE_PRICE_STREET','STRIPE_PRICE_LEGEND','STRIPE_PRICE_DRIFT_PASS'])
+     if(!process.env[name])missing.push(name);
+    if(process.env.STRIPE_LIVE_CHECKOUT_ENABLED!=='true')missing.push('STRIPE_LIVE_CHECKOUT_ENABLED');
+   }
+   return json(res,missing.length?503:200,{paymentServer:'v19',mode:liveStripe?'live':'sandbox',status:missing.length?'configuration_missing':'ready',missing});
   }
   if(route.startsWith('/api/player/')||route.startsWith('/api/runs/'))return await playerStatusApi(req,res,route);
   if(route==='/api/leaderboard'&&req.method==='GET')return await leaderboardApi(res,new URL(req.url,'http://localhost').searchParams.get('sort'));
