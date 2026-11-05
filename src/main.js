@@ -1076,10 +1076,10 @@ class DriftGame{
   if(!this.playing||this.crashState)return;
   const p=this.player;
   if(p.speed<8)return;
-  const feature=(at,lane,cell,last)=>{const n=Math.round((p.z-at)/96);return Math.abs(p.z-(n*96+at))<2.0&&Math.abs(p.x-lane)<2.7&&n!==this[last]?n:null;};
-  const boost=feature(-20,12,0,'lastBoostCell');
+  const feature=(kind,last)=>{for(const chunk of this.world.chunks){const marker=chunk.userData[kind];if(!marker)continue;const z=chunk.position.z+marker.z,id=Math.round(z);if(Math.abs(p.z-z)<2.3&&Math.abs(p.x-marker.x)<2.7&&id!==this[last])return id;}return null;};
+  const boost=feature('boost','lastBoostCell');
   if(boost!==null){this.lastBoostCell=boost;this.boostTimer=3.4;const forward=new THREE.Vector2(Math.sin(p.heading),Math.cos(p.heading));p.vx+=forward.x*13;p.vz+=forward.y*13;this.run.active=true;this.run.grace=2.6;this.run.score+=85;this.showFeature('BOOST PAD  +85 XP',2.8);}
-  const ramp=feature(25,-4,0,'lastRampCell');
+  const ramp=feature('ramp','lastRampCell');
   if(ramp!==null){this.lastRampCell=ramp;this.airDuration=1.15;this.airTimer=this.airDuration;this.run.active=true;this.run.grace=2.6;this.run.score+=120;this.showFeature('RAMP JUMP  +120 XP',2.8);}
  }
  showFeature(text,duration=2){$('featureNotice').textContent=text;$('featureNotice').classList.remove('hidden');this.featureUntil=this.elapsed+duration;}
