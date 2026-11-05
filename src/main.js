@@ -9,7 +9,7 @@ import {Soundtrack} from './audio.js';
 import {driftStep} from './driftPhysics.js';
 import {crashMultiplier} from './penalties.js';
 import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
-import {performanceStats,upgradePreview,PERFORMANCE_FIELDS} from './performance.js';
+import {performanceStats,upgradePreview,PERFORMANCE_FIELDS,capVehicleVelocity} from './performance.js';
 import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned,cloudLoadGameSave,cloudSaveGameSave,cloudAccessToken} from './cloud.js';
 import {purchased,clearPurchased,refreshPurchased,spendPurchased} from './payments.js';
 
@@ -1199,9 +1199,13 @@ class DriftGame{
   // Recompute the basis after turning; using the old heading made car movement jitter.
   const fw2=Math.sin(p.heading),fz2=Math.cos(p.heading),rx2=Math.cos(p.heading),rz2=-Math.sin(p.heading);
   p.vx=fw2*longitudinal+rx2*lateral;p.vz=fz2*longitudinal+rz2*lateral;
+  // Limit full movement speed, not only forward velocity: slides add sideways speed.
+  capVehicleVelocity(p,topSpeed);
   const prevPlayerZ=p.z;
   p.x+=p.vx*dt;p.z+=p.vz*dt;this.checkRoadFeatures(dt);
-  p.speed=Math.hypot(p.vx,p.vz);p.angle=dynamics.slip;
+  // Boost pads can change velocity after normal acceleration; apply the same cap.
+  capVehicleVelocity(p,topSpeed);
+  p.angle=dynamics.slip;
   if(this.lastThrottle&&!throttle&&p.speed>14&&this.elapsed-(this.lastPopTime||0)>.4){this.audio?.exhaustPop(1+(carSave().upgrades.turbo||0)*.12);this.lastPopTime=this.elapsed;this.backfireUntil=this.elapsed+.16;}
   this.lastThrottle=throttle;
   const engineRpm=900+Math.min(7600,Math.abs(longitudinal)*235+(throttle?700:0)+((p.shiftTimer||0)>0?400:0));

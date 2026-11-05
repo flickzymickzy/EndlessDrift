@@ -24,3 +24,17 @@ export function upgradePreview(base,upgrades,upgradeId,cap){
  const after={...upgrades,[upgradeId]:Math.min(cap,(upgrades[upgradeId]||0)+1)};
  return {current,next:performanceStats(base,after)};
 }
+
+// Hard speed limit for total car movement, including side-slip and boost-pad impulses.
+// topSpeedMps reflects the upgraded car and the existing admin speed multiplier.
+export function capVehicleVelocity(vehicle,topSpeedMps){
+ const cap=Number.isFinite(topSpeedMps)?Math.max(0,topSpeedMps):0;
+ const vx=Number.isFinite(vehicle.vx)?vehicle.vx:0;
+ const vz=Number.isFinite(vehicle.vz)?vehicle.vz:0;
+ const speed=Math.hypot(vx,vz);
+ const scale=speed>cap&&speed>0?cap/speed:1;
+ vehicle.vx=vx*scale;
+ vehicle.vz=vz*scale;
+ vehicle.speed=Math.hypot(vehicle.vx,vehicle.vz);
+ return vehicle.speed;
+}
