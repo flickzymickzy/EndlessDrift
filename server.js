@@ -4,7 +4,7 @@ import {readFile, stat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import Stripe from 'stripe';
-import {randomUUID} from 'node:crypto';
+import {randomUUID,createHash,timingSafeEqual} from 'node:crypto';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.txt':'text/plain; charset=utf-8'};
 const port=Number(process.env.PORT)||5173;
@@ -14,7 +14,11 @@ const publicKey=process.env.SUPABASE_PUBLISHABLE_KEY||'';
 const secretKey=process.env.SUPABASE_SECRET_KEY||'';
 const stripeSecret=process.env.STRIPE_SECRET_KEY||'';
 const webhookSecret=process.env.STRIPE_WEBHOOK_SECRET||'';
-const adminUserId=process.env.ADMIN_USER_ID||''; // Supabase Auth UUID, never browser-controlled.
+const adminUserId=process.env.ADMIN_USER_ID||''; // Optional account UUID.
+const inviteCode=process.env.ED_ADMIN_ACTIVATION_CODE||'';
+const inviteAnswer=process.env.ED_ADMIN_CHALLENGE_ANSWER||'';
+const inviteQuestion=process.env.ED_ADMIN_CHALLENGE_QUESTION||'Account verification';
+const adminPending=new Map(),adminAttempts=new Map();
 
 const stripe=stripeSecret?new Stripe(stripeSecret):null;
 const products={
@@ -31,6 +35,7 @@ async function supabase(resource,{method='GET',payload,admin=true,token}={}){
  const headers={'apikey':admin?secretKey:publicKey,'Accept':'application/json'};
  if(token)headers.Authorization=`Bearer ${token}`;
  if(payload)headers['Content-Type']='application/json';
+ if(method==='POST'&&resource.includes('on_conflict='))headers.Prefer='resolution=merge-duplicates,return=minimal';
  const result=await fetch(sb+resource,{method,headers,...(payload?{body:JSON.stringify(payload)}:{})});
  const text=await result.text();let data;try{data=JSON.parse(text);}catch{data=text;}
  if(!result.ok)throw new Error(`Supabase ${result.status}: ${String(typeof data==='object'?data?.message||data?.error||text:text).slice(0,160)}`);
@@ -57,29 +62,98 @@ async function fulfillSession(sessionId){
  if(!/^[0-9a-f-]{36}$/.test(uid||''))throw new Error('Invalid checkout account');
  return supabase('/rest/v1/rpc/ed_fulfill_purchase',{method:'POST',payload:{p_session_id:session.id,p_user_id:uid,p_sku:sku,p_amount_aed_fils:product.amount}});
 }
+
+function safeSecretMatch(userValue,expected){
+ if(typeof userValue!=='string'||!expected||userValue.length>128)return false;
+ const provided=createHash('sha256').update(userValue.trim()).digest();
+ const actual=createHash('sha256').update(expected.trim()).digest();
+ return timingSafeEqual(provided,actual);
+}
+function allowAttempt(userId,req){
+ const key=userId+':'+String(req.socket.remoteAddress||'');
+ const now=Date.now(),old=adminAttempts.get(key)||{count:0,until:now+1200000};
+ if(now>old.until){old.count=0;old.until=now+1200000;}
+ old.count+=1;adminAttempts.set(key,old);return old.count<=14;
+}
+async function hasAdmin(userId){
+ if(adminUserId && userId===adminUserId)return true;
+ const roles=await supabase('/rest/v1/ed_admin_roles?user_id=eq.'+encodeURIComponent(userId)+'&select=user_id&limit=1');
+ return Array.isArray(roles)&&roles.length>0;
+}
+async function adminApi(req,res,route){
+ if(!sb||!publicKey||!secretKey)return json(res,503,{error:'Admin server not configured'});
+ if(req.headers.origin && req.headers.origin!==site)return json(res,403,{error:'Origin not allowed'});
+ const user=await userFromRequest(req);
+ const isAdmin=await hasAdmin(user.id);
+ if(route==='/api/admin/me'&&req.method==='GET')return json(res,isAdmin?200:403,{admin:isAdmin});
+ if(route==='/api/admin/redeem'&&req.method==='POST'){
+  if(isAdmin)return json(res,200,{admin:true,activated:true});
+  if(!allowAttempt(user.id,req))return json(res,429,{error:'Too many attempts'});
+  const data=JSON.parse((await body(req,3000)).toString()||'{}');
+  if(data.step==='begin'){
+   if(!inviteCode||!inviteAnswer||!safeSecretMatch(data.value,inviteCode))return json(res,200,{candidate:false});
+   adminPending.set(user.id,{until:Date.now()+300000});
+   return json(res,200,{candidate:true,question:inviteQuestion});
+  }
+  if(data.step==='finish'){
+   const pending=adminPending.get(user.id);
+   if(!pending||Date.now()>pending.until)return json(res,403,{error:'Verification expired'});
+   if(!safeSecretMatch(data.value,inviteAnswer))return json(res,403,{error:'Incorrect answer'});
+   adminPending.delete(user.id);
+   await supabase('/rest/v1/ed_admin_roles?on_conflict=user_id',{method:'POST',payload:{user_id:user.id,source:'verified_invite'}});
+   return json(res,200,{admin:true,activated:true});
+  }
+  return json(res,400,{error:'Invalid verification step'});
+ }
+ if(!isAdmin)return json(res,403,{error:'Admin permission required'});
+ if(route==='/api/admin/overview'&&req.method==='GET'){
+  const [drivers,purchases,announcements]=await Promise.all([
+   supabase('/rest/v1/driver_profiles?select=id&limit=1000'),
+   supabase('/rest/v1/ed_stripe_purchases?select=sku,amount_aed_fils&order=created_at.desc&limit=1000'),
+   supabase('/rest/v1/ed_announcements?select=id,message,created_at,is_active&order=created_at.desc&limit=12')
+  ]);
+  return json(res,200,{drivers:drivers.length,purchases:purchases.length,
+   totalFils:purchases.reduce((sum,p)=>sum+Math.max(0,Number(p.amount_aed_fils)||0),0),recent:purchases.slice(0,12),announcements});
+ }
+ if(route==='/api/admin/announce'&&req.method==='POST'){
+  const data=JSON.parse((await body(req,3000)).toString()||'{}');
+  const message=String(data.message||'').trim().replace(/[\x00-\x1f\x7f]/g,' ');
+  if(message.length<1||message.length>180)return json(res,400,{error:'Message must be 1 to 180 characters'});
+  await supabase('/rest/v1/ed_announcements',{method:'POST',payload:{message,created_by:user.id}});
+  return json(res,200,{sent:true});
+ }
+ if(route==='/api/admin/announcement/hide'&&req.method==='POST'){
+  const data=JSON.parse((await body(req,3000)).toString()||'{}');
+  if(!Number.isSafeInteger(data.id)||data.id<1)return json(res,400,{error:'Invalid announcement'});
+  await supabase('/rest/v1/ed_announcements?id=eq.'+data.id,{method:'PATCH',payload:{is_active:false}});
+  return json(res,200,{hidden:true});
+ }
+ if(route==='/api/admin/refill'&&req.method==='POST'){
+  const rows=await supabase('/rest/v1/ed_game_saves?user_id=eq.'+encodeURIComponent(user.id)+'&select=save&limit=1');
+  const current=rows?.[0]?.save && typeof rows[0].save==='object'?rows[0].save:{};
+  const wallet=1000000000;
+  await supabase('/rest/v1/ed_game_saves?on_conflict=user_id',{method:'POST',payload:{user_id:user.id,save:{...current,wallet},updated_at:new Date().toISOString()}});
+  return json(res,200,{wallet});
+ }
+ return json(res,404,{error:'Unknown admin command'});
+}
+async function publicAnnouncements(res){
+ if(!sb||!secretKey)return json(res,503,{error:'Announcements unavailable'});
+ const cutoff=new Date(Date.now()-86400000).toISOString();
+ const rows=await supabase('/rest/v1/ed_announcements?select=id,message,created_at&is_active=eq.true&created_at=gt.'+encodeURIComponent(cutoff)+'&order=created_at.desc&limit=5');
+ return json(res,200,{announcements:rows});
+}
+
 async function api(req,res,route){
  try{
   // Public, read-only configuration check: never returns credential values.
   if(route==='/api/payment-status'&&req.method==='GET'){
    const required=['STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','SUPABASE_SECRET_KEY','SITE_URL'];
    const missing=required.filter(name=>!process.env[name]);
-   return json(res,missing.length?503:200,{paymentServer:'v14',status:missing.length?'configuration_missing':'ready',missing});
+   return json(res,missing.length?503:200,{paymentServer:'v17',status:missing.length?'configuration_missing':'ready',missing});
   }
-  if(route==='/api/admin/me'||route==='/api/admin/overview'){
-   if(req.method!=='GET')return json(res,405,{error:'Method not allowed'});
-   if(!sb||!publicKey||!secretKey)return json(res,503,{error:'Auth server not configured'});
-   const user=await userFromRequest(req);
-   // No public fallback, no email allowlist, no user-editable JWT metadata.
-   if(!/^[0-9a-f-]{36}$/i.test(adminUserId)||user.id!==adminUserId)return json(res,403,{error:'Forbidden'});
-   if(route==='/api/admin/me')return json(res,200,{admin:true});
-   const [drivers,purchases]=await Promise.all([
-    supabase('/rest/v1/driver_profiles?select=id&limit=1000'),
-    supabase('/rest/v1/ed_stripe_purchases?select=sku,amount_aed_fils&order=created_at.desc&limit=1000')
-   ]);
-   return json(res,200,{drivers:drivers.length,purchases:purchases.length,
-      totalFils:purchases.reduce((v,x)=>v+Math.max(0,Number(x.amount_aed_fils)||0),0),
-      recent:purchases.slice(0,12)});
-  }
+  if(route==='/api/announcements'&&req.method==='GET')return await publicAnnouncements(res);
+  if(route.startsWith('/api/admin/'))return await adminApi(req,res,route);
   requireConfig();
   if(route==='/api/stripe/webhook'){
    if(req.method!=='POST')return json(res,405,{error:'Method not allowed'});
