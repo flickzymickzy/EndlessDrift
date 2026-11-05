@@ -799,12 +799,25 @@ class DriftGame{
   this.animate=now=>{try{this.frame(now);requestAnimationFrame(this.animate);}catch(e){errorScreen(e);}};
   requestAnimationFrame(this.animate);
  }
+ applyMorph(shape='car'){
+  if(this.currentMorph===shape)return;
+  this.currentMorph=shape;
+  if(this.morph){this.scene.remove(this.morph);this.morph.traverse(o=>{o.geometry?.dispose?.();o.material?.dispose?.();});this.morph=null;}
+  if(this.car)this.car.visible=shape==='car';
+  if(shape==='car'||!['tetris','arcade','toilet'].includes(shape))return;
+  const group=new THREE.Group(),mat=new THREE.MeshStandardMaterial({color:shape==='tetris'?0x4bf7c5:shape==='arcade'?0x5e88ff:0xf4f4f1,metalness:.2,roughness:.45});
+  const put=(g,x,y,z,m=mat)=>{const o=new THREE.Mesh(g,m);o.position.set(x,y,z);group.add(o);return o;};
+  if(shape==='tetris')for(const [x,y] of [[0,.5],[0,1.5],[1,1.5],[-1,1.5]])put(new THREE.BoxGeometry(.95,.95,.95),x,y,0);
+  if(shape==='arcade'){put(new THREE.BoxGeometry(1.5,2.4,1.1),0,1.2,0);put(new THREE.BoxGeometry(1.2,.85,.05),0,1.65,.59,new THREE.MeshBasicMaterial({color:0x061a2d}));put(new THREE.BoxGeometry(1,.15,.25),0,.7,.65);}
+  if(shape==='toilet'){put(new THREE.BoxGeometry(1.3,1.6,.45),0,1.1,-.65);put(new THREE.CylinderGeometry(.72,.65,.55,20),0,.5,.3);put(new THREE.CylinderGeometry(.55,.5,.42,20),0,.24,.3);}
+  this.morph=group;this.scene.add(group);
+ }
  revPreview(carId){
   const conf=carSave(carId);this.audio?.unlock();this.audio?.setCarProfile(conf.upgrades||{},conf.engineNote||'factory');
   this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2900;this.previewRevPopped=false;showroom?.triggerRev(2900);
   notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
@@ -1054,6 +1067,7 @@ class DriftGame{
   if(revActive){const revPhase=Math.min(1,(performance.now()-this.previewRevStart)/2900),rpm=1150+6900*Math.sin(Math.PI*revPhase);this.audio?.updateEngine(rpm,revPhase<.66?1:.12,0);if(revPhase>.70&&!this.previewRevPopped){this.previewRevPopped=true;this.audio?.exhaustPop(1.3);}}
   else if(!this.playing)this.audio?.updateEngine(850,0,0);
   if(!this.playing)for(const f of this.car?.userData?.exhaustFlames||[])f.visible=false;
+  if(this.morph){this.morph.position.set(this.player.x,0,this.player.z);this.morph.rotation.y=this.player.heading;}
   this.updateSmoke(this.playing?dt:0);this.world.update(this.player.z);this.updateCamera(this.playing?dt:0.016);
   this.audio?.update(this.playing?this.wanted:0);this.renderer.render(this.scene,this.camera);if(showroom)showroom.render(dt);this.updateHUD();
  }
