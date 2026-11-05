@@ -886,7 +886,7 @@ class DriftGame{
   const s=state.settings,quality=s.quality||'medium';
   const preset={low:.72,medium:1,high:1.25,ultra:1.6}[quality]||1;
   const resolution=Math.max(.6,Math.min(1.25,Number(s.renderScale||100)/100));
-  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1.5,preset*resolution));
+  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1.5,preset*resolution,window.matchMedia?.('(pointer:coarse)').matches?1.5:2.5));
   this.renderer.shadowMap.enabled=Boolean(s.shadows)&&(quality==='high'||quality==='ultra');
   this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.sun.castShadow=this.renderer.shadowMap.enabled;
   this.sun.shadow.mapSize.set(quality==='ultra'?2048:1024,quality==='ultra'?2048:1024);
