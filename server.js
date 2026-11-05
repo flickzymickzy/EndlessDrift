@@ -22,7 +22,7 @@ const inviteAnswer=process.env.ED_ADMIN_CHALLENGE_ANSWER||'';
 const inviteQuestion=process.env.ED_ADMIN_CHALLENGE_QUESTION||'Account verification';
 const adminPending=new Map(),adminAttempts=new Map();
 
-const stripe=stripeSecret?new Stripe(stripeSecret):null;
+const stripe=stripeSecret?new Stripe(stripeSecret,{apiVersion:'2026-03-25.dahlia'}):null;
 const products={
  starter:{price:checkoutPrice('STARTER','price_1UY6jRAWFsqe6FrwLwaZRtsw'),amount:999,coins:1500},
  street:{price:checkoutPrice('STREET','price_1UY6ojAWFsqe6FrwRHZXoJmQ'),amount:2499,coins:5000},
@@ -301,14 +301,37 @@ async function api(req,res,route){
    const data=JSON.parse((await body(req)).toString()||'{}');const product=products[data.sku];
    if(!product)return json(res,400,{error:'Invalid product'});
    if(data.sku==='drift_pass'&&(await walletForUser(user.id)).driftPass)return json(res,400,{error:'You already own the Drift Pass'});
-   const session=await stripe.checkout.sessions.create({
-    mode:'payment',payment_method_types:['card'],line_items:[{price:product.price,quantity:1}],
+   // Keep hosted checkout as a safe fallback until Render has the public pk_test/pk_live key.
+   // No payment details ever pass through this server or game frontend.
+   const publishableKey=process.env.STRIPE_PUBLISHABLE_KEY||'';
+   const matchingKeys=publishableKey.startsWith(liveStripe?'pk_live_':'pk_test_');
+   const embedded=matchingKeys;
+   const checkoutLineItems=[{price:product.price,quantity:1}];
+   const session=await stripe.checkout.sessions.create(embedded?{
+    ui_mode:'form',
+    mode:'payment',
+    line_items:checkoutLineItems,
+    billing_address_collection:'auto',
+    phone_number_collection:{enabled:false},
+    automatic_tax:{enabled:false},
+    submit_type:'pay',
+    integration_identifier:'custom_embedded_web_0002',
+    // Required for server-verified digital-goods fulfillment; never trust the browser's sku/user.
+    client_reference_id:user.id,metadata:{sku:data.sku,driver_id:user.id},
+    return_url:site+'/?checkout=success&session_id={CHECKOUT_SESSION_ID}'
+   }:{
+    // Existing, already-working hosted Checkout remains available while the public key is unset.
+    mode:'payment',payment_method_types:['card'],line_items:checkoutLineItems,
     client_reference_id:user.id,metadata:{sku:data.sku,driver_id:user.id},
     success_url:site+'/?checkout=success&session_id={CHECKOUT_SESSION_ID}',
     cancel_url:site+'/?checkout=cancel',
-    customer_email:user.email||undefined,
+    customer_email:user.email||undefined
    },{idempotencyKey:randomUUID()});
-   return json(res,200,{url:session.url});
+   if(embedded){
+    if(!session.client_secret)throw new Error('Embedded Checkout did not return a client secret');
+    return json(res,200,{client_secret:session.client_secret,publishable_key:publishableKey,ui_mode:'form'});
+   }
+   return json(res,200,{url:session.url,ui_mode:'hosted'});
   }
   if(route==='/api/purchases/spend'&&req.method==='POST'){
    const data=JSON.parse((await body(req)).toString()||'{}');
