@@ -75,6 +75,11 @@ function allowAttempt(userId,req){
  if(now>old.until){old.count=0;old.until=now+1200000;}
  old.count+=1;adminAttempts.set(key,old);return old.count<=14;
 }
+async function adminRole(userId){
+ if(adminUserId===userId)return {source:'owner'};
+ const roles=await supabase('/rest/v1/ed_admin_roles?user_id=eq.'+encodeURIComponent(userId)+'&select=source&limit=1');
+ return roles?.[0]||null;
+}
 async function hasAdmin(userId){
  if(adminUserId && userId===adminUserId)return true;
  const roles=await supabase('/rest/v1/ed_admin_roles?user_id=eq.'+encodeURIComponent(userId)+'&select=user_id&limit=1');
@@ -85,7 +90,10 @@ async function adminApi(req,res,route){
  if(req.headers.origin && req.headers.origin!==site)return json(res,403,{error:'Origin not allowed'});
  const user=await userFromRequest(req);
  const isAdmin=await hasAdmin(user.id);
- if(route==='/api/admin/me'&&req.method==='GET')return json(res,isAdmin?200:403,{admin:isAdmin});
+ if(route==='/api/admin/me'&&req.method==='GET'){
+  const role=isAdmin?await adminRole(user.id):null;
+  return json(res,isAdmin?200:403,{admin:isAdmin,owner:role?.source==='owner'});
+ }
  if(route==='/api/admin/redeem'&&req.method==='POST'){
   if(isAdmin)return json(res,200,{admin:true,activated:true});
   if(!allowAttempt(user.id,req))return json(res,429,{error:'Too many attempts'});
@@ -137,6 +145,21 @@ async function adminApi(req,res,route){
  }
  return json(res,404,{error:'Unknown admin command'});
 }
+async function leaderboardApi(res,sort='lifetime_xp'){
+ if(!sb||!secretKey)return json(res,503,{error:'Leaderboard is not configured'});
+ const order=sort==='coins_spent'?'coins_spent':'lifetime_xp';
+ const [rows,admins]=await Promise.all([
+  supabase('/rest/v1/leaderboard_public?select=username,lifetime_xp,coins_spent&order='+order+'.desc&limit=100'),
+  supabase('/rest/v1/ed_admin_roles?source=eq.owner&select=user_id&limit=100')
+ ]);
+ let owners=new Set();
+ if(admins.length){
+  const profiles=await supabase('/rest/v1/driver_profiles?select=id,username&id=in.('+admins.map(a=>a.user_id).join(',')+')');
+  owners=new Set(profiles.map(p=>p.username));
+ }
+ return json(res,200,{rows:rows.map(row=>({username:String(row.username||'DRIVER').slice(0,24),lifetime_xp:Math.max(0,Number(row.lifetime_xp)||0),coins_spent:Math.max(0,Number(row.coins_spent)||0),owner:owners.has(row.username)}))});
+}
+
 async function publicAnnouncements(res){
  if(!sb||!secretKey)return json(res,503,{error:'Announcements unavailable'});
  const cutoff=new Date(Date.now()-86400000).toISOString();
@@ -152,6 +175,7 @@ async function api(req,res,route){
    const missing=required.filter(name=>!process.env[name]);
    return json(res,missing.length?503:200,{paymentServer:'v17',status:missing.length?'configuration_missing':'ready',missing});
   }
+  if(route==='/api/leaderboard'&&req.method==='GET')return await leaderboardApi(res,new URL(req.url,'http://localhost').searchParams.get('sort'));
   if(route==='/api/announcements'&&req.method==='GET')return await publicAnnouncements(res);
   if(route.startsWith('/api/admin/'))return await adminApi(req,res,route);
   requireConfig();
