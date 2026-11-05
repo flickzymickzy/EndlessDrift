@@ -151,8 +151,10 @@ async function adminApi(req,res,route){
 const liveRate=new Map(),bankRate=new Map();
 const emptyControls=()=>({banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0});
 async function playerControls(userId){
- const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,xp_grant_total&limit=1');
- return {...emptyControls(),...(rows?.[0]||{})};
+ const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,morph_expires_at,xp_grant_total&limit=1');
+ const row={...emptyControls(),...(rows?.[0]||{})};
+ if(row.shape!=='car'&&row.morph_expires_at&&Date.now()>Date.parse(row.morph_expires_at))row.shape='car';
+ return row;
 }
 async function playerStatusApi(req,res,route){
  if(!sb||!secretKey||!publicKey)return json(res,503,{error:'Player service unavailable'});
@@ -218,7 +220,7 @@ async function adminModerationApi(req,res,route,user){
   case 'god':patch.god_mode=data.value===true||data.value==='on';break;
   case 'speed':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Speed must be 0.5–3'});patch.speed_multiplier=n;break;}
   case 'jump':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Jump must be 0.5–3'});patch.jump_multiplier=n;break;}
-  case 'morph':{const shape=String(data.value||'').toLowerCase();if(!['car','tetris','arcade','toilet'].includes(shape))return json(res,400,{error:'Invalid transformation'});patch.shape=shape;break;}
+  case 'morph':{const shape=String(data.value||'').toLowerCase();if(!['car','tetris','arcade','toilet'].includes(shape))return json(res,400,{error:'Invalid transformation'});patch.shape=shape;patch.morph_expires_at=shape==='car'?null:new Date(Date.now()+90000).toISOString();break;}
   case 'xp':{
    const amount=Number(data.value);if(!Number.isSafeInteger(amount)||amount<1||amount>5000)return json(res,400,{error:'Grant 1–5000 XP per action'});
    await supabase('/rest/v1/rpc/ed_record_ranked_xp',{method:'POST',payload:{p_user:target.id,p_event:randomUUID(),p_xp:amount}});
