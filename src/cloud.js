@@ -66,8 +66,10 @@ export async function cloudSignOut(){const access=await token();try{if(access)aw
 export async function cloudUser(){const access=await token();if(!access)return null;try{return await request('/auth/v1/user',{token:access});}catch{remember(null);return null;}}
 export async function cloudBoard(key='lifetime_xp'){
  const col=key==='coins_spent'?'coins_spent':'lifetime_xp';
- const rows=await request(`/rest/v1/leaderboard_public?select=username,lifetime_xp,coins_spent&order=${col}.desc&limit=100`);
- if(!Array.isArray(rows))throw new Error('Invalid leaderboard response');return rows;
+ const response=await fetch('/api/leaderboard?sort='+col,{cache:'no-store'});
+ const result=await response.json().catch(()=>({}));
+ if(!response.ok||!Array.isArray(result.rows))throw new Error(result.error||'Leaderboard unavailable');
+ return result.rows;
 }
 
 // A short-lived user JWT for the SAME-ORIGIN payment server. Never a Supabase secret key.
