@@ -721,6 +721,16 @@ document.addEventListener('submit',async e=>{
   return;
  }
 
+ if(e.target.id==='adminCommandForm'){
+  e.preventDefault();const fields=new FormData(e.target),command=String(fields.get('command')||''),username=String(fields.get('username')||'').trim(),raw=String(fields.get('value')||'').trim();
+  const value=command==='god'?raw.toLowerCase()==='on':raw;
+  try{const data=await adminRequest('/api/admin/moderate',{command,username,value});$('adminActionResult').textContent='DONE /'+data.command+' '+data.username;await refreshPlayerControlState();}
+  catch(err){$('adminActionResult').textContent='ERROR '+err.message;}return;
+ }
+ if(e.target.id==='adminWatchForm'){
+  e.preventDefault();try{await watchPlayerForm(String(new FormData(e.target).get('username')||'').trim());}
+  catch(err){$('adminWatchResult').textContent=err.message;}return;
+ }
  if(e.target.id==='firstUsernameForm'){
   e.preventDefault();const form=e.target;const button=form.querySelector('button[type=submit]');button.disabled=true;
   try{const name=String(new FormData(form).get('username')||'').trim();if(await maybeAdminEnrollment(name)){button.disabled=false;return;}await cloudUpdateUsername(name);activeUsername=name;showUsernameGate(null);notify('WELCOME @'+name.toUpperCase());if(mode==='account')await renderAccount();}
