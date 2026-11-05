@@ -744,7 +744,7 @@ class DriftGame{
   this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2900;this.previewRevPopped=false;showroom?.triggerRev(2900);
   notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?25:this.weather==='fog'||this.weather==='rain'?15:7;}
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
@@ -786,7 +786,8 @@ class DriftGame{
   this.sun.intensity=style.sun;
   this.ambientLight.intensity=style.hemi;
   this.renderer.toneMappingExposure=style.exposure;
-  for(const light of this.car?.userData?.headlights||[])light.intensity=weather==='night'?25:weather==='rain'||weather==='fog'?15:7;
+  for(const light of this.car?.userData?.headlights||[])light.intensity=weather==='night'?110:weather==='rain'||weather==='fog'?72:29;
+  for(const light of this.world?.streetLights||[])light.intensity=weather==='night'?3.7:weather==='rain'||weather==='fog'?1.7:.15;
   if(this.world.sky?.material?.uniforms){this.world.sky.material.uniforms.uHorizon.value.set(style.horizon);this.world.sky.material.uniforms.uZenith.value.set(style.zenith);}
   $('weatherRain')?.classList.toggle('hidden',weather!=='rain');
   document.body.dataset.weather=weather;
