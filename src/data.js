@@ -35,7 +35,19 @@ export const CARS = [
   {id:'zenith-nsx',name:'Zenith NSX',type:'Mid Engine Hybrid',price:90500,hp:610,top:222,handling:94,weight:1665,kind:'super',color:'#d2d5e4',length:4.48,width:1.94},
   {id:'crimson-m5',name:'Crimson M5',type:'Executive Drift Sedan',price:67000,hp:625,top:215,handling:82,weight:1815,kind:'sedan',color:'#dc364e',length:4.96,width:1.92},
   {id:'nebula-gt',name:'Nebula GT',type:'All Wheel Hyper Coupe',price:132000,hp:850,top:244,handling:93,weight:1600,kind:'super',color:'#a98afd',length:4.68,width:1.98},
-  {id:'solaris-xx',name:'Solaris XX',type:'Track Hypercar',price:185000,hp:1050,top:285,handling:96,weight:1320,kind:'hyper',color:'#ff6045',length:4.72,width:2.00}
+  {id:'solaris-xx',name:'Solaris XX',type:'Track Hypercar',price:185000,hp:1050,top:285,handling:96,weight:1320,kind:'hyper',color:'#ff6045',length:4.72,width:2.00},
+  {id:'sakura-180',name:'Sakura 180',type:'Touge Coupe',price:8000,hp:275,top:166,handling:89,weight:1190,kind:'coupe',color:'#e767a4',length:4.43,width:1.78},
+  {id:'falcon-gt',name:'Falcon GT',type:'Grand Touring Muscle',price:29500,hp:465,top:194,handling:77,weight:1670,kind:'muscle',color:'#66d3ff',length:4.72,width:1.91},
+  {id:'kai-supra',name:'Kai Supra',type:'Track Edition',price:62000,hp:620,top:225,handling:88,weight:1430,kind:'sports',color:'#f06a5f',length:4.51,width:1.85},
+  {id:'shadow-gt86',name:'Shadow GT86',type:'Drift Academy',price:12500,hp:290,top:167,handling:92,weight:1230,kind:'coupe',color:'#abb5d8',length:4.28,width:1.76},
+  {id:'aurora-lfa',name:'Aurora V10',type:'High Revving Exotic',price:142000,hp:615,top:218,handling:92,weight:1515,kind:'super',color:'#f6e4ac',length:4.49,width:1.90},
+  {id:'raven-carrera',name:'Raven Carrera',type:'Lightweight Track',price:112000,hp:525,top:206,handling:96,weight:1340,kind:'rounded',color:'#ed6f64',length:4.51,width:1.84},
+  {id:'vector-zr',name:'Vector ZR',type:'Twin Turbo Coupe',price:44500,hp:455,top:198,handling:86,weight:1460,kind:'track',color:'#98d7ce',length:4.38,width:1.86},
+  {id:'titan-rs',name:'Titan RS',type:'Performance Wagon',price:76000,hp:650,top:220,handling:80,weight:1920,kind:'wagon',color:'#b19aff',length:4.94,width:1.96},
+  {id:'inferno-gt',name:'Inferno GT',type:'Mid Engine Supercar',price:169000,hp:800,top:249,handling:94,weight:1430,kind:'super',color:'#fdaf45',length:4.66,width:1.99},
+  {id:'volt-eclipse',name:'Volt Eclipse',type:'Electric Drift Coupe',price:82000,hp:620,top:203,handling:90,weight:1730,kind:'coupe',color:'#67e9d7',length:4.55,width:1.92},
+  {id:'nova-ss',name:'Nova SS',type:'Classic Street Muscle',price:21000,hp:385,top:181,handling:75,weight:1750,kind:'muscle',color:'#eac3f7',length:4.80,width:1.94},
+  {id:'specter-gtx',name:'Specter GTX',type:'Carbon Track Hypercar',price:220000,hp:1120,top:289,handling:97,weight:1290,kind:'hyper',color:'#74b5ff',length:4.70,width:2.02},
 ];
 
 export const UPGRADES = [

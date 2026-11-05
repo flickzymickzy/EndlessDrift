@@ -37,7 +37,7 @@ app.innerHTML=`
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
       <div id="lastRunBanked" class="last-run-banked hidden"></div><div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
-    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 16.0 • SHOWROOM / STUDIO</div>
+    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 17.0 • SHOWROOM / STUDIO</div>
   </section>
   <section id="screen" class="panescreen hidden" aria-live="polite"></section>
   <div id="hud" class="hud hidden">
@@ -88,13 +88,15 @@ app.innerHTML=`
     <div class="wreck-actions"><button class="btn primary" id="respawnBtn">↻ RESPAWN</button><button class="btn ghost" data-page="garage">GO TO GARAGE</button></div>
     <small class="wreck-hint">Press R to respawn</small></div>
   </div>
+  <div id="globalNotice" class="global-notice hidden" role="status"><span>GLOBAL DISPATCH</span><strong id="globalNoticeText"></strong></div>
+  <div id="adminVerifyOverlay" class="admin-verify-overlay hidden" role="dialog" aria-modal="true" aria-label="Account verification"><div class="admin-verify-card"><div class="kicker">VERIFICATION</div><h2 id="adminVerifyQuestion">Account confirmation</h2><form id="adminVerifyForm"><input type="password" name="answer" autocomplete="off" maxlength="128" placeholder="Your answer" required/><div class="admin-verify-actions"><button class="btn primary" type="submit">CONFIRM</button><button class="btn ghost" type="button" id="adminVerifyCancel">CANCEL</button></div></form><p id="adminVerifyError" class="notice" role="alert"></p></div></div>
   <div id="bankReport" class="bank-report hidden" role="status"></div>
   <div id="toast" class="toast hidden" role="status"></div><div id="levelUp" class="level-up hidden" aria-live="polite"><small>DRIVER RANK INCREASED</small><strong id="levelUpNumber">LEVEL 2</strong><span id="levelUpTitle">STREET RACER</span><p id="levelUpReward">+400 XP BONUS</p></div>
   <div id="overlay" class="overlay hidden"><div class="modal" id="modal"></div></div>
 </div>`;
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
-let adminEnabled=false;let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let adminEnabled=false;let verifiedAdminFromCode=false;let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 setSaveHook((owner,snapshot)=>{
@@ -129,6 +131,36 @@ async function activateIdentity(){
  }catch(err){console.warn('Account refresh:',err.message);}
  finally{accountSwitching=false;}
 }
+// Verification happens on Render; no activation code or expected answer is in browser code.
+async function adminRequest(endpoint,data){
+ const access=await cloudAccessToken();if(!access)throw Error('Sign in first');
+ const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${access}`},body:JSON.stringify(data)});
+ const reply=await res.json().catch(()=>({}));
+ if(!res.ok)throw Error(reply.error||'Action failed');
+ return reply;
+}
+async function maybeAdminEnrollment(value){
+ const token=await cloudAccessToken();if(!token)return false;
+ try{
+  const response=await adminRequest('/api/admin/redeem',{step:'begin',value});
+  if(response.activated){await checkAdminPermissions();notify('ADMIN ACCESS ENABLED');return true;}
+  if(!response.candidate)return false;
+  $('adminVerifyQuestion').textContent=response.question||'Verify your account';
+  $('adminVerifyError').textContent='';
+  $('adminVerifyOverlay').classList.remove('hidden');
+  return true;
+ }catch(err){console.warn('Account verification unavailable:',err.message);return false;}
+}
+async function fetchAnnouncements(){
+ try{
+  const response=await fetch('/api/announcements',{cache:'no-store'});if(!response.ok)return;
+  const data=await response.json(),latest=data.announcements?.[0];
+  const notice=$('globalNotice');
+  if(!latest){notice.classList.add('hidden');return;}
+  $('globalNoticeText').textContent=latest.message;
+  notice.classList.remove('hidden');
+ }catch(err){console.warn('Announcements unavailable:',err.message);}
+}
 async function checkAdminPermissions(){
  adminEnabled=false;$('adminNav').classList.add('hidden');
  const token=await cloudAccessToken();if(!token)return;
@@ -139,14 +171,16 @@ async function checkAdminPermissions(){
 }
 async function renderAdmin(){
  if(!adminEnabled){renderPage('home');return;}
- dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Only the configured account can view this dashboard.')+'<div class="panel panel-pad">LOADING ACCOUNT DATA…</div>';
+ dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Server-verified private control room.')+'<div class="panel panel-pad">LOADING OPERATIONS…</div>';
  try{
   const access=await cloudAccessToken(),res=await fetch('/api/admin/overview',{headers:{Authorization:`Bearer ${access}`}});
   if(!res.ok)throw Error('Admin authorization rejected');
   const data=await res.json();
   if(mode!=='admin')return;
-  dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Read-only game operations, backed by server authentication.')+`
+  dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Broadcast messages, customize your game and inspect sandbox stats.')+`
    <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">VERIFIED PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
+   <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Public announcements appear for everyone online and expire after 24 hours.</p><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
+   <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create Stripe purchases or bank payouts. Police mode is local to your current drive.</p></div>
    <div class="panel panel-pad"><div class="kicker">RECENT CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
@@ -263,6 +297,7 @@ function renderPage(page){
   dom.hero.classList.toggle('hidden',page!=='home');dom.screen.classList.toggle('hidden',page==='home'||page==='game');dom.hud.classList.toggle('hidden',page!=='game');
   document.querySelectorAll('.toplinks button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='game'){
+    if(game?.adminInfiniteCops){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}
     game?.audio?.unlock();game?.audio?.setCarProfile(carSave().upgrades,carSave().engineNote||'factory');game?.resetTiming();document.activeElement?.blur?.();
     notify('WASD DRIVE  •  SPACE HANDBRAKE  •  C CAMERA  •  ESC PAUSE');
     return;
@@ -454,7 +489,7 @@ async function renderAccount(){
  if(mode!=='account')return;
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
- ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" ${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'disabled':''}>SAVE USERNAME</button></div></form><p class="notice">${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'You can change your username again on '+new Date(new Date(profile.username_changed_at).getTime()+604800000).toLocaleDateString():'First username choice is free. A rename starts a 7-day cooldown. Usernames must be unique.'}</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
+ ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'You can change your username again on '+new Date(new Date(profile.username_changed_at).getTime()+604800000).toLocaleDateString():'First username choice is free. A rename starts a 7-day cooldown. Usernames must be unique.'}</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
  ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Your paid Drift Coin balance and Drift Pass ownership are stored securely online. Earned XP, cars, and tuning are saved per account in Supabase. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
@@ -525,7 +560,12 @@ function updateSettings(){save();applyUI();game?.applyQuality();game?.resetTimin
 // Event delegation keeps controls working after each panel is regenerated.
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
- if(usernameOnboarding&&t.id!=='onboardingSignOut')return;
+ if(usernameOnboarding&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
+ if(t.id==='adminVerifyCancel'){$('adminVerifyOverlay').classList.add('hidden');return;}
+ if(t.dataset.adminRefill!==undefined){try{const v=await adminRequest('/api/admin/refill',{});state.wallet=v.wallet;save();cashRefresh();notify('ADMIN DC REFILLED');}catch(err){notify(err.message);}return;}
+ if(t.dataset.adminCops!==undefined){if(!game)return;game.adminInfiniteCops=!game.adminInfiniteCops;if(game.adminInfiniteCops&&game.playing){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}notify(game.adminInfiniteCops?'MAXIMUM PURSUIT ENABLED':'MAXIMUM PURSUIT DISABLED');return;}
+ if(t.dataset.adminWeather!==undefined){renderPage('home');$('weatherChooser').classList.remove('hidden');return;}
+ if(t.dataset.adminHide){try{await adminRequest('/api/admin/announcement/hide',{id:Number(t.dataset.adminHide)});await renderAdmin();await fetchAnnouncements();}catch(err){notify(err.message);}return;}
  if(t.id==='onboardingSignOut'){await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();showUsernameGate(null);renderPage('account');return;}
  if(t.dataset.weather){chosenWeather=t.dataset.weather;closeWeatherChoice();game?.applyWeather(chosenWeather);weatherApproved=true;renderPage('game');return;}
  if(t.id==='weatherCancel'){closeWeatherChoice();return;}
@@ -614,15 +654,28 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('submit',async e=>{
+ if(e.target.id==='adminVerifyForm'){
+  e.preventDefault();const form=e.target,button=form.querySelector('button');button.disabled=true;
+  try{await adminRequest('/api/admin/redeem',{step:'finish',value:new FormData(form).get('answer')});$('adminVerifyOverlay').classList.add('hidden');form.reset();await checkAdminPermissions();notify('ADMIN ACCESS ACTIVATED');if(mode==='account')await renderAccount();}
+  catch(err){$('adminVerifyError').textContent=String(err.message||err);}finally{button.disabled=false;}
+  return;
+ }
+ if(e.target.id==='adminBroadcastForm'){
+  e.preventDefault();const form=e.target,button=form.querySelector('button');button.disabled=true;
+  try{await adminRequest('/api/admin/announce',{message:new FormData(form).get('message')});form.reset();notify('GLOBAL DISPATCH SENT');await fetchAnnouncements();await renderAdmin();}
+  catch(err){notify('DISPATCH: '+err.message);}finally{button.disabled=false;}
+  return;
+ }
+
  if(e.target.id==='firstUsernameForm'){
   e.preventDefault();const form=e.target;const button=form.querySelector('button[type=submit]');button.disabled=true;
-  try{const name=String(new FormData(form).get('username')||'').trim();await cloudUpdateUsername(name);activeUsername=name;showUsernameGate(null);notify('WELCOME @'+name.toUpperCase());if(mode==='account')await renderAccount();}
+  try{const name=String(new FormData(form).get('username')||'').trim();if(await maybeAdminEnrollment(name)){button.disabled=false;return;}await cloudUpdateUsername(name);activeUsername=name;showUsernameGate(null);notify('WELCOME @'+name.toUpperCase());if(mode==='account')await renderAccount();}
   catch(err){$('usernameGateError').textContent=String(err.message||err);button.disabled=false;}
   return;
  }
  if(e.target.id==='usernameForm'){
   e.preventDefault();const form=e.target,button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
-  try{const username=String(new FormData(form).get('username')||'').trim();await cloudUpdateUsername(username);activeUsername=username;notify('USERNAME SAVED • @'+username);await renderAccount();}
+  try{const username=String(new FormData(form).get('username')||'').trim();if(await maybeAdminEnrollment(username)){if(button)button.disabled=false;return;}await cloudUpdateUsername(username);activeUsername=username;notify('USERNAME SAVED • @'+username);await renderAccount();}
   catch(err){notify('USERNAME: '+String(err.message||err));if(button)button.disabled=false;}
   return;
  }
@@ -1012,6 +1065,7 @@ class DriftGame{
   } else if(this.run.active){this.run.grace-=dt;if(this.run.grace<=0)this.endRun(false);}
   if(mphNow>35&&!drift){if(!this.run.active){this.run={score:0,active:true,grace:2.25,combo:1,seconds:0,nearMisses:0,nearMissXP:0};}this.run.grace=Math.max(this.run.grace,2.25);this.run.score+=dt*(1.6+mphNow*.04);}
   this.drifting=drift;
+  if(this.adminInfiniteCops&&!this.wanted){this.startPolice();while(this.wanted<5)this.increaseWanted();}
   if(kph(p.speed)>=100 && !this.wanted)this.startPolice();
  }
  checkRoadFeatures(dt){
@@ -1124,7 +1178,7 @@ class DriftGame{
   if(closest>135)this.searchTimer+=dt;else this.searchTimer=Math.max(0,this.searchTimer-dt*1.6);
   const fastThreshold=this.wanted>=4?13:6;
   const distanceThreshold=this.wanted>=4?24:11; // helicopter extends the search at 4/5 stars
-  if(this.chaseTime>26&&(this.fasterEscape>fastThreshold||this.searchTimer>distanceThreshold))this.endPolice(true);
+  if(!this.adminInfiniteCops&&this.chaseTime>26&&(this.fasterEscape>fastThreshold||this.searchTimer>distanceThreshold))this.endPolice(true);
   this.nearestPolice=closest;
  }
  updateCamera(dt){const p=this.player;let dx,dy,dz,lookX,lookY,lookZ;const h=p.heading;
@@ -1169,5 +1223,5 @@ class DriftGame{
  }
 }
 
-try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}}
+try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}fetchAnnouncements();setInterval(fetchAnnouncements,25000);}
 catch(e){errorScreen(e);}
