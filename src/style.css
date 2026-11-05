@@ -567,3 +567,16 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
  .hud-top{top:91px}
  .topbar{min-height:62px}
 }
+
+/* Stripe Checkout Form SDK: Stripe owns the secure card iframe. */
+.stripe-checkout-overlay[hidden]{display:none!important}
+.stripe-checkout-overlay{position:fixed;z-index:5000;inset:0;padding:calc(22px + env(safe-area-inset-top,0px)) 14px calc(18px + env(safe-area-inset-bottom,0px));background:#030914f5;display:flex;align-items:center;justify-content:center;overflow:auto;overscroll-behavior:contain;backdrop-filter:blur(15px)}
+.stripe-checkout-panel{background:#101d2a;color:#e9f6ff;border:1px solid #638198;border-radius:20px;box-shadow:0 18px 80px #000c;width:min(560px,100%);max-height:95vh;overflow-y:auto;padding:clamp(15px,3vw,27px)}
+.stripe-checkout-header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.stripe-checkout-header h2{font-size:clamp(18px,4vw,25px);letter-spacing:.12em;margin:0}
+.stripe-checkout-header button{padding:10px 15px;color:#e4f4ff;background:#203c4d;border:1px solid #7894a1;border-radius:10px;cursor:pointer}
+.stripe-checkout-header button:disabled{opacity:.45;cursor:wait}
+#stripeCheckoutStatus{font-size:13px;line-height:1.45;color:#c7d7df;padding:5px 0 14px}
+#checkout-form{min-height:160px;max-width:100%;overflow:hidden}
+body.stripe-checkout-open{overflow:hidden}
+@media(max-width:600px){.stripe-checkout-overlay{align-items:flex-start}.stripe-checkout-panel{max-height:calc(100dvh - 28px);border-radius:15px}}
