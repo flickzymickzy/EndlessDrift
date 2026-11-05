@@ -115,6 +115,7 @@ async function adminApi(req,res,route){
   return json(res,400,{error:'Invalid verification step'});
  }
  if(!isAdmin)return json(res,403,{error:'Admin permission required'});
+ if(route==='/api/admin/moderate'||route==='/api/admin/watch')return await adminModerationApi(req,res,route,user);
  if(route==='/api/admin/overview'&&req.method==='GET'){
   const [drivers,purchases,announcements]=await Promise.all([
    supabase('/rest/v1/driver_profiles?select=id&limit=1000'),
@@ -146,6 +147,90 @@ async function adminApi(req,res,route){
  }
  return json(res,404,{error:'Unknown admin command'});
 }
+
+const liveRate=new Map(),bankRate=new Map();
+const emptyControls=()=>({banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0});
+async function playerControls(userId){
+ const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,xp_grant_total&limit=1');
+ return {...emptyControls(),...(rows?.[0]||{})};
+}
+async function playerStatusApi(req,res,route){
+ if(!sb||!secretKey||!publicKey)return json(res,503,{error:'Player service unavailable'});
+ if(req.headers.origin&&req.headers.origin!==site)return json(res,403,{error:'Invalid origin'});
+ const user=await userFromRequest(req);
+ if(route==='/api/player/status'&&req.method==='GET'){
+  const status=await playerControls(user.id);
+  return json(res,200,{status});
+ }
+ if(route==='/api/player/telemetry'&&req.method==='POST'){
+  const now=Date.now();
+  if(now-(liveRate.get(user.id)||0)<7000)return json(res,200,{ok:true,throttled:true});
+  const status=await playerControls(user.id);
+  if(status.banned)return json(res,403,{error:'Your account is banned from the game'});
+  const data=JSON.parse((await body(req,1500)).toString()||'{}');
+  const vals=[data.x,data.z,data.speed,data.wanted];
+  if(!vals.every(Number.isFinite)||Math.abs(data.x)>100000||Math.abs(data.z)>50000000||data.speed<0||data.speed>600||data.wanted<0||data.wanted>5)return json(res,400,{error:'Invalid game telemetry'});
+  liveRate.set(user.id,now);
+  await supabase('/rest/v1/ed_player_telemetry?on_conflict=user_id',{method:'POST',payload:{user_id:user.id,position_x:Math.round(data.x*100)/100,position_z:Math.round(data.z*100)/100,speed_kph:Math.round(data.speed*100)/100,wanted:Math.floor(data.wanted),active:data.active===true,last_seen:new Date(now).toISOString()}});
+  return json(res,200,{ok:true});
+ }
+ if(route==='/api/runs/bank'&&req.method==='POST'){
+  const status=await playerControls(user.id);
+  if(status.banned)return json(res,403,{error:'Banned accounts cannot submit ranked XP'});
+  const data=JSON.parse((await body(req,1800)).toString()||'{}');
+  const xp=Number(data.xp),seconds=Number(data.seconds);
+  if(!Number.isSafeInteger(xp)||xp<1||xp>5000||!Number.isFinite(seconds)||seconds<1||seconds>7200||xp>Math.max(350,seconds*550)||typeof data.eventId!=='string'||!/^[a-f0-9-]{36}$/i.test(data.eventId))return json(res,400,{error:'Run score outside safety limits'});
+  const now=Date.now(),last=bankRate.get(user.id)||0;
+  if(now-last<1600)return json(res,429,{error:'Please wait before submitting another run'});
+  bankRate.set(user.id,now);
+  const total=await supabase('/rest/v1/rpc/ed_record_ranked_xp',{method:'POST',payload:{p_user:user.id,p_event:data.eventId,p_xp:xp}});
+  return json(res,200,{lifetime_xp:Number(total||0),provisional:true});
+ }
+ return json(res,404,{error:'Unknown player endpoint'});
+}
+async function adminModerationApi(req,res,route,user){
+ if(route==='/api/admin/watch'&&req.method==='GET'){
+  const name=String(new URL(req.url,'http://localhost').searchParams.get('username')||'').trim();
+  if(!/^[A-Za-z0-9_]{3,24}$/.test(name))return json(res,400,{error:'Enter a valid player username'});
+  const matches=await supabase('/rest/v1/driver_profiles?username=ilike.'+encodeURIComponent(name)+'&select=id,username&limit=1');
+  const profile=matches?.[0];
+  if(!profile)return json(res,404,{error:'Player not found'});
+  const rows=await supabase('/rest/v1/ed_player_telemetry?user_id=eq.'+encodeURIComponent(profile.id)+'&select=position_x,position_z,speed_kph,wanted,active,last_seen&limit=1');
+  const data=rows?.[0]||null;
+  return json(res,200,{username:profile.username,telemetry:data,online:!!(data?.active&&Date.now()-Date.parse(data.last_seen)<45000)});
+ }
+ if(route!=='/api/admin/moderate'||req.method!=='POST')return json(res,404,{error:'Unknown admin command'});
+ const data=JSON.parse((await body(req,3000)).toString()||'{}');
+ const command=String(data.command||'').replace(/^\//,'').toLowerCase(),name=String(data.username||'').trim();
+ if(!/^[A-Za-z0-9_]{3,24}$/.test(name))return json(res,400,{error:'Target username required'});
+ const profiles=await supabase('/rest/v1/driver_profiles?username=ilike.'+encodeURIComponent(name)+'&select=id,username&limit=1');
+ const target=profiles?.[0];if(!target)return json(res,404,{error:'Target player not found'});
+ const ownerRole=await adminRole(target.id);
+ const destructive=['kick','ban','freeze','unfreeze'];
+ if(destructive.includes(command)&&(target.id===user.id||ownerRole?.source==='owner'))return json(res,403,{error:'Cannot moderate yourself or the owner'});
+ const before=await playerControls(target.id);const patch={updated_at:new Date().toISOString()};
+ switch(command){
+  case 'kick':patch.kick_version=Number(before.kick_version||0)+1;break;
+  case 'ban':patch.banned=true;break;
+  case 'unban':patch.banned=false;break;
+  case 'freeze':patch.frozen=true;break;
+  case 'unfreeze':patch.frozen=false;break;
+  case 'god':patch.god_mode=data.value===true||data.value==='on';break;
+  case 'speed':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Speed must be 0.5–3'});patch.speed_multiplier=n;break;}
+  case 'jump':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Jump must be 0.5–3'});patch.jump_multiplier=n;break;}
+  case 'morph':{const shape=String(data.value||'').toLowerCase();if(!['car','tetris','arcade','toilet'].includes(shape))return json(res,400,{error:'Invalid transformation'});patch.shape=shape;break;}
+  case 'xp':{
+   const amount=Number(data.value);if(!Number.isSafeInteger(amount)||amount<1||amount>5000)return json(res,400,{error:'Grant 1–5000 XP per action'});
+   await supabase('/rest/v1/rpc/ed_record_ranked_xp',{method:'POST',payload:{p_user:target.id,p_event:randomUUID(),p_xp:amount}});
+   patch.xp_grant_total=Number(before.xp_grant_total||0)+amount;
+   break;
+  }
+  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph xp'});
+ }
+ await supabase('/rest/v1/ed_player_controls?on_conflict=user_id',{method:'POST',payload:{user_id:target.id,...patch}});
+ return json(res,200,{ok:true,command,username:target.username});
+}
+
 async function leaderboardApi(res,sort='lifetime_xp'){
  if(!sb||!secretKey)return json(res,503,{error:'Leaderboard is not configured'});
  const order=sort==='coins_spent'?'coins_spent':'lifetime_xp';
@@ -176,6 +261,7 @@ async function api(req,res,route){
    const missing=required.filter(name=>!process.env[name]);
    return json(res,missing.length?503:200,{paymentServer:'v17',status:missing.length?'configuration_missing':'ready',missing});
   }
+  if(route.startsWith('/api/player/')||route.startsWith('/api/runs/'))return await playerStatusApi(req,res,route);
   if(route==='/api/leaderboard'&&req.method==='GET')return await leaderboardApi(res,new URL(req.url,'http://localhost').searchParams.get('sort'));
   if(route==='/api/announcements'&&req.method==='GET')return await publicAnnouncements(res);
   if(route.startsWith('/api/admin/'))return await adminApi(req,res,route);
