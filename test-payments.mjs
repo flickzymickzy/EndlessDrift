@@ -28,3 +28,8 @@ assert.match(html,/drift-endlessly-logo\.png/);
 assert.match(manifest,/Drift Endlessly/);
 assert.match(main,/class="beta-label">BETA/);
 console.log('V20 BETA checks passed: earned-DC pass, no checkout, new brand, legacy saves.');
+
+// The separate coin-buying page is removed, while earned Drift Coins and Drift Pass remain.
+assert.doesNotMatch(main,/renderCoins|data-page="coins"|page==='coins'|mode==='coins'/);
+assert.match(main,/data-buy-drift-pass/);
+assert.match(main,/data-confirm-drift-pass/);

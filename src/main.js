@@ -23,7 +23,7 @@ app.innerHTML=`
   <header class="topbar">
     <div class="brand">DRIFT <span>ENDLESSLY</span><b class="beta-label">BETA</b><small>DRIVE // DRIFT // EARN</small></div>
     <nav class="toplinks" aria-label="Main navigation">
-      <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="coins">COINS</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button><button id="adminNav" data-page="admin" class="hidden">ADMIN</button>
+      <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button><button id="adminNav" data-page="admin" class="hidden">ADMIN</button>
     </nav>
     <div class="player-progression" title="Level rises with lifetime XP earned">
       <div class="progress-top"><span id="playerLevel">LVL 1</span><span id="playerRank">ROOKIE DRIVER</span></div>
@@ -313,7 +313,7 @@ async function payWithPurchasedCoins(cost){
  finally{paymentSpending=false;}
 }
 async function syncPaidState(){
- try{await refreshPurchased();cashRefresh();if(mode==='coins')renderCoins();if(mode==='battlepass')renderBattlePass();}
+ try{await refreshPurchased();cashRefresh();if(mode==='battlepass')renderBattlePass();}
  catch(e){console.warn('Purchased balance not available:',e.message);}
 }
 let levelUpTimeout;
@@ -393,7 +393,6 @@ function renderPage(page){
   if(page==='settings')renderSettings();
   if(page==='battlepass')renderBattlePass();
   if(page==='shop')renderShop();
-  if(page==='coins')renderCoins();
   if(page==='account')renderAccount();
   if(page==='admin')renderAdmin();
 }
@@ -552,13 +551,6 @@ function renderBattlePass(){
  <div class="pass-v10-wrap"><div class="pass-v10-rail-labels"><div>LEVEL</div><div>FREE</div><div>PREMIUM <span>${hasDriftPass()?'✓':'🔒'}</span></div></div><div class="pass-v10-scroll"><div class="pass-v10-grid">${BATTLE_PASS.map((free,i)=>`<div class="pass-v10-column"><div class="pass-v10-level ${level>=free.level?'pass-v10-reached':''}">${free.level}${level===free.level?' • YOU':''}</div>${tierCard(free)}${tierCard(PREMIUM_PASS[i])}</div>`).join('')}</div></div></div>
  <p class="notice" style="margin-top:19px">Drift Pass costs 15,000 earned Drift Coins, not real money. Ownership is saved with your garage. Premium rewards unlock when you reach the required level.</p>`;
  previewCosmetic(state.selected,item,'passCarMount');
-}
-function renderCoins(){
- dom.screen.innerHTML=header('DRIFT COINS','EARN CURRENCY • NO REAL MONEY','Get Drift Coins by drifting, banking XP and leveling up. The Drift Pass also uses earned DC.')+`
- <div class="coin-banner panel panel-pad"><div class="kicker">YOUR EARNED BALANCE</div><strong>${fmt(state.wallet)} DC</strong><p>Spend Drift Coins on cars, upgrades, cosmetics and the Drift Pass. Earn 1 DC for every 5 XP you bank, plus level bonuses.</p></div>
- <div class="coin-pack-grid"><div class="coin-pack panel panel-pad"><div class="kicker">01 • DRIFT</div><h3>BANK YOUR <span>XP</span></h3><p class="muted">Drive, hold clean drifts and bank your runs to earn Drift Coins.</p><button class="btn primary" data-page="game">START DRIVING</button></div><div class="coin-pack panel panel-pad"><div class="kicker">02 • LEVEL UP</div><h3>UNLOCK <span>BONUSES</span></h3><p class="muted">Level rewards include more Drift Coins.</p><button class="btn ghost" data-page="leaderboard">VIEW PROGRESS</button></div><div class="coin-pack panel panel-pad"><div class="kicker">03 • DRIFT PASS</div><h3>${fmt(DRIFT_PASS_COST)} <span>DC</span></h3><p class="muted">Unlock the premium track with earned Drift Coins.</p><button class="btn primary" data-buy-drift-pass>BUY DRIFT PASS</button></div></div>
- ${purchased.coins>0?`<p class="notice" style="margin-top:16px">You also have ${fmt(purchased.coins)} DC from previous purchases. They remain available in the garage and shop. New real-money purchases are disabled; Drift Pass requires earned DC.</p>`:''}
- <p class="notice" style="margin-top:16px">No payment details needed. Drift Coins are earned by playing.</p>`;
 }
 function showUsernameGate(profile){
  const needsChoice=!!profile && profile.username_initialized_at===null;
