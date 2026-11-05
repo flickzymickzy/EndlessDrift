@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const main=readFileSync('./src/main.js','utf8');
+const html=readFileSync('./index.html','utf8');
+const manifest=JSON.parse(readFileSync('./site.webmanifest','utf8'));
+const sql=readFileSync('./backend/leaderboard-spend-v21.sql','utf8');
+assert.match(main,/table\(spent,'coins_spent','DC'\)/);
+assert.match(main,/synced garage spending totals/);
+assert.match(sql,/create or replace view public\.leaderboard_public/);
+assert.match(sql,/ed_game_saves/);
+assert.match(sql,/g\.save->>'spent'/);
+assert.equal(manifest.name,'driftendlessly');
+assert.equal(manifest.short_name,'driftendlessly');
+assert.match(html,/application-name" content="driftendlessly"/);
+assert.match(html,/<title>Just Drift Endlessly<\/title>/);
+assert.match(html,/drift-endlessly-logo\.png\?v=21/);
+console.log('V21 tests passed: spent board, DC units, favicon and website identity.');

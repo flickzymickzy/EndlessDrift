@@ -19,3 +19,9 @@ The main branch deploys through your existing Render configuration.
 
 ## Beta limitation
 The earned wallet is not yet anti-cheat authoritative. Never treat Drift Coins as redeemable cash or valuable items.
+
+## V21 updates
+- A verified database view change now reads each driver's synced `ed_game_saves.save.spent` counter, not just the stale 0 in `verified_scores`.
+- Most Coins Spent values display DC and are marked game-only and not anti-cheat verified.
+- Your uploaded logo is the tab icon and loading logo, with cache-busting version 21.
+- App/manifest name is `driftendlessly`. Existing Render hostname stays until a coordinated service/domain rename.
