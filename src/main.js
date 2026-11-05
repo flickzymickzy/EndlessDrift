@@ -241,6 +241,7 @@ function bankAndExit(){
  const xp=Math.max(0,Math.round(game.run.score));
  const coinEstimate=Math.floor(xp/5);
  game.endRun(false);
+ flushOnlineXP();
  game.endPolice(false);
  lastBanked={xp,coins:coinEstimate,time:Date.now()};
  clearPause();renderPage('home');
@@ -349,6 +350,7 @@ function renderPage(page){
   dom.hero.classList.toggle('hidden',page!=='home');dom.screen.classList.toggle('hidden',page==='home'||page==='game');dom.hud.classList.toggle('hidden',page!=='game');
   document.querySelectorAll('.toplinks button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='game'){
+  if(playerControlState.banned){notify('ACCOUNT BANNED • CONTACT ADMIN');return;}
     if(game?.adminInfiniteCops){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}
     game?.audio?.unlock();game?.audio?.setCarProfile(carSave().upgrades,carSave().engineNote||'factory');game?.resetTiming();document.activeElement?.blur?.();
     notify('WASD DRIVE  •  SPACE HANDBRAKE  •  C CAMERA  •  ESC PAUSE');
@@ -1181,6 +1183,7 @@ class DriftGame{
   const breakdown={total:score,banked:received,lost:score-received,penalty:Math.round((1-multiplier)*100)};
   if(this.run.active&&score>0){
    const result=award(received);
+   queueOnlineXP(received);
    state.nearMissXP+=Math.floor(this.run.nearMissXP*multiplier);
    if(this.run.seconds>.3)state.drifts++;
    state.bestDrift=Math.max(state.bestDrift,received);save();earnedXP(result);
@@ -1282,5 +1285,5 @@ class DriftGame{
  }
 }
 
-try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}fetchAnnouncements();setInterval(fetchAnnouncements,25000);}
+try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}fetchAnnouncements();setInterval(fetchAnnouncements,25000);setTimeout(refreshPlayerControlState,1600);setInterval(refreshPlayerControlState,14000);setInterval(sendPlayerTelemetry,11000);setInterval(flushOnlineXP,23000);}
 catch(e){errorScreen(e);}
