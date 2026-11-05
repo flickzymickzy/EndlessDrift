@@ -8,6 +8,7 @@ assert.match(main,/table\(spent,'coins_spent','DC'\)/);
 assert.match(main,/synced garage spending totals/);
 assert.match(sql,/create or replace view public\.leaderboard_public/);
 assert.match(sql,/ed_game_saves/);
+assert.match(sql,/security_invoker = true/);
 assert.match(sql,/g\.save->>'spent'/);
 assert.equal(manifest.name,'driftendlessly');
 assert.equal(manifest.short_name,'driftendlessly');

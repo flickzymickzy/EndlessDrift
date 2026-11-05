@@ -15,3 +15,6 @@ select p.username,
 from public.verified_scores s
 join public.driver_profiles p on p.id = s.driver_id
 left join public.ed_game_saves g on g.user_id = s.driver_id;
+
+-- Keep the view subject to caller RLS; the server uses its existing service role.
+alter view public.leaderboard_public set (security_invoker = true);
