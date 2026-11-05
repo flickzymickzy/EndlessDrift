@@ -7,6 +7,7 @@
   <meta name="description" content="ENDLESS DRIFT — drift physics, Drift Pass cosmetics, Drift Coins and near-miss challenges." />
   <title>ENDLESS DRIFT | Drive, Drift & Tune</title>
   <link rel="stylesheet" href="./src/style.css" />
+  <script src="https://js.stripe.com/dahlia/stripe.js"></script>
   <script type="importmap">
   {"imports": {
     "three": "./vendor/three.module.js",
@@ -16,6 +17,13 @@
 </head>
 <body>
   <div id="app"><div style="color:white;background:#08101a;min-height:100vh;padding:15vh 8vw;font:700 30px system-ui">ENDLESS DRIFT <div style="font-size:16px;margin-top:18px;font-weight:400">Loading game... If this stays here, open Terminal and make sure <code>node server.js</code> is running.</div></div></div>
+  <section id="stripeCheckoutOverlay" class="stripe-checkout-overlay" hidden role="dialog" aria-modal="true" aria-label="Secure payment">
+    <div class="stripe-checkout-panel">
+      <header class="stripe-checkout-header"><h2>SECURE CHECKOUT</h2><button id="stripeCheckoutClose" type="button" aria-label="Close checkout">CLOSE</button></header>
+      <p id="stripeCheckoutStatus" role="status">Loading payment form…</p>
+      <div id="checkout-form"></div>
+    </div>
+  </section>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>
