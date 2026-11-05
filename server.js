@@ -95,7 +95,8 @@ async function adminApi(req,res,route){
   return json(res,isAdmin?200:403,{admin:isAdmin,owner:role?.source==='owner'});
  }
  if(route==='/api/admin/redeem'&&req.method==='POST'){
-  if(isAdmin)return json(res,200,{admin:true,activated:true});
+  // Already-verified admins can edit usernames normally; no invite interception.
+  if(isAdmin)return json(res,200,{candidate:false,admin:true});
   if(!allowAttempt(user.id,req))return json(res,429,{error:'Too many attempts'});
   const data=JSON.parse((await body(req,3000)).toString()||'{}');
   if(data.step==='begin'){
