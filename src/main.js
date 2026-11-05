@@ -194,6 +194,32 @@ async function sendPlayerTelemetry(){
  try{await fetch('/api/player/telemetry',{method:'POST',headers:{Authorization:'Bearer '+access,'Content-Type':'application/json'},body:JSON.stringify({x:game.player.x,z:game.player.z,speed:Math.min(600,kph(game.player.speed)),wanted:game.wanted,active:mode==='game'&&game.playing})});}catch{}
 }
 
+
+function queueOnlineXP(xp){
+ if(!getSaveOwner()||!Number.isFinite(xp)||xp<1)return;
+ rankedPending=Math.min(50000,rankedPending+Math.floor(xp));
+ clearTimeout(rankedFlushTimer);rankedFlushTimer=setTimeout(flushOnlineXP,4200);
+}
+async function flushOnlineXP(){
+ if(rankedFlushBusy||!getSaveOwner()||rankedPending<1)return;
+ const owner=getSaveOwner();rankedFlushBusy=true;
+ try{
+  const token=await cloudAccessToken();if(!token)return;
+  const amount=Math.min(5000,rankedPending),seconds=Math.max(12,Math.min(7200,Math.round((Date.now()-rankedLastReport)/1000)));
+  const response=await fetch('/api/runs/bank',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({xp:amount,seconds,eventId:crypto.randomUUID()}),keepalive:true});
+  const reply=await response.json().catch(()=>({}));if(!response.ok)throw Error(reply.error||'Ranked score update failed');
+  if(owner===getSaveOwner()){rankedPending-=amount;rankedLastReport=Date.now();}
+ }catch(err){console.warn('Online XP waiting for retry:',err.message);}
+ finally{rankedFlushBusy=false;if(rankedPending>0)rankedFlushTimer=setTimeout(flushOnlineXP,9000);}
+}
+async function watchPlayerForm(name){
+ const access=await cloudAccessToken();if(!access)throw Error('Log in first');
+ const response=await fetch('/api/admin/watch?username='+encodeURIComponent(name),{headers:{Authorization:'Bearer '+access}});
+ const data=await response.json().catch(()=>({}));if(!response.ok)throw Error(data.error||'Unable to watch player');
+ const t=data.telemetry,box=$('adminWatchResult');if(!box)return;
+ box.textContent=data.username+' • '+(data.online?'ACTIVE':'OFFLINE')+(t?' • '+Math.round(Number(t.speed_kph)||0)+' KM/H • '+Number(t.wanted||0)+' STARS • ROAD '+Math.round(Number(t.position_z)||0)+'m':' • No recent game data');
+}
+
 async function renderAdmin(){
  if(!adminEnabled){renderPage('home');return;}
  dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Server-verified private control room.')+'<div class="panel panel-pad">LOADING OPERATIONS…</div>';
