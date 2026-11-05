@@ -509,3 +509,61 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 :where(button,input,select,textarea,a,[role=button]):focus-visible{outline:2px solid var(--mint,#56dabb)!important;outline-offset:3px}
 :where(button,input,select,textarea,a):focus:not(:focus-visible){outline:none}
 @media(max-width:700px){.controls-hint{bottom:85px;left:8px;font-size:11px;max-width:170px;padding:7px 9px}.admin-control-form{flex-direction:column}.admin-control-form input,.admin-control-form select{width:100%;min-width:0}}
+
+
+/* V19: thumb-friendly controls, responsive tablet/phone HUD and iOS safe areas. */
+.touch-controls{display:none}
+@media (pointer:coarse), (hover:none){
+ .touch-controls{display:block;position:fixed;inset:0;z-index:26;pointer-events:none}
+ .touch-controls button{
+   pointer-events:auto;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+   -webkit-tap-highlight-color:transparent;cursor:pointer;
+   min-height:55px;min-width:55px;padding:10px 13px;
+   color:var(--text,#eaffff);font:800 13px/1 system-ui,sans-serif;letter-spacing:.08em;
+   border-radius:16px;border:2px solid color-mix(in srgb,var(--mint,#59dbc3) 63%,#fff);
+   background:linear-gradient(155deg,#102e40ea,#091823f2);
+   box-shadow:0 6px 22px #0009,inset 0 1px 4px #ffffff12;
+ }
+ .touch-controls button[data-held],.touch-controls button:active{
+   background:color-mix(in srgb,var(--mint,#56dabb) 33%,#071a29);
+   border-color:var(--mint,#56dabb);
+   transform:scale(.96);
+ }
+ .touch-group{position:absolute;display:flex;gap:10px;bottom:max(14px,env(safe-area-inset-bottom,0px));pointer-events:none}
+ .touch-group button{min-width:clamp(57px,11vw,86px);min-height:clamp(65px,13vw,96px);pointer-events:auto}
+ .touch-steer{left:max(10px,env(safe-area-inset-left,0px))}
+ .touch-steer button{font-size:27px}
+ .touch-pedals{right:max(10px,env(safe-area-inset-right,0px));align-items:flex-end}
+ .touch-pedals .touch-gas{background:linear-gradient(155deg,#185044e8,#103329f2);font-size:16px}
+ .touch-pedals .touch-handbrake{font-size:11px}
+ .touch-tools{
+   position:absolute;left:50%;transform:translateX(-50%);
+   bottom:calc(102px + env(safe-area-inset-bottom,0px));
+   display:flex;align-items:center;justify-content:center;gap:7px;
+   max-width:calc(100vw - 16px);pointer-events:none;
+ }
+ .touch-tools button{min-width:0;min-height:40px;padding:10px 12px;font-size:10px;white-space:nowrap}
+ .touch-tools [data-touch="bank"]{color:#fff4d0;border-color:#ddab5f}
+ .hud-bottom-left,.controls-hint{display:none!important}
+ .speed{right:max(10px,env(safe-area-inset-right,0px));bottom:calc(190px + env(safe-area-inset-bottom,0px));transform:scale(.77);transform-origin:bottom right}
+ .toplinks button[data-page='leaderboard'],.toplinks button[data-page='settings']{display:inline-flex!important}
+ .toplinks{scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+ .topbar{padding-top:env(safe-area-inset-top,0px)}
+ .hud-top-right #customFromHud{display:none}
+}
+@media (pointer:coarse) and (max-width:650px), (hover:none) and (max-width:650px){
+ .touch-group{gap:7px;bottom:max(8px,env(safe-area-inset-bottom,0px))}
+ .touch-group button{min-width:clamp(51px,14vw,69px);min-height:clamp(60px,18vw,79px);padding:7px;font-size:12px}
+ .touch-steer button{font-size:21px}
+ .touch-tools{bottom:calc(90px + env(safe-area-inset-bottom,0px));gap:5px}
+ .touch-tools button{padding:10px 8px;font-size:9px;min-height:39px}
+ .speed{bottom:calc(180px + env(safe-area-inset-bottom,0px));transform:scale(.65)}
+ .hud-top .tag:nth-child(3),.car-tag{display:none}
+}
+@media (pointer:coarse) and (max-height:470px), (hover:none) and (max-height:470px){
+ .touch-group button{min-height:52px}
+ .touch-tools{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+ .speed{bottom:calc(118px + env(safe-area-inset-bottom,0px));transform:scale(.60)}
+ .hud-top{top:91px}
+ .topbar{min-height:62px}
+}

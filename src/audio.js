@@ -4,9 +4,86 @@ const CHASE=[ [38,45,50,53],[36,43,48,52],[33,40,45,48],[35,42,47,50] ];
 const FREQ=n=>440*Math.pow(2,(n-69)/12);
 export class Soundtrack {
  constructor(settings){this.settings=settings;this.ctx=null;this.mode='calm';this.phase=0;this.step=0;this.next=0;this.lastRadio=-100;this.lastMode='';this.engineNodes=null;this.engineProfile={turbo:0,supercharger:0,engine:0,exhaust:0,transmission:0,ecu:0,clutch:0,note:'factory'};}
- setCarProfile(upgrades={},note='factory'){this.engineProfile={turbo:Number(upgrades.turbo||0),supercharger:Number(upgrades.supercharger||0),engine:Number(upgrades.engine||0),exhaust:Number(upgrades.exhaustPerformance||0),transmission:Number(upgrades.transmission||0),ecu:Number(upgrades.ecu||0),clutch:Number(upgrades.clutch||0),note};}
- ensureEngine(){if(!this.ctx||this.engineNodes)return;const master=this.ctx.createGain();master.gain.value=0;const low=this.ctx.createOscillator(),mid=this.ctx.createOscillator(),whine=this.ctx.createOscillator(),harmonic=this.ctx.createOscillator();const lowGain=this.ctx.createGain(),midGain=this.ctx.createGain(),whineGain=this.ctx.createGain(),harmonicGain=this.ctx.createGain();low.type='sawtooth';mid.type='triangle';whine.type='sine';harmonic.type='sawtooth';lowGain.gain.value=.02;midGain.gain.value=.01;whineGain.gain.value=.0;harmonicGain.gain.value=.008;const lowFilter=this.ctx.createBiquadFilter();lowFilter.type='lowpass';lowFilter.frequency.value=680;const midFilter=this.ctx.createBiquadFilter();midFilter.type='bandpass';midFilter.frequency.value=920;midFilter.Q.value=.55;const highFilter=this.ctx.createBiquadFilter();highFilter.type='highpass';highFilter.frequency.value=1200;low.connect(lowGain);lowGain.connect(lowFilter);lowFilter.connect(master);mid.connect(midGain);midGain.connect(midFilter);midFilter.connect(master);whine.connect(whineGain);whineGain.connect(highFilter);highFilter.connect(master);harmonic.connect(harmonicGain);harmonicGain.connect(midFilter);master.connect(this.ctx.destination);for(const o of [low,mid,whine,harmonic])o.start();this.engineNodes={master,low,mid,whine,harmonic,lowGain,midGain,whineGain,harmonicGain,lowFilter,midFilter,highFilter};}
- updateEngine(rpm=900,throttle=0,speed=0){if(!this.ctx||this.ctx.state!=='running')return;this.ensureEngine();const n=this.engineNodes;if(!n)return;const s=this.settings();const fx=Math.max(0,Math.min(1,Number(s.effectsVolume??65)/100));const profile=this.engineProfile||{};const t=this.ctx.currentTime;const rev=Math.max(700,Math.min(8500,Number(rpm)||900));const nrm=(rev-700)/7800;const turbo=Math.max(0,Math.min(1,(profile.turbo||0)/4));const blower=Math.max(0,Math.min(1,(profile.supercharger||0)/3));const engineLvl=Math.max(0,Math.min(1,(profile.engine||0)/5));const throttleAmt=Math.max(0,Math.min(1,Number(throttle)||0));const exhaust=Math.min(1,(profile.exhaust||0)/4),gear=Math.min(1,(profile.transmission||0)/5),ecu=Math.min(1,(profile.ecu||0)/4),note=profile.note||'factory',noteGain=note==='race'?1.28:note==='deep'?1.14:1;const targetVol=(0.05+0.23*(0.18+nrm*.82)*(0.4+throttleAmt*.6)*(0.75+engineLvl*.4+exhaust*.35))*fx*noteGain; n.master.gain.cancelScheduledValues(t);n.master.gain.linearRampToValueAtTime(targetVol,t+.06);n.low.frequency.setTargetAtTime((note==='deep'?29:note==='race'?44:36)+nrm*(54+ecu*16),t,.05);n.mid.frequency.setTargetAtTime(82+nrm*(185+gear*42+exhaust*17)+speed*.08,t,.05);n.whine.frequency.setTargetAtTime(150+nrm*380+turbo*140+blower*75,t,.05);n.harmonic.frequency.setTargetAtTime((105+nrm*285)*(1+engineLvl*.22),t,.045);n.harmonicGain.gain.setTargetAtTime(.006+nrm*.016+throttleAmt*.018+exhaust*.014,t,.055);n.lowGain.gain.setTargetAtTime(.03+engineLvl*.012+throttleAmt*.01,t,.06);n.midGain.gain.setTargetAtTime(.014+nrm*.03+blower*.012+gear*.008+exhaust*.013,t,.06);n.whineGain.gain.setTargetAtTime((turbo*.028*Math.max(0,nrm-.32)+blower*.018*(.45+nrm*.7))*Math.max(.2,throttleAmt),t,.06);n.lowFilter.frequency.setTargetAtTime(420+nrm*780,t,.08);n.midFilter.frequency.setTargetAtTime(540+nrm*1050,t,.08);}
+ setCarProfile(upgrades={},note='factory',car={}){
+  const id=String(car?.id||car?.name||'endless-drift');
+  const family=String(car?.kind||car?.type||'street').toLowerCase();
+  const hp=Math.max(70,Number(car?.hp)||250);
+  let hash=2166136261;
+  for(const letter of id)hash=Math.imul(hash^letter.charCodeAt(0),16777619)>>>0;
+  const cylinders=family.includes('hyper')||hp>850?12:family.includes('muscle')||hp>560?8:family.includes('super')||hp>380?6:4;
+  this.engineProfile={
+   turbo:Number(upgrades.turbo||0),supercharger:Number(upgrades.supercharger||0),
+   engine:Number(upgrades.engine||0),exhaust:Number(upgrades.exhaustPerformance||0),
+   transmission:Number(upgrades.transmission||0),ecu:Number(upgrades.ecu||0),
+   clutch:Number(upgrades.clutch||0),note,
+   cylinders,carId:id,family,pitch:.83+(hash%31)/100,
+   bark:.65+((hash>>>5)%27)/35,brightness:.67+((hash>>>11)%33)/35
+  };
+  if(this.engineNodes){
+   this.engineNodes.low.type=cylinders>=8?'sawtooth':'triangle';
+   this.engineNodes.mid.type=cylinders===12?'sawtooth':'triangle';
+   this.engineNodes.harmonic.type=cylinders===4?'square':'sawtooth';
+  }
+ }
+ ensureEngine(){
+  if(!this.ctx||this.engineNodes)return;
+  const ctx=this.ctx,master=ctx.createGain(),compressor=ctx.createDynamicsCompressor();
+  master.gain.value=0;
+  compressor.threshold.value=-18;compressor.knee.value=18;compressor.ratio.value=3.5;
+  compressor.attack.value=.003;compressor.release.value=.14;
+  const low=ctx.createOscillator(),mid=ctx.createOscillator(),whine=ctx.createOscillator(),harmonic=ctx.createOscillator();
+  const lowGain=ctx.createGain(),midGain=ctx.createGain(),whineGain=ctx.createGain(),harmonicGain=ctx.createGain();
+  const lowFilter=ctx.createBiquadFilter(),midFilter=ctx.createBiquadFilter(),highFilter=ctx.createBiquadFilter();
+  low.type='sawtooth';mid.type='triangle';whine.type='sine';harmonic.type='sawtooth';
+  lowFilter.type='lowpass';lowFilter.frequency.value=520;
+  midFilter.type='bandpass';midFilter.frequency.value=950;midFilter.Q.value=.62;
+  highFilter.type='highpass';highFilter.frequency.value=1250;
+  lowGain.gain.value=.12;midGain.gain.value=.07;whineGain.gain.value=0;harmonicGain.gain.value=.035;
+  low.connect(lowGain);lowGain.connect(lowFilter);lowFilter.connect(master);
+  mid.connect(midGain);midGain.connect(midFilter);midFilter.connect(master);
+  whine.connect(whineGain);whineGain.connect(highFilter);highFilter.connect(master);
+  harmonic.connect(harmonicGain);harmonicGain.connect(midFilter);
+  const count=Math.ceil(ctx.sampleRate*.18),noiseBuffer=ctx.createBuffer(1,count,ctx.sampleRate),pixels=noiseBuffer.getChannelData(0);
+  for(let i=0;i<count;i++)pixels[i]=Math.random()*2-1;
+  const intake=ctx.createBufferSource(),intakeFilter=ctx.createBiquadFilter(),intakeGain=ctx.createGain();
+  intake.buffer=noiseBuffer;intake.loop=true;intakeFilter.type='bandpass';intakeFilter.frequency.value=920;intakeFilter.Q.value=.8;
+  intakeGain.gain.value=.0;intake.connect(intakeFilter);intakeFilter.connect(intakeGain);intakeGain.connect(master);
+  master.connect(compressor);compressor.connect(ctx.destination);
+  for(const o of [low,mid,whine,harmonic])o.start();
+  intake.start();
+  this.engineNodes={master,compressor,low,mid,whine,harmonic,lowGain,midGain,whineGain,harmonicGain,
+   lowFilter,midFilter,highFilter,intake,intakeFilter,intakeGain};
+  this.setCarProfile(this.engineProfile,this.engineProfile.note,{id:this.engineProfile.carId,kind:this.engineProfile.family,hp:this.engineProfile.cylinders===12?900:this.engineProfile.cylinders===8?600:this.engineProfile.cylinders===6?400:260});
+ }
+ updateEngine(rpm=900,throttle=0,speed=0){
+  if(!this.ctx||this.ctx.state!=='running')return;
+  this.ensureEngine();const n=this.engineNodes;if(!n)return;
+  const s=this.settings(),p=this.engineProfile||{},t=this.ctx.currentTime;
+  const fx=Math.max(0,Math.min(1,Number(s.effectsVolume??65)/100));
+  const rev=Math.max(650,Math.min(9000,Number(rpm)||900));
+  const gas=Math.max(0,Math.min(1,Number(throttle)||0));
+  const nrm=(rev-650)/8350,load=.28+gas*.72;
+  const cylinders=Math.max(4,Number(p.cylinders)||4),pitch=p.pitch||1;
+  const turbo=Math.max(0,Math.min(1,(p.turbo||0)/4)),blower=Math.max(0,Math.min(1,(p.supercharger||0)/3));
+  const exhaust=Math.max(0,Math.min(1,(p.exhaust||0)/4)),engine=Math.max(0,Math.min(1,(p.engine||0)/5));
+  const gear=Math.max(0,Math.min(1,(p.transmission||0)/5)),ecu=Math.max(0,Math.min(1,(p.ecu||0)/4));
+  const noteFactor=p.note==='deep'?.82:p.note==='race'?1.17:1;
+  const firing=Math.max(30,rev/60*cylinders*.5*pitch*noteFactor);
+  const volume=(.31+.18*nrm+.1*gas+engine*.05)*fx;
+  n.master.gain.setTargetAtTime(volume,t,.06);
+  n.low.frequency.setTargetAtTime(firing*.62,t,.055);
+  n.mid.frequency.setTargetAtTime(firing*(1.14+gear*.08),t,.04);
+  n.harmonic.frequency.setTargetAtTime(firing*(1.94+ecu*.17),t,.043);
+  n.whine.frequency.setTargetAtTime(240+nrm*860+turbo*210+blower*175,t,.05);
+  n.lowGain.gain.setTargetAtTime(.13+(1-nrm)*.035+(p.bark||.8)*gas*.025,t,.055);
+  n.midGain.gain.setTargetAtTime(.08+nrm*.055+gas*.055+exhaust*.025,t,.055);
+  n.harmonicGain.gain.setTargetAtTime(.026+(p.brightness||.8)*nrm*.055+exhaust*.034,t,.055);
+  n.whineGain.gain.setTargetAtTime((turbo*.055+blower*.03)*Math.max(.25,nrm)*Math.max(.16,gas),t,.055);
+  n.lowFilter.frequency.setTargetAtTime(310+nrm*1250+gas*370,t,.075);
+  n.midFilter.frequency.setTargetAtTime(430+nrm*1750+(p.brightness||.8)*320,t,.075);
+  n.intakeFilter.frequency.setTargetAtTime(500+nrm*1950+gas*600,t,.085);
+  n.intakeGain.gain.setTargetAtTime(.008+gas*.019+nrm*.015,t,.075);
+ }
  unlock(){try{this.ctx||=new (window.AudioContext||window.webkitAudioContext)();this.ctx.resume().catch(()=>{});if(!this.next||this.next<this.ctx.currentTime-.5)this.next=this.ctx.currentTime+.04;this.ensureEngine();}catch{}}
  setMode(mode){if(this.mode===mode)return;this.mode=mode;this.step=0;this.next=this.ctx?.currentTime+.08||0;}
  tone(n,when,duration,type='sine',amp=.08,attack=.015,filter=0){if(!this.ctx||this.ctx.state!=='running')return;
@@ -72,17 +149,42 @@ export class Soundtrack {
  suspend(){this.cancelRadio();try{this.ctx?.suspend?.();}catch{}}
  exhaustPop(strength=1){
   if(!this.ctx||this.ctx.state!=='running')return;
-  const t=this.ctx.currentTime,fx=Math.max(0,Math.min(1,Number(this.settings().effectsVolume??65)/100));
-  this.noise(t,.11,.085*fx*strength);
-  const boom=this.ctx.createOscillator(),boomGain=this.ctx.createGain(),boomFilter=this.ctx.createBiquadFilter();
-  boom.type='sine';boom.frequency.setValueAtTime(148,t);boom.frequency.exponentialRampToValueAtTime(42,t+.18);boomFilter.type='lowpass';boomFilter.frequency.value=320;
-  boomGain.gain.setValueAtTime(.0001,t);boomGain.gain.exponentialRampToValueAtTime(Math.min(.24,.13*fx*strength+.0001),t+.012);boomGain.gain.exponentialRampToValueAtTime(.0001,t+.21);
-  boom.connect(boomFilter);boomFilter.connect(boomGain);boomGain.connect(this.ctx.destination);boom.start(t);boom.stop(t+.24);
-  const osc=this.ctx.createOscillator(),gain=this.ctx.createGain(),filter=this.ctx.createBiquadFilter();
-  osc.type='triangle';osc.frequency.setValueAtTime(205,t);osc.frequency.exponentialRampToValueAtTime(65,t+.105);
-  filter.type='lowpass';filter.frequency.value=1200;
-  gain.gain.setValueAtTime(.0001,t);gain.gain.exponentialRampToValueAtTime(.080*fx*strength+.0001,t+.006);gain.gain.exponentialRampToValueAtTime(.0001,t+.13);
-  osc.connect(filter);filter.connect(gain);gain.connect(this.ctx.destination);osc.start(t);osc.stop(t+.145);
+  const ctx=this.ctx,t=ctx.currentTime,p=this.engineProfile||{};
+  const fx=Math.max(0,Math.min(1,Number(this.settings().effectsVolume??65)/100));
+  const force=Math.max(.15,Math.min(2,Number(strength)||1))*fx;
+  if(force<.01)return;
+  // A sharp, band-limited pressure crack layered over a short low-frequency exhaust thump.
+  // Independent from the continuous engine oscillators and music scheduler.
+  const count=Math.max(256,Math.floor(ctx.sampleRate*.145)),buf=ctx.createBuffer(1,count,ctx.sampleRate),samples=buf.getChannelData(0);
+  let previous=0;
+  for(let i=0;i<count;i++){
+   const a=i/count,white=Math.random()*2-1;
+   previous=previous*.68+white*.32;
+   const envelope=Math.exp(-a*17)+.48*Math.exp(-Math.max(0,a-.16)*26)*(a>.16?1:0);
+   samples[i]=(white*.55+previous*.75)*envelope;
+  }
+  const crack=ctx.createBufferSource(),crackBand=ctx.createBiquadFilter(),crackGain=ctx.createGain();
+  crack.buffer=buf;crackBand.type='bandpass';crackBand.Q.value=.68;
+  crackBand.frequency.value=(p.cylinders||6)>=8?690:1100;
+  crackGain.gain.setValueAtTime(.0001,t);
+  crackGain.gain.exponentialRampToValueAtTime(Math.max(.0002,force*.44),t+.004);
+  crackGain.gain.exponentialRampToValueAtTime(.0001,t+.137);
+  crack.connect(crackBand);crackBand.connect(crackGain);crackGain.connect(ctx.destination);
+  crack.start(t);crack.stop(t+.146);
+  const thump=ctx.createOscillator(),thumpGain=ctx.createGain(),thumpFilter=ctx.createBiquadFilter();
+  thump.type='triangle';thump.frequency.setValueAtTime((p.cylinders||6)>=8?119:155,t);
+  thump.frequency.exponentialRampToValueAtTime(43,t+.155);
+  thumpFilter.type='lowpass';thumpFilter.frequency.value=400;
+  thumpGain.gain.setValueAtTime(.0001,t);
+  thumpGain.gain.exponentialRampToValueAtTime(Math.min(.20,force*.14+.0001),t+.007);
+  thumpGain.gain.exponentialRampToValueAtTime(.0001,t+.19);
+  thump.connect(thumpFilter);thumpFilter.connect(thumpGain);thumpGain.connect(ctx.destination);
+  thump.start(t);thump.stop(t+.20);
+  const snap=ctx.createOscillator(),snapGain=ctx.createGain();
+  snap.type='square';snap.frequency.setValueAtTime(410,t);snap.frequency.exponentialRampToValueAtTime(95,t+.038);
+  snapGain.gain.setValueAtTime(.0001,t);snapGain.gain.exponentialRampToValueAtTime(force*.024+.0001,t+.002);
+  snapGain.gain.exponentialRampToValueAtTime(.0001,t+.041);
+  snap.connect(snapGain);snapGain.connect(ctx.destination);snap.start(t);snap.stop(t+.048);
  }
  impact(){if(!this.ctx||this.ctx.state!=='running')return;const t=this.ctx.currentTime;this.noise(t,.18,.11);this.tone(35,t,.4,'sawtooth',.065);}
 }

@@ -37,7 +37,7 @@ app.innerHTML=`
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
       <div id="lastRunBanked" class="last-run-banked hidden"></div><div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
-    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 17.0 • SHOWROOM / STUDIO</div>
+    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 19.0 • SHOWROOM / STUDIO</div>
   </section>
   <section id="screen" class="panescreen hidden" aria-live="polite"></section>
   <div id="hud" class="hud hidden">
@@ -49,7 +49,22 @@ app.innerHTML=`
     <div id="copGlow" class="cop-glow hidden" aria-hidden="true"></div>
     <div id="featureNotice" class="feature-notice hidden" aria-live="polite"></div>
     <div class="drift-notice hidden" id="driftNotice"><div class="drift-rating" id="driftRating">CLEAN DRIFT</div><div class="score" id="driftSplash">DRIFT!</div><div class="combo" id="driftAngle">SUSTAIN YOUR DRIFT</div><div class="drift-meter"><i id="driftMeterFill"></i><b id="driftMeterPin"></b></div><small class="drift-meter-note">STEER SMOOTHLY • HOLD A / D TO SLIDE</small></div>
-    <details class="controls-hint"><summary>CONTROLS</summary><div><b>W / ↑</b> Drive<br><b>S / ↓</b> Brake<br><b>A / D</b> Steer<br><b>SPACE</b> Drift<br><b>C</b> Camera<br><b>R</b> Recover<br><b>ESC</b> Pause</div></details><div class="hud-bottom-left"><button class="btn bank-btn" id="bankExit">BANK XP + DC / EXIT</button><button class="btn" id="pauseHud">PAUSE / MENU</button><button class="btn" data-page="garage">GARAGE</button></div>
+    <details class="controls-hint"><summary>CONTROLS</summary><div><b>W / ↑</b> Drive<br><b>S / ↓</b> Brake<br><b>A / D</b> Steer<br><b>SPACE</b> Drift<br><b>C</b> Camera<br><b>R</b> Recover<br><b>ESC</b> Pause</div></details><div id="touchControls" class="touch-controls" aria-label="Touch driving controls">
+  <div class="touch-tools" role="group" aria-label="Game actions">
+    <button type="button" data-touch="camera" aria-label="Change camera">CAM</button>
+    <button type="button" data-touch="recover" aria-label="Recover vehicle">RESET</button>
+    <button type="button" data-touch="pause" aria-label="Pause game">PAUSE</button>
+    <button type="button" data-touch="bank" aria-label="Bank this run and exit">BANK + EXIT</button>
+  </div>
+  <div class="touch-steer touch-group" role="group" aria-label="Steering">
+    <button type="button" data-touch="left" aria-label="Steer left">◀</button><button type="button" data-touch="right" aria-label="Steer right">▶</button>
+  </div>
+  <div class="touch-pedals touch-group" role="group" aria-label="Driving pedals">
+    <button type="button" data-touch="handbrake" class="touch-handbrake" aria-label="Handbrake drift">DRIFT</button>
+    <button type="button" data-touch="brake" aria-label="Brake">BRAKE</button>
+    <button type="button" data-touch="accelerate" class="touch-gas" aria-label="Accelerate">GAS</button>
+  </div>
+ </div><div class="hud-bottom-left"><button class="btn bank-btn" id="bankExit">BANK XP + DC / EXIT</button><button class="btn" id="pauseHud">PAUSE / MENU</button><button class="btn" data-page="garage">GARAGE</button></div>
     <div class="speed"><div class="speed-number" id="speedNumber">0</div><div class="unit" id="speedUnit">MPH</div><div class="speed-track"><b id="rpmLine"></b></div><div class="speed-bottom"><div><span>GEAR</span> <b id="gear">N</b></div><div><span>RPM</span> <b id="rpm">800</b></div><div><span>BOOST</span> <b id="boost">0%</b></div></div></div>
   </div>
   <div id="weatherChooser" class="weather-chooser hidden" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
@@ -97,8 +112,8 @@ app.innerHTML=`
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
 let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;
-let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
-const keys={};let game;
+let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+const keys={};const touchHeld=Object.create(null),touchPointers=new Map();let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 setSaveHook((owner,snapshot)=>{
  clearTimeout(saveSyncTimer);saveSyncPending={owner,snapshot};
@@ -176,7 +191,7 @@ async function checkAdminPermissions(){
 
 async function refreshPlayerControlState(){
  const owner=getSaveOwner(),access=await cloudAccessToken();
- if(!owner||!access){kickVersionSeen=null;playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0};return;}
+ if(!owner||!access){kickVersionSeen=null;playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0};return;}
  try{
   const response=await fetch('/api/player/status',{headers:{Authorization:'Bearer '+access},cache:'no-store'});
   if(!response.ok)return;
@@ -186,6 +201,12 @@ async function refreshPlayerControlState(){
   if(game){game.adminFrozen=!!status.frozen;game.adminGodMode=!!status.god_mode;game.adminSpeedMultiplier=Math.max(.5,Math.min(3,Number(status.speed_multiplier)||1));game.adminJumpMultiplier=Math.max(.5,Math.min(3,Number(status.jump_multiplier)||1));game.applyMorph?.(status.shape||'car');}
   const total=Number(status.xp_grant_total||0),done=Number(state.adminXpApplied||0);
   if(total>done){state.lifetimeXP+=total-done;state.adminXpApplied=total;save();cashRefresh();notify('ADMIN XP GRANTED +'+fmt(total-done));}
+  const coinTotal=Math.max(0,Number(status.coins_grant_total)||0),appliedCoins=Math.max(0,Number(state.adminCoinsApplied)||0);
+  if(coinTotal>appliedCoins){
+   const gift=Math.min(2000000000,coinTotal-appliedCoins);
+   state.wallet=Math.min(2000000000,state.wallet+gift);
+   state.adminCoinsApplied=coinTotal;save();cashRefresh();notify('ADMIN GIFT +'+fmt(gift)+' DC');
+  }
   if(status.banned&&mode==='game'){renderPage('account');notify('ACCOUNT BANNED FROM ONLINE PLAY');}
  }catch(err){console.warn('Player status unavailable:',err.message);}
 }
@@ -232,7 +253,15 @@ async function renderAdmin(){
    <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">VERIFIED PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
    <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Public announcements appear for everyone online and expire after 24 hours.</p><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
    <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create Stripe purchases or bank payouts. Police mode is local to your current drive.</p></div>
-   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (1–5000)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
+   <div class="panel panel-pad"><div class="kicker">ADMIN GIFTS</div><h3>GIVE DRIFT COINS</h3>
+    <p class="notice">Grant game-earned DC to an existing driver username. Maximum 500,000 per action. Does not affect Stripe paid coins.</p>
+    <form id="adminCoinsForm" class="admin-control-form">
+      <input name="username" maxlength="24" autocomplete="off" placeholder="Player username" pattern="[A-Za-z0-9_]{3,24}" required/>
+      <input name="amount" type="number" min="1" max="500000" step="1" placeholder="Amount of DC" required/>
+      <button class="btn primary" type="submit">GIVE DC</button>
+    </form><p id="adminCoinsResult" class="notice" role="status"></p>
+   </div>
+   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (1–5000)</option><option value="coins">/givecoins (1–500,000)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
    <div class="panel panel-pad"><div class="kicker">RECENT CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
@@ -352,7 +381,7 @@ function renderPage(page){
   if(page==='game'){
   if(playerControlState.banned){notify('ACCOUNT BANNED • CONTACT ADMIN');return;}
     if(game?.adminInfiniteCops){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}
-    game?.audio?.unlock();game?.audio?.setCarProfile(carSave().upgrades,carSave().engineNote||'factory');game?.resetTiming();document.activeElement?.blur?.();
+    game?.audio?.unlock();game?.audio?.setCarProfile(carSave().upgrades,carSave().engineNote||'factory',getSelected());game?.resetTiming();document.activeElement?.blur?.();
     notify('WASD DRIVE  •  SPACE HANDBRAKE  •  C CAMERA  •  ESC PAUSE');
     return;
   }
@@ -679,7 +708,7 @@ document.addEventListener('click',async e=>{
  }
  if(t.dataset.commitUpgrade){const u=UPGRADES.find(x=>x.id===t.dataset.commitUpgrade);if(!u)return;const cs=carSave(tuningCar),lv=cs.upgrades[u.id];if(lv>=u.max)return;
    if(!await payWithPurchasedCoins(upgradeCost(u,lv))){notify('NOT ENOUGH DRIFT COINS • BANK MORE DRIFTS');return;}
-   cs.upgrades[u.id]++;pendingUpgrade=null;save();if(tuningCar===state.selected)game?.audio?.setCarProfile(cs.upgrades,cs.engineNote||'factory');cashRefresh();notify(`${u.label.toUpperCase()} LEVEL ${cs.upgrades[u.id]} INSTALLED`);renderTune();return;
+   cs.upgrades[u.id]++;pendingUpgrade=null;save();if(tuningCar===state.selected)game?.audio?.setCarProfile(cs.upgrades,cs.engineNote||'factory',getSelected());cashRefresh();notify(`${u.label.toUpperCase()} LEVEL ${cs.upgrades[u.id]} INSTALLED`);renderTune();return;
  }
  if(t.dataset.commitVisual){const [id,variant]=t.dataset.commitVisual.split('|');const part=BODY_PARTS.find(p=>p.id===id),opt=part?.options.find(o=>o[0]===variant);if(!part||!opt||!state.owned.includes(tuningCar))return;const cs=carSave(tuningCar),key=id+':'+variant;
    if(opt[2]>0&&!cs.ownedParts.includes(key)){if(!await payWithPurchasedCoins(opt[2])){notify('NOT ENOUGH DRIFT COINS TO INSTALL THIS PART');return;}cs.ownedParts.push(key);}
@@ -718,6 +747,24 @@ document.addEventListener('submit',async e=>{
   e.preventDefault();const form=e.target,button=form.querySelector('button');button.disabled=true;
   try{await adminRequest('/api/admin/announce',{message:new FormData(form).get('message')});form.reset();notify('GLOBAL DISPATCH SENT');await fetchAnnouncements();await renderAdmin();}
   catch(err){notify('DISPATCH: '+err.message);}finally{button.disabled=false;}
+  return;
+ }
+
+
+ if(e.target.id==='adminCoinsForm'){
+  e.preventDefault();
+  const form=e.target,button=form.querySelector('[type=submit]'),fields=new FormData(form);
+  const username=String(fields.get('username')||'').trim(),amount=Number(fields.get('amount'));
+  const result=$('adminCoinsResult');
+  if(!Number.isSafeInteger(amount)||amount<1||amount>500000){result.textContent='Enter 1 to 500,000 DC';return;}
+  button.disabled=true;result.textContent='Sending gift...';
+  try{
+   await adminRequest('/api/admin/moderate',{command:'coins',username,value:amount});
+   result.textContent='GIFT SENT: +'+fmt(amount)+' DC TO @'+username;
+   notify('ADMIN GIFT +'+fmt(amount)+' DC → @'+username);
+   form.reset();
+  }catch(err){result.textContent='GIFT FAILED: '+String(err.message||err);}
+  finally{button.disabled=false;}
   return;
  }
 
@@ -761,7 +808,7 @@ document.addEventListener('input',e=>{
  }
 });
 function bound(action,code){return (state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space',camera:'KeyC',recover:'KeyR',pause:'Escape'}[action]))===code;}
-function pressed(action){return !!keys[state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space'}[action])];}
+function pressed(action){return !!touchHeld[action]||!!keys[state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space'}[action])];}
 window.addEventListener('keydown',e=>{
  const code=e.code;
  if(usernameOnboarding)return;
@@ -777,6 +824,39 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>{keys[e.code]=false;});
 window.addEventListener('blur',()=>{Object.keys(keys).forEach(k=>keys[k]=false);pauseGame('focus');});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseGame('focus');});
+
+const touchPanel=$('touchControls');
+const drivingTouchActions=new Set(['accelerate','brake','left','right','handbrake']);
+function releaseTouch(id){
+ const entry=touchPointers.get(id);if(!entry)return;
+ touchPointers.delete(id);
+ touchHeld[entry.action]=Math.max(0,(touchHeld[entry.action]||1)-1);
+ entry.button?.toggleAttribute('data-held',!!touchHeld[entry.action]);
+ entry.button?.setAttribute('aria-pressed',touchHeld[entry.action]?'true':'false');
+}
+function clearTouchDriving(){for(const id of [...touchPointers.keys()])releaseTouch(id);for(const action of Object.keys(touchHeld))touchHeld[action]=0;}
+touchPanel?.addEventListener('pointerdown',event=>{
+ const button=event.target.closest('button[data-touch]');
+ if(!button||mode!=='game'||usernameOnboarding)return;
+ const action=button.dataset.touch;event.preventDefault();event.stopPropagation();
+ game?.audio?.unlock(); // Must happen inside a real touch gesture on iOS.
+ if(drivingTouchActions.has(action)){
+  if(pauseActive||touchPointers.has(event.pointerId))return;
+  touchPointers.set(event.pointerId,{button,action});
+  touchHeld[action]=(touchHeld[action]||0)+1;
+  button.setAttribute('data-held','');button.setAttribute('aria-pressed','true');
+  try{button.setPointerCapture(event.pointerId);}catch{}
+  return;
+ }
+ if(action==='camera'&&!pauseActive)game?.changeCamera();
+ if(action==='recover'&&!pauseActive){if(game?.crashState)game.respawn();else game?.recover();}
+ if(action==='pause'){if(pauseActive)resumeGame();else pauseGame();}
+ if(action==='bank')$(pauseActive?'bankExitPaused':'bankExit')?.click();
+});
+for(const eventName of ['pointerup','pointercancel','lostpointercapture'])touchPanel?.addEventListener(eventName,event=>releaseTouch(event.pointerId));
+window.addEventListener('blur',clearTouchDriving);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTouchDriving();});
+
 
 class DriftGame{
  constructor(){
@@ -813,11 +893,11 @@ class DriftGame{
   this.morph=group;this.scene.add(group);
  }
  revPreview(carId){
-  const conf=carSave(carId);this.audio?.unlock();this.audio?.setCarProfile(conf.upgrades||{},conf.engineNote||'factory');
+  const conf=carSave(carId);this.audio?.unlock();this.audio?.setCarProfile(conf.upgrades||{},conf.engineNote||'factory',CARS.find(c=>c.id===carId));
   this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2900;this.previewRevPopped=false;showroom?.triggerRev(2900);
   notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory',getSelected());for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
@@ -832,7 +912,7 @@ class DriftGame{
   const s=state.settings,quality=s.quality||'medium';
   const preset={low:.72,medium:1,high:1.25,ultra:1.6}[quality]||1;
   const resolution=Math.max(.6,Math.min(1.25,Number(s.renderScale||100)/100));
-  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1.5,preset*resolution));
+  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1.5,preset*resolution,window.matchMedia?.('(pointer:coarse)').matches?1.5:2.5));
   this.renderer.shadowMap.enabled=Boolean(s.shadows)&&(quality==='high'||quality==='ultra');
   this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.sun.castShadow=this.renderer.shadowMap.enabled;
   this.sun.shadow.mapSize.set(quality==='ultra'?2048:1024,quality==='ultra'?2048:1024);
@@ -1283,9 +1363,18 @@ class DriftGame{
     dz=p.z-9+Math.cos(t*.8)*3+(Math.random()-.5)*amp*.95;
     lookX=p.x;lookY=1;lookZ=p.z;
   }
-  const lerp=1-Math.exp(-(mode==='game'?(this.crashState?8:5):2)*dt);this.camera.position.lerp(new THREE.Vector3(dx,dy,dz),lerp);
+  // Fix fast acceleration camera lag and avoid a widening third-person zoom.
+  const desiredCamera=new THREE.Vector3(dx,dy,dz);
+  const followRate=mode==='game'?(this.crashState?8:Math.min(26,9+Math.abs(p.speed)*.36)):2;
+  const lerp=1-Math.exp(-followRate*Math.max(.001,dt));
+  this.camera.position.lerp(desiredCamera,lerp);
+  if(mode==='game'&&!this.crashState){
+   const maxLag=this.cameraMode===2?1.8:3.7;
+   const gap=this.camera.position.distanceTo(desiredCamera);
+   if(gap>maxLag)this.camera.position.lerp(desiredCamera,(gap-maxLag)/gap);
+  }
   const look=new THREE.Vector3(lookX,lookY,lookZ);this.lookAt ||= look.clone();this.lookAt.lerp(look,Math.min(1,lerp*1.5));this.camera.lookAt(this.lookAt);
-  this.camera.fov=THREE.MathUtils.damp(this.camera.fov,this.crashState?55:mode==='game'?65+Math.min(10,mph(p.speed)/26):62,2,dt);this.camera.updateProjectionMatrix();
+  this.camera.fov=THREE.MathUtils.damp(this.camera.fov,this.crashState?55:mode==='game'?64+Math.min(2,Math.max(0,mph(p.speed))/140):62,3,dt);this.camera.updateProjectionMatrix();
  }
  updateHUD(){if(mode!=='game')return;
   const p=this.player;let speed=state.settings.units==='kph'?kph(p.speed):mph(p.speed);
