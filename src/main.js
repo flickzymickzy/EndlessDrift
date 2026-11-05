@@ -140,6 +140,7 @@ async function adminRequest(endpoint,data){
  return reply;
 }
 async function maybeAdminEnrollment(value){
+ if(adminEnabled)return false;
  // An already verified admin must be allowed to edit their normal username.
  if(adminEnabled)return false;
  const token=await cloudAccessToken();if(!token)return false;
