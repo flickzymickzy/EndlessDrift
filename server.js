@@ -224,9 +224,11 @@ async function adminModerationApi(req,res,route,user){
   case 'jump':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Jump must be 0.5–3'});patch.jump_multiplier=n;break;}
   case 'morph':{const shape=String(data.value||'').toLowerCase();if(!['car','tetris','arcade','toilet'].includes(shape))return json(res,400,{error:'Invalid transformation'});patch.shape=shape;patch.morph_expires_at=shape==='car'?null:new Date(Date.now()+90000).toISOString();break;}
   case 'xp':{
-   const amount=Number(data.value);if(!Number.isSafeInteger(amount)||amount<1||amount>5000)return json(res,400,{error:'Grant 1–5000 XP per action'});
+   const amount=Number(data.value),existing=Number(before.xp_grant_total||0);
+   if(!Number.isSafeInteger(amount)||amount<1||amount>50000)return json(res,400,{error:'Grant 1–50,000 XP per action'});
+   if(!Number.isSafeInteger(existing)||existing+amount>2000000000)return json(res,400,{error:'Admin XP grant limit reached'});
    await supabase('/rest/v1/rpc/ed_record_ranked_xp',{method:'POST',payload:{p_user:target.id,p_event:randomUUID(),p_xp:amount}});
-   patch.xp_grant_total=Number(before.xp_grant_total||0)+amount;
+   patch.xp_grant_total=existing+amount;
    break;
   }
   case 'coins':{

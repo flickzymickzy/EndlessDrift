@@ -33,3 +33,12 @@ console.log('V20 BETA checks passed: earned-DC pass, no checkout, new brand, leg
 assert.doesNotMatch(main,/renderCoins|data-page="coins"|page==='coins'|mode==='coins'/);
 assert.match(main,/data-buy-drift-pass/);
 assert.match(main,/data-confirm-drift-pass/);
+
+const xpAdminSql=readFileSync('./backend/admin-xp-limit-v23.sql','utf8');
+// Only admin-issued grants can reach 50,000. Normal run banking is still capped at 5,000.
+assert.match(main, /<option value="xp">\/xp \(1–50,000\)<\/option>/);
+assert.match(server, /amount<1\|\|amount>50000/);
+assert.match(server, /error:'Grant 1–50,000 XP per action'/);
+assert.match(server, /xp>5000/);
+assert.match(xpAdminSql, /p_xp > 50000/);
+assert.match(xpAdminSql, /revoke all on function public\.ed_record_ranked_xp/i);
