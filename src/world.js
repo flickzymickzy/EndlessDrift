@@ -53,7 +53,7 @@ export function createWorld(scene){
  }));sky.frustumCulled=false;scene.add(sky);
  scene.fog=new THREE.FogExp2('#8bb0be',.0021);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000),new THREE.MeshStandardMaterial({color:0x647e73,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.105;ground.receiveShadow=true;scene.add(ground);
- const chunks=[];let trackedIdx=Infinity;
+ const chunks=[];const streetLights=[];let trackedIdx=Infinity;
  for(let i=0;i<11;i++){
    const g=new THREE.Group();
    // wide drivable highway in the centre, smooth joints between segments
@@ -95,15 +95,24 @@ export function createWorld(scene){
        const canopy=new THREE.Mesh(new THREE.IcosahedronGeometry(1.65,0),leafMat);canopy.position.set(x,3,z);g.add(canopy);
      }
    }
-   // Marked boost strip in the outer right lane and a short jump ramp in lane -4.
+   // Fewer boosts and ramps, spread across the four playable lanes.
+   const boostLane=[12,4,-12,-4][Math.floor(i/4)%4],rampLane=[-4,12,4,-12][Math.floor(i/5)%4];
+   g.userData.boost=i%4===1?{x:boostLane,z:-20}:null;
+   g.userData.ramp=i%5===3?{x:rampLane,z:25}:null;
+   if(i%2===0){
+    const light=new THREE.PointLight(0xfff1cf,0,40,1.45);
+    light.position.set(i%4===0?-18.7:18.7,4,12);light.castShadow=false;
+    g.add(light);streetLights.push(light);
+   }
+   // Sparse power-up meshes.
    const boost=new THREE.Group();
    const pad=new THREE.Mesh(new THREE.BoxGeometry(2.8,.055,4.6),new THREE.MeshStandardMaterial({color:0x12393b,metalness:.4,roughness:.4,emissive:0x04c5ba,emissiveIntensity:.38}));pad.position.y=.06;boost.add(pad);
    for(const z of [-1.65,-.4,.85,2.1]){const bar=new THREE.Mesh(new THREE.BoxGeometry(2.32,.06,.24),new THREE.MeshBasicMaterial({color:0x63ffdd}));bar.position.set(0,.1,z);boost.add(bar);}
-   boost.position.set(12,0,-20);g.add(boost);
+   boost.position.set(boostLane,0,-20);if(g.userData.boost)g.add(boost);
    const ramp=new THREE.Group();
    const wedge=new THREE.Mesh(new THREE.BoxGeometry(3.3,.23,5.3),new THREE.MeshStandardMaterial({color:0xeab45d,metalness:.5,roughness:.55}));wedge.rotation.x=-.095;wedge.position.y=.20;ramp.add(wedge);
    const arrow=new THREE.Mesh(new THREE.BoxGeometry(2.2,.04,.38),new THREE.MeshBasicMaterial({color:0x191f28}));arrow.position.set(0,.48,1.45);ramp.add(arrow);
-   ramp.position.set(-4,0,25);g.add(ramp);
+   ramp.position.set(rampLane,0,25);if(g.userData.ramp)g.add(ramp);
    // Highway gantry, reflective posts, and overhead direction signs.
    if(i%3===0){
      for(const x of [-18,18])put(g,box(.22,6,.22),poleMat,x,3,22);
@@ -122,5 +131,5 @@ export function createWorld(scene){
    chunks.forEach((g,i)=>{g.position.z=(center+i-5)*SEG;});
  }
  update(0);
- return {update,ground,sky,chunks,roadHalf:16.3};
+ return {update,ground,sky,chunks,streetLights,roadHalf:16.3};
 }
