@@ -96,7 +96,8 @@ app.innerHTML=`
 </div>`;
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
-let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;
+let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 setSaveHook((owner,snapshot)=>{
@@ -172,6 +173,27 @@ async function checkAdminPermissions(){
  }catch(err){console.warn('Admin authorization check:',err.message);}
  $('adminNav').classList.toggle('hidden',!adminEnabled);
 }
+
+async function refreshPlayerControlState(){
+ const owner=getSaveOwner(),access=await cloudAccessToken();
+ if(!owner||!access){kickVersionSeen=null;playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0};return;}
+ try{
+  const response=await fetch('/api/player/status',{headers:{Authorization:'Bearer '+access},cache:'no-store'});
+  if(!response.ok)return;
+  const data=await response.json(),status=data.status||{},kick=Number(status.kick_version||0);
+  if(kickVersionSeen!==null&&kick>kickVersionSeen&&mode==='game'){notify('KICKED BY ADMIN');renderPage('account');}
+  kickVersionSeen=kick;playerControlState={...playerControlState,...status};
+  if(game){game.adminFrozen=!!status.frozen;game.adminGodMode=!!status.god_mode;game.adminSpeedMultiplier=Math.max(.5,Math.min(3,Number(status.speed_multiplier)||1));game.adminJumpMultiplier=Math.max(.5,Math.min(3,Number(status.jump_multiplier)||1));game.applyMorph?.(status.shape||'car');}
+  const total=Number(status.xp_grant_total||0),done=Number(state.adminXpApplied||0);
+  if(total>done){state.lifetimeXP+=total-done;state.adminXpApplied=total;save();cashRefresh();notify('ADMIN XP GRANTED +'+fmt(total-done));}
+  if(status.banned&&mode==='game'){renderPage('account');notify('ACCOUNT BANNED FROM ONLINE PLAY');}
+ }catch(err){console.warn('Player status unavailable:',err.message);}
+}
+async function sendPlayerTelemetry(){
+ const owner=getSaveOwner(),access=await cloudAccessToken();if(!owner||!access||!game)return;
+ try{await fetch('/api/player/telemetry',{method:'POST',headers:{Authorization:'Bearer '+access,'Content-Type':'application/json'},body:JSON.stringify({x:game.player.x,z:game.player.z,speed:Math.min(600,kph(game.player.speed)),wanted:game.wanted,active:mode==='game'&&game.playing})});}catch{}
+}
+
 async function renderAdmin(){
  if(!adminEnabled){renderPage('home');return;}
  dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Server-verified private control room.')+'<div class="panel panel-pad">LOADING OPERATIONS…</div>';
