@@ -149,9 +149,9 @@ async function adminApi(req,res,route){
 }
 
 const liveRate=new Map(),bankRate=new Map();
-const emptyControls=()=>({banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0});
+const emptyControls=()=>({banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0});
 async function playerControls(userId){
- const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,morph_expires_at,xp_grant_total&limit=1');
+ const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,morph_expires_at,xp_grant_total,coins_grant_total&limit=1');
  const row={...emptyControls(),...(rows?.[0]||{})};
  if(row.shape!=='car'&&row.morph_expires_at&&Date.now()>Date.parse(row.morph_expires_at))row.shape='car';
  return row;
@@ -227,9 +227,19 @@ async function adminModerationApi(req,res,route,user){
    patch.xp_grant_total=Number(before.xp_grant_total||0)+amount;
    break;
   }
-  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph xp'});
+  case 'coins':{
+   const amount=Number(data.value),existing=Number(before.coins_grant_total||0);
+   if(!Number.isSafeInteger(amount)||amount<1||amount>500000)return json(res,400,{error:'Grant 1 to 500,000 game-earned Drift Coins per action'});
+   if(!Number.isSafeInteger(existing)||existing+amount>2000000000)return json(res,400,{error:'Admin grant limit reached'});
+   patch.coins_grant_total=existing+amount;
+   break;
+  }
+  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph xp coins'});
  }
  await supabase('/rest/v1/ed_player_controls?on_conflict=user_id',{method:'POST',payload:{user_id:target.id,...patch}});
+ if(command==='coins'){
+  await supabase('/rest/v1/ed_admin_coin_grants',{method:'POST',payload:{actor_id:user.id,recipient_id:target.id,amount:Number(data.value)}});
+ }
  return json(res,200,{ok:true,command,username:target.username});
 }
 
