@@ -581,11 +581,10 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 body.stripe-checkout-open{overflow:hidden}
 @media(max-width:600px){.stripe-checkout-overlay{align-items:flex-start}.stripe-checkout-panel{max-height:calc(100dvh - 28px);border-radius:15px}}
 
-/* V20 BETA new branding. Preserve older gameplay and touch styles. */
+/* Responsive brand lettering. Preserve older gameplay and touch styles. */
 .brand{font-size:clamp(19px,2vw,27px)}
-.brand .beta-label{display:inline-block;vertical-align:middle;margin-left:10px;padding:5px 8px;border:1px solid #ff5e66;background:#ed2636;color:#fff;border-radius:4px;font:900 9px/1 system-ui,sans-serif;letter-spacing:.12em;box-shadow:0 0 15px #ff38494a}
 .hero h1{font-size:clamp(48px,8.6vw,112px);letter-spacing:-.045em}
-@media(max-width:700px){.brand{font-size:19px}.brand .beta-label{font-size:8px;padding:4px 6px;margin-left:5px}.hero h1{font-size:clamp(45px,13vw,70px)}}
+@media(max-width:700px){.brand{font-size:19px}.hero h1{font-size:clamp(45px,13vw,70px)}}
 
 /* V22: prominent in-game Drift Pass purchasing. */
 .drift-pass-buy-btn{display:block;min-width:225px;min-height:46px;background:var(--mint)!important;color:#07151a!important;border:2px solid var(--mint)!important;font-weight:900!important;box-shadow:0 0 22px color-mix(in srgb,var(--mint) 24%,transparent)}

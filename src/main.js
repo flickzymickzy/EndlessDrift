@@ -9,7 +9,7 @@ import {Soundtrack} from './audio.js';
 import {driftStep} from './driftPhysics.js';
 import {crashMultiplier} from './penalties.js';
 import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
-import {performanceStats,upgradePreview,PERFORMANCE_FIELDS,capVehicleVelocity} from './performance.js';
+import {performanceStats,upgradePreview,PERFORMANCE_FIELDS,capVehicleVelocity,vehicleSpeedLimitMps} from './performance.js';
 import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned,cloudLoadGameSave,cloudSaveGameSave,cloudAccessToken} from './cloud.js';
 import {purchased,clearPurchased,refreshPurchased,spendPurchased} from './payments.js';
 
@@ -21,7 +21,7 @@ app.innerHTML=`
 <canvas id="view" aria-label="3D drifting game"></canvas><div id="tone"></div>
 <div id="ui">
   <header class="topbar">
-    <div class="brand">DRIFT <span>ENDLESSLY</span><b class="beta-label">BETA</b><small>DRIVE // DRIFT // EARN</small></div>
+    <div class="brand">DRIFT <span>ENDLESSLY</span><small>DRIVE // DRIFT // EARN</small></div>
     <nav class="toplinks" aria-label="Main navigation">
       <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button><button id="adminNav" data-page="admin" class="hidden">ADMIN</button>
     </nav>
@@ -664,7 +664,7 @@ document.addEventListener('click',async e=>{
  if(t.dataset.saveImport!==undefined){document.getElementById('saveFileInput')?.click();return;}
  if(t.id==='garageDesign'){showModal('garage');return;}
  if(t.id==='customFromHud'){showModal('car');return;}
- /* New real-money coin purchases disabled in V20 BETA. */
+ /* Real-money coin purchases remain disabled after release. */
  if(t.dataset.cloudSignout!==undefined){try{await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();notify('LOGGED OUT');renderAccount();}catch(e){notify(e.message);}return;}
  if(t.dataset.revCar){game?.revPreview(t.dataset.revCar);return;}
  if(t.dataset.tuneSound){carSave(tuningCar).engineNote=t.dataset.tuneSound;save();game?.revPreview(tuningCar);renderTune();return;}
@@ -1168,7 +1168,7 @@ class DriftGame{
   const steer=(Number(pressed('right'))-Number(pressed('left')));
   const fw=Math.sin(p.heading),fz=Math.cos(p.heading),rightX=Math.cos(p.heading),rightZ=-Math.sin(p.heading);
   let longitudinal=p.vx*fw+p.vz*fz,lateral=p.vx*rightX+p.vz*rightZ;
-  const topSpeed=stats.top/2.23694*(this.adminSpeedMultiplier||1);
+  const topSpeed=vehicleSpeedLimitMps(stats.top,this.adminSpeedMultiplier||1);
   // Enough power to reach highway speeds while keeping acceleration smooth.
   // Upgrades increase the actual force applied rather than just the HUD number.
   const maxAccel=stats.acceleration*(1-this.tireDamage*.25)*(this.adminSpeedMultiplier||1);
@@ -1387,7 +1387,10 @@ class DriftGame{
   this.camera.fov=THREE.MathUtils.damp(this.camera.fov,this.crashState?55:mode==='game'?64+Math.min(2,Math.max(0,mph(p.speed))/140):62,3,dt);this.camera.updateProjectionMatrix();
  }
  updateHUD(){if(mode!=='game')return;
-  const p=this.player;let speed=state.settings.units==='kph'?kph(p.speed):mph(p.speed);
+  const p=this.player;
+  // Recheck the physical velocity before HUD output, even after boosts or status updates.
+  capVehicleVelocity(p,vehicleSpeedLimitMps(this.currentStats().top,this.adminSpeedMultiplier||1));
+  let speed=state.settings.units==='kph'?kph(p.speed):mph(p.speed);
   $('speedNumber').textContent=Math.round(speed).toString();$('speedUnit').textContent=state.settings.units==='kph'?'KM/H':'MPH';
   const rpm=Math.min(8000,Math.round(850+Math.abs(mph(p.speed))*41));
   $('rpm').textContent=String(rpm);$('rpmLine').style.width=`${Math.min(100,rpm/80)}%`;
