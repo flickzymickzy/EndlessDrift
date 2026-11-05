@@ -253,6 +253,14 @@ async function renderAdmin(){
    <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">VERIFIED PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
    <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Public announcements appear for everyone online and expire after 24 hours.</p><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
    <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create Stripe purchases or bank payouts. Police mode is local to your current drive.</p></div>
+   <div class="panel panel-pad"><div class="kicker">ADMIN GIFTS</div><h3>GIVE DRIFT COINS</h3>
+    <p class="notice">Grant game-earned DC to an existing driver username. Maximum 500,000 per action. Does not affect Stripe paid coins.</p>
+    <form id="adminCoinsForm" class="admin-control-form">
+      <input name="username" maxlength="24" autocomplete="off" placeholder="Player username" pattern="[A-Za-z0-9_]{3,24}" required/>
+      <input name="amount" type="number" min="1" max="500000" step="1" placeholder="Amount of DC" required/>
+      <button class="btn primary" type="submit">GIVE DC</button>
+    </form><p id="adminCoinsResult" class="notice" role="status"></p>
+   </div>
    <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (1–5000)</option><option value="coins">/givecoins (1–500,000)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
    <div class="panel panel-pad"><div class="kicker">RECENT CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
@@ -739,6 +747,24 @@ document.addEventListener('submit',async e=>{
   e.preventDefault();const form=e.target,button=form.querySelector('button');button.disabled=true;
   try{await adminRequest('/api/admin/announce',{message:new FormData(form).get('message')});form.reset();notify('GLOBAL DISPATCH SENT');await fetchAnnouncements();await renderAdmin();}
   catch(err){notify('DISPATCH: '+err.message);}finally{button.disabled=false;}
+  return;
+ }
+
+
+ if(e.target.id==='adminCoinsForm'){
+  e.preventDefault();
+  const form=e.target,button=form.querySelector('[type=submit]'),fields=new FormData(form);
+  const username=String(fields.get('username')||'').trim(),amount=Number(fields.get('amount'));
+  const result=$('adminCoinsResult');
+  if(!Number.isSafeInteger(amount)||amount<1||amount>500000){result.textContent='Enter 1 to 500,000 DC';return;}
+  button.disabled=true;result.textContent='Sending gift...';
+  try{
+   await adminRequest('/api/admin/moderate',{command:'coins',username,value:amount});
+   result.textContent='GIFT SENT: +'+fmt(amount)+' DC TO @'+username;
+   notify('ADMIN GIFT +'+fmt(amount)+' DC → @'+username);
+   form.reset();
+  }catch(err){result.textContent='GIFT FAILED: '+String(err.message||err);}
+  finally{button.disabled=false;}
   return;
  }
 
