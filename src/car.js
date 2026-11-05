@@ -133,6 +133,17 @@ export function createCar(spec,color,options={}){
   for(const side of [-1,1]){box(parts,w*.19,.095,.024,shared.grille,side*w*.35,.45,half+.12,.01);box(parts,w*.20,.018,.025,shared.chrome,side*w*.35,.54,half+.133,.005);}
  }
  box(parts,w*.43,.09,.033,shared.grille,0,bumperY+.035,-half-.102,.01);
+ const headlights=[];
+ if(!traffic){
+  for(const side of [-1,1]){
+   const light=new THREE.SpotLight(0xd7f4ff,18,52,.31,.72,1.7);
+   light.castShadow=false;
+   light.position.set(side*w*.31,.80,half+.17);
+   const target=new THREE.Object3D();target.position.set(side*w*.37,-.48,half+29);
+   root.add(light,target);light.target=target;
+   headlights.push(light);
+  }
+ }
  const headlampStyle=(spec.id.length+spec.hp)%3;
  for(const side of [-1,1]){
    if(headlampStyle===0||kind==='rounded'){
@@ -304,7 +315,7 @@ export function createCar(spec,color,options={}){
  }
  // Underbody light is an optional battle-pass cosmetic, off by default.
  const neon=new THREE.Mesh(new THREE.PlaneGeometry(w*1.48,l*.7),underMat);neon.rotation.x=-Math.PI/2;neon.position.set(0,.028,0);root.add(neon);
- root.userData={wheels,bodyMat:paintMat,rimMat,neonMat:underMat,neon,spec,parts,kind,wing,appearance,exhaustFlames:traffic?[]:exhaustFlames};
+ root.userData={wheels,bodyMat:paintMat,rimMat,neonMat:underMat,neon,spec,parts,kind,wing,appearance,exhaustFlames:traffic?[]:exhaustFlames,headlights};
  if(traffic)root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
  return root;
 }

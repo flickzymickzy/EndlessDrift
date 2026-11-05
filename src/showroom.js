@@ -36,7 +36,7 @@ export class Showroom {
       const vapor=new THREE.Sprite(mat);
       vapor.visible=false;this.scene.add(vapor);this.previewSmoke.push(vapor);
     }
-    this.car=null;this.signature='';this.rotation=.6;this.dragging=false;this.lastX=0;this.dragged=false;
+    this.revUntil=0;this.car=null;this.signature='';this.rotation=.6;this.dragging=false;this.lastX=0;this.dragged=false;
     this.canvas.addEventListener('pointerdown',e=>{this.dragging=true;this.lastX=e.clientX;this.canvas.setPointerCapture(e.pointerId);});
     this.canvas.addEventListener('pointermove',e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX;this.lastX=e.clientX;this.rotation+=dx*.012;this.dragged=true;});
     const done=()=>this.dragging=false;this.canvas.addEventListener('pointerup',done);this.canvas.addEventListener('pointercancel',done);
@@ -59,6 +59,7 @@ export class Showroom {
     }
     this.signature=sig;
   }
+  triggerRev(durationMs=2900){this.revUntil=performance.now()+durationMs;}
   render(dt=0.016){
     if(!this.canvas.isConnected||this.canvas.clientWidth<50||this.canvas.clientHeight<50)return;
     const w=this.canvas.clientWidth,h=this.canvas.clientHeight;
@@ -68,7 +69,15 @@ export class Showroom {
       this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
     }
     if(!this.dragging)this.rotation+=Math.min(.045,dt*.19);
-    if(this.car)this.car.rotation.y=this.rotation;
+    if(this.car){
+      this.car.rotation.y=this.rotation;
+      const remaining=this.revUntil-performance.now();
+      const pop=remaining>0&&remaining<1000;
+      for(const flame of this.car.userData.exhaustFlames||[]){
+        flame.visible=pop;
+        if(pop){const flicker=.7+Math.abs(Math.sin(performance.now()*.03+flame.userData.flameOffset))*.5;flame.scale.set(flicker,flicker*1.5,flicker);}
+      }
+    }
     for(const [i,vapor] of this.previewSmoke.entries()){
       vapor.rotation.y=-this.rotation;
       vapor.scale.setScalar(.95+i*.27+Math.sin(this.rotation*1.8+i)*.035);

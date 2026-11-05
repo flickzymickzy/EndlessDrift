@@ -18,12 +18,35 @@ function sanitize(input){
  s.cars=s.cars&&typeof s.cars==='object'?s.cars:{};
  return s;
 }
-function load(){try{return sanitize(JSON.parse(localStorage.getItem(KEY)||'null')||starting);}catch{return copy(starting);}}
-export const state=load();
-export function save(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch{return false;}}
+const ACCOUNT_PREFIX='endless-drift-account-v16:';
+const GUEST_KEY='endless-drift-guest-session-v16';
+let currentOwner=null;
+let onSave=null;
+function readLocal(key,storage){try{return JSON.parse(storage.getItem(key)||'null');}catch{return null;}}
+export const state=sanitize(starting); // Every anonymous visitor begins with a fresh garage.
+export function getSaveOwner(){return currentOwner;}
+export function setSaveHook(callback){onSave=callback;}
+export function setSaveOwner(userId,remoteSave=null){
+  currentOwner=userId||null;
+  const key=currentOwner?ACCOUNT_PREFIX+currentOwner:GUEST_KEY;
+  const incoming=currentOwner?(remoteSave||readLocal(key,localStorage)||starting):starting;
+  const clean=sanitize(incoming);
+  for(const prop of Object.keys(state))delete state[prop];
+  Object.assign(state,clean);
+  if(!currentOwner&&typeof sessionStorage!=='undefined')sessionStorage.removeItem(GUEST_KEY);
+  return state;
+}
+export function save(){
+ try{
+  if(currentOwner)localStorage.setItem(ACCOUNT_PREFIX+currentOwner,JSON.stringify(state));
+  else if(typeof sessionStorage!=='undefined')sessionStorage.setItem(GUEST_KEY,JSON.stringify(state));
+  if(currentOwner&&typeof onSave==='function')onSave(currentOwner,copy(state));
+  return true;
+ }catch(e){console.warn('Save unavailable',e);return false;}
+}
 export function carSave(id=state.selected){
  if(!state.cars[id])state.cars[id]={color:CARS.find(c=>c.id===id)?.color||'#e4475c',smoke:'#eeeeff',upgrades:{},tune:{grip:50,steering:50,stability:60},rims:'#d0d9e2',neon:'off'};
- const c=state.cars[id];c.appearance ||= {};c.ownedParts ||= [];for(const part of BODY_PARTS)c.appearance[part.id] ||= 'stock';c.rims ||= '#d0d9e2';c.neon ||= 'off';c.upgrades ||= {};c.tune ||= {grip:50,steering:50,stability:60};
+ const c=state.cars[id];c.appearance ||= {};c.ownedParts ||= [];for(const part of BODY_PARTS)c.appearance[part.id] ||= 'stock';c.rims ||= '#d0d9e2';c.neon ||= 'off'; c.upgrades ||= {};c.tune ||= {grip:50,steering:50,stability:60};c.engineNote ||= 'factory';
  for(const u of UPGRADES)c.upgrades[u.id]=Math.min(u.max,Math.max(0,Math.floor(Number(c.upgrades[u.id])||0)));
  return c;
 }

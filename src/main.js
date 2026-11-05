@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 // Styles load from index.html so no installation/build step is needed.
 import {CARS,UPGRADES,BODY_PARTS,COLORS,SMOKES,GARAGE_THEMES,BATTLE_PASS,PREMIUM_PASS,BASE_RIMS,BASE_NEONS,COSMETIC_SHOP,fmt,mph,kph,upgradeCost,levelStart,levelFromXP,levelTitle} from './data.js';
-import {state,save,carSave,pay,award,getSelected,cosmeticUnlocked,exportSave,importSave} from './store.js';
+import {state,save,carSave,pay,award,getSelected,cosmeticUnlocked,exportSave,importSave,setSaveOwner,getSaveOwner,setSaveHook} from './store.js';
 import {createWorld} from './world.js';
 import {createCar,setCarPaint,setCarCosmetics,animateWheels} from './car.js';
 import {Showroom} from './showroom.js';
@@ -10,7 +10,7 @@ import {driftStep} from './driftPhysics.js';
 import {crashMultiplier} from './penalties.js';
 import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
 import {performanceStats,upgradePreview,PERFORMANCE_FIELDS} from './performance.js';
-import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned} from './cloud.js';
+import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned,cloudLoadGameSave,cloudSaveGameSave,cloudAccessToken} from './cloud.js';
 import {purchased,clearPurchased,refreshPurchased,beginCheckout,spendPurchased} from './payments.js';
 
 const app=document.querySelector('#app');
@@ -21,7 +21,7 @@ app.innerHTML=`
   <header class="topbar">
     <div class="brand">ENDLESS <span>DRIFT</span><small>DRIVE // DRIFT // EARN</small></div>
     <nav class="toplinks" aria-label="Main navigation">
-      <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="coins">COINS</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button>
+      <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="coins">COINS</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button><button id="adminNav" data-page="admin" class="hidden">ADMIN</button>
     </nav>
     <div class="player-progression" title="Level rises with lifetime XP earned">
       <div class="progress-top"><span id="playerLevel">LVL 1</span><span id="playerRank">ROOKIE DRIVER</span></div>
@@ -35,13 +35,13 @@ app.innerHTML=`
       <div class="kicker">FREE TO PLAY • XP LEVELS • DRIFT COIN ECONOMY</div>
       <h1>ENDLESS<br/><span>DRIFT</span></h1>
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
-      <div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
+      <div id="lastRunBanked" class="last-run-banked hidden"></div><div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
-    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 15.0 • SHOWROOM / STUDIO</div>
+    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 16.0 • SHOWROOM / STUDIO</div>
   </section>
   <section id="screen" class="panescreen hidden" aria-live="polite"></section>
   <div id="hud" class="hud hidden">
-    <div class="hud-top"><div class="tag featured-tag"><small>RUN XP • 5 XP = 1 DC <span class="live-dot"></span></small><b id="runScore">0 XP</b><small id="runEarnedCoins" class="run-coin-preview">EST. +0 DC</small></div><div class="tag"><small>COMBO</small><b id="combo">×1.0</b></div><div class="tag"><small>TOTAL NEAR MISSES</small><b id="nearMissCount">0</b></div><div class="tag car-tag"><small>CAR</small><b id="hudCar">SAKURA S13</b></div></div>
+    <div class="hud-top"><div class="tag featured-tag"><small>RUN XP • 5 XP = 1 DC <span class="live-dot"></span></small><b id="runScore">0 XP</b><small id="runEarnedCoins" class="run-coin-preview">EST. +0 DC</small><small class="run-coin-preview">BANK TO SAVE REWARDS</small></div><div class="tag"><small>COMBO</small><b id="combo">×1.0</b></div><div class="tag"><small>TOTAL NEAR MISSES</small><b id="nearMissCount">0</b></div><div class="tag car-tag"><small>CAR</small><b id="hudCar">SAKURA S13</b></div></div>
     <div class="level-mini"><span id="hudLevel">LEVEL 1</span><div><b id="hudLevelBar"></b></div><small id="hudLevelProgress">0 / 1500 XP</small></div>
     <div id="nearMissFlash" class="near-miss-flash hidden"><strong id="nearMissTitle">NEAR MISS</strong><span id="nearMissValue">+300 XP</span><small id="nearMissStreak">STREAK ×1</small></div>
     <div id="dispatchMessage" class="dispatch-message hidden" aria-live="polite"><small>POLICE DISPATCH</small><strong id="dispatchText"></strong></div>
@@ -49,7 +49,7 @@ app.innerHTML=`
     <div id="copGlow" class="cop-glow hidden" aria-hidden="true"></div>
     <div id="featureNotice" class="feature-notice hidden" aria-live="polite"></div>
     <div class="drift-notice hidden" id="driftNotice"><div class="drift-rating" id="driftRating">CLEAN DRIFT</div><div class="score" id="driftSplash">DRIFT!</div><div class="combo" id="driftAngle">SUSTAIN YOUR DRIFT</div><div class="drift-meter"><i id="driftMeterFill"></i><b id="driftMeterPin"></b></div><small class="drift-meter-note">STEER SMOOTHLY • HOLD A / D TO SLIDE</small></div>
-    <div class="hud-bottom-left"><button class="btn" id="pauseHud">PAUSE / MENU</button><button class="btn" data-page="garage">GARAGE</button></div>
+    <div class="hud-bottom-left"><button class="btn bank-btn" id="bankExit">BANK XP + DC / EXIT</button><button class="btn" id="pauseHud">PAUSE / MENU</button><button class="btn" data-page="garage">GARAGE</button></div>
     <div class="speed"><div class="speed-number" id="speedNumber">0</div><div class="unit" id="speedUnit">MPH</div><div class="speed-track"><b id="rpmLine"></b></div><div class="speed-bottom"><div><span>GEAR</span> <b id="gear">N</b></div><div><span>RPM</span> <b id="rpm">800</b></div><div><span>BOOST</span> <b id="boost">0%</b></div></div></div>
   </div>
   <div id="weatherChooser" class="weather-chooser hidden" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
@@ -69,9 +69,9 @@ app.innerHTML=`
       <div class="pause-kicker">ENDLESS DRIFT // GAME STOPPED</div>
       <h2 id="pauseTitle">PAUSED<span> / /</span></h2>
       <p id="pauseReason">Your run is frozen. Resume whenever you're ready.</p>
-      <div class="pause-status"><span id="pauseCar">CURRENT RIDE</span><span id="pauseXP">0 RUN XP</span></div>
+      <div class="pause-status"><span id="pauseCar">CURRENT RIDE</span><span id="pauseXP">0 RUN XP</span><span id="pauseCoins">+0 DC</span></div>
       <div class="pause-buttons">
-        <button class="btn primary" id="resumeGame">▶ RESUME DRIVING</button>
+        <button class="btn primary" id="resumeGame">▶ RESUME DRIVING</button><button class="btn bank-btn" id="bankExitPaused">BANK XP + DC / EXIT</button>
         <button class="btn" id="restartGame">↻ RESTART / BANK XP</button>
         <button class="btn ghost" data-pause-page="garage">GARAGE</button>
         <button class="btn ghost" data-pause-page="settings">SETTINGS</button>
@@ -88,14 +88,80 @@ app.innerHTML=`
     <div class="wreck-actions"><button class="btn primary" id="respawnBtn">↻ RESPAWN</button><button class="btn ghost" data-page="garage">GO TO GARAGE</button></div>
     <small class="wreck-hint">Press R to respawn</small></div>
   </div>
+  <div id="bankReport" class="bank-report hidden" role="status"></div>
   <div id="toast" class="toast hidden" role="status"></div><div id="levelUp" class="level-up hidden" aria-live="polite"><small>DRIVER RANK INCREASED</small><strong id="levelUpNumber">LEVEL 2</strong><span id="levelUpTitle">STREET RACER</span><p id="levelUpReward">+400 XP BONUS</p></div>
   <div id="overlay" class="overlay hidden"><div class="modal" id="modal"></div></div>
 </div>`;
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
-let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let adminEnabled=false;let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+setSaveHook((owner,snapshot)=>{
+ clearTimeout(saveSyncTimer);saveSyncPending={owner,snapshot};
+ saveSyncTimer=setTimeout(()=>{syncCloudSave().catch(e=>console.warn('Cloud save retry needed:',e.message));},950);
+});
+async function syncCloudSave(){
+ clearTimeout(saveSyncTimer);
+ const pending=saveSyncPending;saveSyncPending=null;
+ if(!pending||pending.owner!==getSaveOwner())return;
+ try{await cloudSaveGameSave(pending.owner,pending.snapshot);}
+ catch(err){if(pending.owner===getSaveOwner())saveSyncPending=pending;throw err;}
+}
+async function activateIdentity(){
+ if(accountSwitching)return;
+ accountSwitching=true;
+ try{
+  const user=cloudConfigured()?await cloudUser():null;
+  if(user){
+   if(getSaveOwner()!==user.id){
+    let saved=null;try{saved=await cloudLoadGameSave();}catch(err){console.warn('Cloud saves unavailable; progress not overwritten:',err.message);notify('CLOUD SAVE OFFLINE • PLEASE RETRY LATER');return;}
+    setSaveOwner(user.id,saved);save();
+    selectedPreview=state.selected;tuningCar=state.selected;
+    game?.setPlayerCar();game?.applyQuality();applyUI();cashRefresh();
+   }
+   await checkAdminPermissions();
+  } else {
+   if(getSaveOwner())setSaveOwner(null);
+   adminEnabled=false;$('adminNav')?.classList.add('hidden');
+   clearPurchased();cashRefresh();game?.setPlayerCar();
+  }
+ }catch(err){console.warn('Account refresh:',err.message);}
+ finally{accountSwitching=false;}
+}
+async function checkAdminPermissions(){
+ adminEnabled=false;$('adminNav').classList.add('hidden');
+ const token=await cloudAccessToken();if(!token)return;
+ try{const response=await fetch('/api/admin/me',{headers:{Authorization:`Bearer ${token}`}});
+  if(response.ok){const data=await response.json();adminEnabled=data.admin===true;}
+ }catch(err){console.warn('Admin authorization check:',err.message);}
+ $('adminNav').classList.toggle('hidden',!adminEnabled);
+}
+async function renderAdmin(){
+ if(!adminEnabled){renderPage('home');return;}
+ dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Only the configured account can view this dashboard.')+'<div class="panel panel-pad">LOADING ACCOUNT DATA…</div>';
+ try{
+  const access=await cloudAccessToken(),res=await fetch('/api/admin/overview',{headers:{Authorization:`Bearer ${access}`}});
+  if(!res.ok)throw Error('Admin authorization rejected');
+  const data=await res.json();
+  if(mode!=='admin')return;
+  dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Read-only game operations, backed by server authentication.')+`
+   <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">VERIFIED PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
+   <div class="panel panel-pad"><div class="kicker">RECENT CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
+ }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
+}
+function bankAndExit(){
+ if(mode!=='game'||!game||game.crashState)return;
+ const xp=Math.max(0,Math.round(game.run.score));
+ const coinEstimate=Math.floor(xp/5);
+ game.endRun(false);
+ game.endPolice(false);
+ lastBanked={xp,coins:coinEstimate,time:Date.now()};
+ clearPause();renderPage('home');
+ const report=$('lastRunBanked');if(report){report.textContent=`LAST RUN BANKED  +${fmt(xp)} XP  /  +${fmt(coinEstimate)} DC`;report.classList.remove('hidden');}
+ notify(`BANKED +${fmt(xp)} XP AND +${fmt(coinEstimate)} DC • SAFE EXIT`);
+ syncCloudSave().catch(e=>console.warn('Bank cloud sync:',e.message));
+}
 function cashRefresh(){
  $('wallet').textContent=`${fmt(state.wallet+purchased.coins)} DC`;
  refreshProgress();
@@ -150,7 +216,7 @@ function pauseGame(reason='manual'){
  pauseActive=true;
  Object.keys(keys).forEach(key=>keys[key]=false);
  $('pauseCar').textContent=getSelected().name.toUpperCase();
- $('pauseXP').textContent=fmt(game.run.score)+' RUN XP';
+ $('pauseXP').textContent=fmt(game.run.score)+' RUN XP';$('pauseCoins').textContent='+'+fmt(Math.floor(game.run.score/5))+' DC';
  $('pauseReason').textContent=reason==='focus'?'Window focus lost. Your run was paused automatically.':'Your run is frozen. Resume whenever you are ready.';
  $('pauseScreen').classList.remove('hidden');
  game.audio?.suspend?.();
@@ -186,6 +252,7 @@ function showWeatherChoice(){
 }
 function closeWeatherChoice(){$('weatherChooser').classList.add('hidden');}
 function renderPage(page){
+  if(page==='admin'&&!adminEnabled){notify('ADMIN ACCESS REQUIRED');return;}
   if(page==='game'&&!weatherApproved){showWeatherChoice();return;}
   if(page==='game')weatherApproved=false;
   if(page!=='game'&&pauseActive)clearPause();
@@ -208,6 +275,7 @@ function renderPage(page){
   if(page==='shop')renderShop();
   if(page==='coins')renderCoins();
   if(page==='account')renderAccount();
+  if(page==='admin')renderAdmin();
 }
 function header(title,kicker,desc){return `<div class="screen-head"><div><div class="kicker">${kicker}</div><h2>${title}</h2><p>${desc}</p></div><button class="btn ghost" data-page="game">▶ DRIVE</button></div>`;}
 function carThumbnail(spec,paint){
@@ -225,7 +293,9 @@ function carThumbnail(spec,paint){
    :`M 10 47 Q 12 38 28 35 L 58 34 Q 78 ${roofY} 108 ${roofY} L 142 ${roofY+3} Q 170 ${roofY+4} ${hoodNose} 34 L 191 37 Q 194 39 194 48 L 185 54 L 16 54 Z`;
  const stripe=spec.hp>500?`<path d="M 28 38 L 171 38" stroke="#ffffff40" stroke-width="2"/>`:'';
  const rimColor='#dce8ef';
- return `<svg class="car-thumb" viewBox="0 0 200 74" role="img" aria-label="${char(spec.name)} thumbnail"><defs><linearGradient id="body-${spec.id}" x1="0" x2="1"><stop offset="0%" stop-color="${char(paint)}"/><stop offset="100%" stop-color="${char(accent)}"/></linearGradient></defs><ellipse cx="101" cy="60" rx="90" ry="8" fill="${shadow}"/><path d="${body}" fill="url(#body-${spec.id})" stroke="#ffffff60" stroke-width="1.2"/><path d="M 56 31 Q 77 ${roofY+4} 108 ${roofY+4} L 147 ${roofY+7} L 169 33 Z" fill="${glass}" stroke="#aceaff88" stroke-width="1"/>${spoiler}${stripe}<path d="M 20 44 L 29 43" stroke="#ff6679" stroke-width="3"/><path d="M 175 43 L 187 46" stroke="#ecf4fa" stroke-width="4"/><circle cx="${wheelRear}" cy="53" r="15.4" fill="#090e15"/><circle cx="${wheelFront}" cy="53" r="15.4" fill="#090e15"/><circle cx="${wheelRear}" cy="53" r="10.3" fill="#293746"/><circle cx="${wheelFront}" cy="53" r="10.3" fill="#293746"/><circle cx="${wheelRear}" cy="53" r="8.1" fill="${rimColor}"/><circle cx="${wheelFront}" cy="53" r="8.1" fill="${rimColor}"/><path d="M ${wheelRear-7} 53 H ${wheelRear+7} M ${wheelRear} 46 V 60 M ${wheelFront-7} 53 H ${wheelFront+7} M ${wheelFront} 46 V 60" stroke="#213241" stroke-width="1.6"/></svg>`;
+ const lampDetails=`<ellipse cx="185" cy="43" rx="8" ry="4" fill="#c7f6ff" opacity=".78"/><ellipse cx="20" cy="44" rx="6" ry="3" fill="#ff4f6c" opacity=".85"/>`;
+ const classBadge=`<text x="100" y="70" font-size="7" letter-spacing="1.5" font-family="sans-serif" fill="#c4e7ed" text-anchor="middle">${char(family.toUpperCase())}</text>`;
+ return `<svg class="car-thumb" viewBox="0 0 200 74" role="img" aria-label="${char(spec.name)} thumbnail"><defs><linearGradient id="body-${spec.id}" x1="0" x2="1"><stop offset="0%" stop-color="${char(paint)}"/><stop offset="100%" stop-color="${char(accent)}"/></linearGradient></defs><ellipse cx="101" cy="60" rx="90" ry="8" fill="${shadow}"/><path d="${body}" fill="url(#body-${spec.id})" stroke="#ffffff60" stroke-width="1.2"/><path d="M 56 31 Q 77 ${roofY+4} 108 ${roofY+4} L 147 ${roofY+7} L 169 33 Z" fill="${glass}" stroke="#aceaff88" stroke-width="1"/>${spoiler}${stripe}${lampDetails}${classBadge}<path d="M 20 44 L 29 43" stroke="#ff6679" stroke-width="3"/><path d="M 175 43 L 187 46" stroke="#ecf4fa" stroke-width="4"/><circle cx="${wheelRear}" cy="53" r="15.4" fill="#090e15"/><circle cx="${wheelFront}" cy="53" r="15.4" fill="#090e15"/><circle cx="${wheelRear}" cy="53" r="10.3" fill="#293746"/><circle cx="${wheelFront}" cy="53" r="10.3" fill="#293746"/><circle cx="${wheelRear}" cy="53" r="8.1" fill="${rimColor}"/><circle cx="${wheelFront}" cy="53" r="8.1" fill="${rimColor}"/><path d="M ${wheelRear-7} 53 H ${wheelRear+7} M ${wheelRear} 46 V 60 M ${wheelFront-7} 53 H ${wheelFront+7} M ${wheelFront} 46 V 60" stroke="#213241" stroke-width="1.6"/></svg>`;
 }
 function mountShowroom(id,car){
  if(!showroom)return;
@@ -361,7 +431,7 @@ function renderCoins(){
  dom.screen.innerHTML=header('DRIFT COINS','CURRENCY STORE • STRIPE CHECKOUT','Sign in under Account before buying. Stripe Checkout handles payment. Purchased coins are saved securely in your Supabase account.')+`
  <div class="coin-banner panel panel-pad"><div class="kicker">YOUR CURRENT BALANCE</div><strong>${fmt(state.wallet+purchased.coins)} DC</strong><p>${fmt(state.wallet)} earned on this browser + ${fmt(purchased.coins)} purchased on your account. Online coins require a login to spend.</p></div>
  <div class="coin-pack-grid">${COIN_PACKS.map((pack,i)=>`<div class="coin-pack panel panel-pad"><div class="kicker">${i===0?'STARTER PACK':i===1?'STREET PACK':'LEGEND PACK'}</div><h3>${fmt(pack.coins)} <span>DC</span></h3><p class="muted">${pack.price}</p><div class="coin-symbol">DC</div><button class="btn primary" data-coins-guide="${pack.id}">BUY ${pack.price}</button><small>Secure Stripe Checkout • Sign-in required</small></div>`).join('')}</div>
- <div class="notice">A Stripe webhook must be configured on Render to award paid coins. Purchasing only works while logged in. Offline-earned coins and car saves remain browser-local until cloud saves are developed.</div>`;
+ <div class="notice">A Stripe webhook must be configured on Render to award paid coins. Purchasing only works while logged in. Earned coins and cars are tied to your driver account. Visitors start with a fresh guest save.</div>`;
 }
 function showUsernameGate(profile){
  const needsChoice=!!profile && profile.username_initialized_at===null;
@@ -371,19 +441,21 @@ function showUsernameGate(profile){
 }
 async function checkUsernameGate(){
  if(!cloudConfigured())return;
+ await activateIdentity();
  try{const user=await cloudUser();if(!user){showUsernameGate(null);return;}const profile=await cloudProfile();if(profile)showUsernameGate(profile);}
  catch(err){console.warn('Username setup check:',err.message);}
 }
 async function renderAccount(){
+ if(!accountSwitching)await activateIdentity();
  let user=null;let profile=null;let error='';
  if(cloudConfigured()){try{user=await cloudUser();if(user)profile=await cloudProfile();}catch(e){error=e.message;}}
  activeUsername=profile?.username||'';
  if(profile)showUsernameGate(profile);
  if(mode!=='account')return;
- dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Local game saves remain on this browser until secure cloud saving is developed.')+`
+ dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
  ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" ${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'disabled':''}>SAVE USERNAME</button></div></form><p class="notice">${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'You can change your username again on '+new Date(new Date(profile.username_changed_at).getTime()+604800000).toLocaleDateString():'First username choice is free. A rename starts a 7-day cooldown. Usernames must be unique.'}</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
- ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Your paid Drift Coin balance and Drift Pass ownership are stored securely online. Locally earned XP, car purchases, and local saves are still browser-based.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
+ ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Your paid Drift Coin balance and Drift Pass ownership are stored securely online. Earned XP, cars, and tuning are saved per account in Supabase. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
  const select=(name,label,items)=>`<div class="setting"><label for="setting-${name}">${label}</label><select id="setting-${name}" data-setting="${name}">${items.map(([v,t])=>`<option value="${v}" ${String(s[name])===String(v)?'selected':''}>${t}</option>`).join('')}</select></div>`;
@@ -454,9 +526,10 @@ function updateSettings(){save();applyUI();game?.applyQuality();game?.resetTimin
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
  if(usernameOnboarding&&t.id!=='onboardingSignOut')return;
- if(t.id==='onboardingSignOut'){await cloudSignOut();showUsernameGate(null);clearPurchased();cashRefresh();renderPage('account');return;}
+ if(t.id==='onboardingSignOut'){await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();showUsernameGate(null);renderPage('account');return;}
  if(t.dataset.weather){chosenWeather=t.dataset.weather;closeWeatherChoice();game?.applyWeather(chosenWeather);weatherApproved=true;renderPage('game');return;}
  if(t.id==='weatherCancel'){closeWeatherChoice();return;}
+ if(t.id==='bankExit'||t.id==='bankExitPaused'){bankAndExit();return;}
  if(t.id==='pauseHud'){pauseGame();return;}
  if(t.id==='resumeGame'){resumeGame();return;}
  if(t.id==='restartGame'){resumeGame();game?.recover();return;}
@@ -468,7 +541,7 @@ document.addEventListener('click',async e=>{
  if(t.id==='garageDesign'){showModal('garage');return;}
  if(t.id==='customFromHud'){showModal('car');return;}
  if(t.dataset.coinsGuide){try{await beginCheckout(t.dataset.coinsGuide);}catch(err){notify('CHECKOUT: '+String(err.message||err));}return;}
- if(t.dataset.cloudSignout!==undefined){cloudSignOut().then(()=>{clearPurchased();cashRefresh();notify('LOGGED OUT');renderAccount()}).catch(e=>notify(e.message));return;}
+ if(t.dataset.cloudSignout!==undefined){try{await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();notify('LOGGED OUT');renderAccount();}catch(e){notify(e.message);}return;}
  if(t.dataset.revCar){game?.revPreview(t.dataset.revCar);return;}
  if(t.dataset.tuneSound){carSave(tuningCar).engineNote=t.dataset.tuneSound;save();game?.revPreview(tuningCar);renderTune();return;}
  if(t.dataset.shopPreview){shopPreviewId=t.dataset.shopPreview;renderShop();return;}
@@ -556,7 +629,7 @@ document.addEventListener('submit',async e=>{
  if(e.target.id!=='accountForm')return;e.preventDefault();
  const f=e.target,form=new FormData(f),email=String(form.get('email')||'').trim(),password=String(form.get('password')||''),username=String(form.get('username')||'').trim();
  for(const b of f.querySelectorAll('button'))b.disabled=true;
- try{if(loginAction==='signup'){if(!/^[A-Za-z0-9_]{3,24}$/.test(username))throw new Error('Username: 3–24 letters, numbers or underscores');const result=await cloudSignUp(email,password,username);notify(result?.session?'ACCOUNT CREATED':'ACCOUNT CREATED • CHECK YOUR EMAIL');}else{await cloudSignIn(email,password);notify('SIGNED IN');}renderAccount();syncPaidState();}
+ try{if(loginAction==='signup'){if(!/^[A-Za-z0-9_]{3,24}$/.test(username))throw new Error('Username: 3–24 letters, numbers or underscores');const result=await cloudSignUp(email,password,username);notify(result?.session?'ACCOUNT CREATED':'ACCOUNT CREATED • CHECK YOUR EMAIL');}else{await cloudSignIn(email,password);notify('SIGNED IN');}await activateIdentity();await renderAccount();syncPaidState();}
  catch(err){notify('ACCOUNT: '+err.message);for(const b of f.querySelectorAll('button'))b.disabled=false;}
 });
 document.addEventListener('change',async e=>{if(e.target.id!=='saveFileInput')return;try{const file=e.target.files?.[0];if(!file)return;importSave(await file.text());selectedPreview=state.selected;tuningCar=state.selected;cashRefresh();applyUI();game?.setPlayerCar();game?.applyQuality();renderPage('settings');notify('SAVE BACKUP IMPORTED SUCCESSFULLY');}catch(err){notify('IMPORT FAILED: '+(err?.message||'INVALID FILE'));}finally{e.target.value='';}});
@@ -611,10 +684,10 @@ class DriftGame{
  }
  revPreview(carId){
   const conf=carSave(carId);this.audio?.unlock();this.audio?.setCarProfile(conf.upgrades||{},conf.engineNote||'factory');
-  this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2300;
+  this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2900;this.previewRevPopped=false;showroom?.triggerRev(2900);
   notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');}
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?25:this.weather==='fog'||this.weather==='rain'?15:7;}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
@@ -656,6 +729,7 @@ class DriftGame{
   this.sun.intensity=style.sun;
   this.ambientLight.intensity=style.hemi;
   this.renderer.toneMappingExposure=style.exposure;
+  for(const light of this.car?.userData?.headlights||[])light.intensity=weather==='night'?25:weather==='rain'||weather==='fog'?15:7;
   if(this.world.sky?.material?.uniforms){this.world.sky.material.uniforms.uHorizon.value.set(style.horizon);this.world.sky.material.uniforms.uZenith.value.set(style.zenith);}
   $('weatherRain')?.classList.toggle('hidden',weather!=='rain');
   document.body.dataset.weather=weather;
@@ -782,7 +856,7 @@ class DriftGame{
   this.audio?.cancelRadio?.();$('dispatchMessage').classList.add('hidden');
   this.police.forEach(p=>this.scene.remove(p.mesh));this.police.length=0;
   this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;
-  if(this.helicopter){this.scene.remove(this.helicopter);this.helicopter=null;this.heliRotor=null;}
+  if(this.helicopter){this.scene.remove(this.helicopter);this.helicopter=null;this.heliRotor=null;}if(this.heliSpotTarget)this.scene.remove(this.heliSpotTarget);if(this.heliLightCircle)this.scene.remove(this.heliLightCircle);this.heliSpot=null;this.heliSpotTarget=null;this.heliLightCircle=null;
   this.wanted=0;this.chaseTime=0;this.wantedTimer=0;this.bustTimer=0;this.searchTimer=0;this.blockadeNext=0;this.fasterEscape=0;this.tireDamage=0;
   if(escaped){state.escapes++;const result=award(45+(this.maxSpeed*.3|0));this.maxSpeed=0;earnedXP(result);notify('POLICE LOST YOU • ESCAPE BONUS + XP');}
  }
@@ -810,7 +884,14 @@ class DriftGame{
   for(const side of [-1,1]){const skid=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,4.1,8),hull);skid.rotation.x=Math.PI/2;skid.position.set(side*1,-1.1,.25);g.add(skid);}
   const rotor=new THREE.Group();for(const sign of [-1,1]){const blade=new THREE.Mesh(new THREE.BoxGeometry(.12,.04,6.4),hull);blade.rotation.y=sign*Math.PI/4;rotor.add(blade);}rotor.position.y=.96;g.add(rotor);
   const light=new THREE.Mesh(new THREE.ConeGeometry(5,25,20,1,true),new THREE.MeshBasicMaterial({color:'#f4f6c1',transparent:true,opacity:.07,depthWrite:false,side:THREE.DoubleSide}));light.position.set(0,-12,0);g.add(light);
-  g.position.set(this.player.x+24,28,this.player.z-40);this.scene.add(g);this.helicopter=g;this.heliRotor=rotor;this.heliLamp=light;notify('AIR UNIT DEPLOYED • 4 STAR PURSUIT');
+  const spot=new THREE.SpotLight(0xfff9d7,58,115,.48,.75,1.2);
+  spot.position.set(0,-.45,.35);g.add(spot);
+  const spotTarget=new THREE.Object3D();this.scene.add(spotTarget);spot.target=spotTarget;
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(5,32),new THREE.MeshBasicMaterial({color:0xfff7c9,transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide}));
+  disc.rotation.x=-Math.PI/2;disc.position.set(this.player.x,.035,this.player.z);this.scene.add(disc);
+  g.position.set(this.player.x+24,28,this.player.z-40);this.scene.add(g);
+  this.helicopter=g;this.heliRotor=rotor;this.heliLamp=light;this.heliSpot=spot;this.heliSpotTarget=spotTarget;this.heliLightCircle=disc;
+  notify('AIR UNIT DEPLOYED • 4 STAR PURSUIT');
  }
  updateHelicopter(dt){if(!this.helicopter||!this.wanted)return;
   const p=this.player,g=this.helicopter;
@@ -819,6 +900,9 @@ class DriftGame{
   g.position.y=27+Math.sin(this.elapsed*1.6)*1.5;
   this.heliRotor.rotation.y+=dt*22;
   this.heliLamp.visible=this.wanted>=4;
+  if(this.heliSpotTarget){this.heliSpotTarget.position.set(p.x,.12,p.z);}
+  if(this.heliLightCircle){this.heliLightCircle.position.x=THREE.MathUtils.damp(this.heliLightCircle.position.x,p.x,5,dt);this.heliLightCircle.position.z=THREE.MathUtils.damp(this.heliLightCircle.position.z,p.z,5,dt);this.heliLightCircle.material.opacity=.11+Math.sin(this.elapsed*4)*.035;}
+
  }
  setupSmoke(){const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;const ctx=canvas.getContext('2d');const gradient=ctx.createRadialGradient(32,32,4,32,32,31);gradient.addColorStop(0,'rgba(255,255,255,.86)');gradient.addColorStop(.42,'rgba(255,255,255,.42)');gradient.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);
   const texture=new THREE.CanvasTexture(canvas);
@@ -844,7 +928,7 @@ class DriftGame{
   }
   else{this.accum=0;} // Freeze EVERYTHING before Play or while browsing the garage.
   const revActive=!this.playing&&performance.now()<(this.previewRevEnd||0);
-  if(revActive){const revPhase=Math.min(1,(performance.now()-this.previewRevStart)/2300),rpm=1100+5800*Math.sin(Math.PI*revPhase);this.audio?.updateEngine(rpm,revPhase<.65?1:.1,0);}
+  if(revActive){const revPhase=Math.min(1,(performance.now()-this.previewRevStart)/2900),rpm=1150+6900*Math.sin(Math.PI*revPhase);this.audio?.updateEngine(rpm,revPhase<.66?1:.12,0);if(revPhase>.70&&!this.previewRevPopped){this.previewRevPopped=true;this.audio?.exhaustPop(1.3);}}
   else if(!this.playing)this.audio?.updateEngine(850,0,0);
   if(!this.playing)for(const f of this.car?.userData?.exhaustFlames||[])f.visible=false;
   this.updateSmoke(this.playing?dt:0);this.world.update(this.player.z);this.updateCamera(this.playing?dt:0.016);
@@ -893,13 +977,15 @@ class DriftGame{
   const prevPlayerZ=p.z;
   p.x+=p.vx*dt;p.z+=p.vz*dt;this.checkRoadFeatures(dt);
   p.speed=Math.hypot(p.vx,p.vz);p.angle=dynamics.slip;
+  if(this.lastThrottle&&!throttle&&p.speed>14&&this.elapsed-(this.lastPopTime||0)>.4){this.audio?.exhaustPop(1+(carSave().upgrades.turbo||0)*.12);this.lastPopTime=this.elapsed;this.backfireUntil=this.elapsed+.16;}
+  this.lastThrottle=throttle;
   const engineRpm=900+Math.min(7600,Math.abs(longitudinal)*235+(throttle?700:0)+((p.shiftTimer||0)>0?400:0));
   this.audio?.updateEngine(engineRpm,Number(throttle),mphNow);
   this.maxSpeed=Math.max(this.maxSpeed,Math.round(mphNow));
   if(Math.abs(p.x)>16.3){p.x=THREE.MathUtils.clamp(p.x,-16.3,16.3);if(p.speed>4.5&&this.invulnerable<=0){this.crash('HIGHWAY BARRIER IMPACT');return;}p.vx*=-.15;p.vz*=.72;}
   if(this.car){this.car.position.set(p.x,this.airTimer>0?Math.sin(Math.PI*(1-this.airTimer/this.airDuration))*1.5:Math.sin(this.elapsed*9)*.007,p.z);this.car.rotation.y=p.heading;this.car.rotation.x=this.airTimer>0?-0.09*Math.cos(Math.PI*(1-this.airTimer/this.airDuration)):0;animateWheels(this.car,dt,longitudinal*dt,p.steer);
    const upgraded=carSave().upgrades||{};
-   const flameChance=throttle&&Math.abs(longitudinal)>7?(this.boostTimer>0?.95:.44+Math.min(.33,(upgraded.turbo||0)*.065+(upgraded.exhaustPerformance||0)*.06)):0;
+   const flameChance=(throttle&&Math.abs(longitudinal)>7)?(this.boostTimer>0?.95:.44+Math.min(.33,(upgraded.turbo||0)*.065+(upgraded.exhaustPerformance||0)*.06)):(this.elapsed<(this.backfireUntil||0)?.98:0);
    const flicker=Math.sin(this.elapsed*38)*.5+.5;
    for(const flame of this.car.userData.exhaustFlames||[]){
      const firing=flameChance>0&&Math.sin(this.elapsed*21+flame.userData.flameOffset)>1-flameChance*1.55;
@@ -1066,7 +1152,7 @@ class DriftGame{
   $('rpm').textContent=String(rpm);$('rpmLine').style.width=`${Math.min(100,rpm/80)}%`;
   $('gear').textContent=p.speed<.7?'N':(p.vx*Math.sin(p.heading)+p.vz*Math.cos(p.heading))<0?'R':String(Math.min(6,Math.floor(mph(p.speed)/32)+1));
   $('boost').textContent=this.boostTimer>0?('PAD '+Math.ceil(this.boostTimer)+'s'):(carSave().upgrades.turbo>0||carSave().upgrades.supercharger>0)?Math.round(Math.min(100,mph(p.speed)/1.8))+'%':'N/A';
-  $('runScore').textContent=fmt(this.run.score)+' XP';$('runEarnedCoins').textContent='EST. +'+fmt(Math.floor(this.run.score/5))+' DC';
+  $('runScore').textContent=fmt(this.run.score)+' XP';$('runEarnedCoins').textContent='THIS RUN +'+fmt(Math.floor(this.run.score/5))+' DC • BANK AT EXIT';
   $('featureNotice').classList.toggle('hidden',!(this.featureUntil>this.elapsed));$('nearMissCount').textContent=fmt(state.nearMisses);
   if(this.elapsed>this.nearMissFlashUntil)$('nearMissFlash').classList.add('hidden');$('combo').textContent='×'+this.run.combo.toFixed(1);
   $('driftNotice').classList.toggle('hidden',!this.drifting);

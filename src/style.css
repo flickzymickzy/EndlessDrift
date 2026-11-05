@@ -479,3 +479,17 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 .weather-rain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.43;background-image:repeating-linear-gradient(107deg,transparent 0 49px,rgba(177,222,242,.3) 50px,transparent 51px,transparent 65px),repeating-linear-gradient(107deg,transparent 0 93px,rgba(193,226,250,.25) 94px,transparent 96px,transparent 125px);background-size:160px 230px,200px 295px;animation:driftRain .45s linear infinite}
 @keyframes driftRain{from{background-position:0 0,0 0}to{background-position:-45px 230px,-65px 295px}}
 @media(max-width:540px){.weather-card{padding:19px}.weather-options{grid-template-columns:1fr}.weather-options button{padding:14px}}
+
+/* V16 – branded driving controls and clear banking affordance */
+.bank-btn{border-color:#70f2c7!important;background:linear-gradient(110deg,#113b36,#1c5747)!important;color:#d4fff2!important;font-weight:900!important;letter-spacing:.025em!important;box-shadow:0 0 20px #5cf2c920!important}
+.bank-btn:hover{filter:brightness(1.18);transform:translateY(-1px)}
+.admin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:17px 0}
+#adminNav{background:linear-gradient(120deg,#1b314d,#144e4c);color:#a8ffe0;border:1px solid #70f2c766}
+#adminNav.hidden{display:none!important}
+.wallet{border:1px solid #63e7b844;background:linear-gradient(145deg,#1c3a42,#071a24)!important;box-shadow:0 0 24px #2ee2b512}
+.hud-top .tag{backdrop-filter:blur(12px);border:1px solid #a4ffff2a;box-shadow:0 5px 18px #0006}
+.toplinks button{transition:background .15s,border-color .15s,transform .15s}
+.toplinks button:hover{transform:translateY(-1px);border-color:#5cf2c9aa}
+@media(max-width:850px){.admin-grid{grid-template-columns:1fr}.hud-bottom-left{max-width:min(95vw,420px);flex-wrap:wrap}}
+
+.last-run-banked{display:inline-flex;gap:8px;margin:14px 0;padding:11px 15px;border-radius:10px;border:1px solid #5cf2c977;color:#dcfff5;background:#0b312cef;font-weight:900;font-size:12px;letter-spacing:.055em;box-shadow:0 0 20px #21d6ae18}

@@ -78,7 +78,7 @@ export async function cloudAccessToken(){return await token();}
 export async function cloudProfile(){
  const access=await token();if(!access)return null;
  const user=await cloudUser();if(!user?.id)return null;
- const rows=await request(`/rest/v1/driver_profiles?select=id,username&id=eq.${encodeURIComponent(user.id)}&limit=1`,{token:access});
+ const rows=await request(`/rest/v1/driver_profiles?select=id,username,username_initialized_at,username_changed_at&id=eq.${encodeURIComponent(user.id)}&limit=1`,{token:access});
  return Array.isArray(rows)?(rows[0]||null):null;
 }
 export async function cloudUpdateUsername(username){
@@ -87,4 +87,24 @@ export async function cloudUpdateUsername(username){
  const access=await token();if(!access)throw new Error('Sign in before choosing a username');
  try{return await request('/rest/v1/rpc/ed_set_username',{method:'POST',body:{p_username:desired},token:access});}
  catch(err){if(/duplicate key|unique constraint|already taken/i.test(err.message))throw new Error('Username already taken. Try another.');throw err;}
+}
+
+// Driver progress is private to the authenticated account. Paid coin balances
+// deliberately remain in the server-managed ed_paid_wallets table.
+export async function cloudLoadGameSave(){
+ const user=await cloudUser(),access=await token();
+ if(!user||!access)return null;
+ const rows=await request(`/rest/v1/ed_game_saves?user_id=eq.${encodeURIComponent(user.id)}&select=save`,{token:access});
+ return Array.isArray(rows)?rows[0]?.save||null:null;
+}
+export async function cloudSaveGameSave(owner,saveData){
+ const user=await cloudUser(),access=await token();
+ if(!user||!access||user.id!==owner)throw new Error('Account changed during save');
+ if(JSON.stringify(saveData).length>220000)throw new Error('Game save too large');
+ const response=await fetch(`${root}/rest/v1/ed_game_saves?on_conflict=user_id`,{
+  method:'POST',headers:{...basic(),Authorization:`Bearer ${access}`,'Prefer':'resolution=merge-duplicates,return=minimal'},
+  body:JSON.stringify({user_id:owner,save:saveData,updated_at:new Date().toISOString()})
+ });
+ if(!response.ok)throw new Error('Cloud save failed: '+response.status);
+ return true;
 }
