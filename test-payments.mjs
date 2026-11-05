@@ -8,7 +8,11 @@ const html=readFileSync('./index.html','utf8');
 const manifest=readFileSync('./site.webmanifest','utf8');
 assert.match(main,/const DRIFT_PASS_COST=15000/);
 assert.match(main,/state\.driftPassOwned=true;save\(\)/);
-assert.match(main,/if\(!pay\(DRIFT_PASS_COST\)\)/);
+assert.match(main,/await payWithPurchasedCoins\(DRIFT_PASS_COST\)/);
+assert.match(main,/data-buy-drift-pass/);
+assert.match(main,/data-confirm-drift-pass/);
+assert.match(main,/function openDriftPassPurchase\(\)/);
+assert.match(main,/state\.wallet\+purchased\.coins/);
 assert.match(store,/driftPassOwned:false/);
 assert.match(store,/s\.driftPassOwned=input\?\.driftPassOwned===true/);
 assert.match(store,/endless-drift-account-v16:/); // stable user saves

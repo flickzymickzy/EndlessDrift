@@ -586,3 +586,11 @@ body.stripe-checkout-open{overflow:hidden}
 .brand .beta-label{display:inline-block;vertical-align:middle;margin-left:10px;padding:5px 8px;border:1px solid #ff5e66;background:#ed2636;color:#fff;border-radius:4px;font:900 9px/1 system-ui,sans-serif;letter-spacing:.12em;box-shadow:0 0 15px #ff38494a}
 .hero h1{font-size:clamp(48px,8.6vw,112px);letter-spacing:-.045em}
 @media(max-width:700px){.brand{font-size:19px}.brand .beta-label{font-size:8px;padding:4px 6px;margin-left:5px}.hero h1{font-size:clamp(45px,13vw,70px)}}
+
+/* V22: prominent in-game Drift Pass purchasing. */
+.drift-pass-buy-btn{display:block;min-width:225px;min-height:46px;background:var(--mint)!important;color:#07151a!important;border:2px solid var(--mint)!important;font-weight:900!important;box-shadow:0 0 22px color-mix(in srgb,var(--mint) 24%,transparent)}
+.drift-pass-buy-btn:hover:not(:disabled){filter:brightness(1.12)}
+.drift-pass-buy-btn:disabled{opacity:.65;box-shadow:none}
+.drift-pass-wallet{color:#d2e6ee;font-size:11px;letter-spacing:.045em}.drift-pass-wallet strong{color:var(--mint);font-size:13px}
+.drift-pass-shortfall{color:#ffca86;font-size:11px;font-weight:800}
+@media(max-width:720px){.pass-banner-actions{width:100%;align-items:stretch!important}.drift-pass-buy-btn{width:100%;min-width:0}}

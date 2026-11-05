@@ -511,6 +511,17 @@ async function renderLeaderboard(){
  if(!cloudConfigured()){document.getElementById('xpLeaderboard').textContent='CONNECT SUPABASE TO LOAD GLOBAL RANKS';document.getElementById('spentLeaderboard').textContent='NOT CONFIGURED';return;}
  try{const [xp,spent]=await Promise.all([cloudBoard('lifetime_xp'),cloudBoard('coins_spent')]);if(mode!=='leaderboard')return;const table=(rows,key,unit)=>rows.length?rows.map((r,i)=>`<div class="rank-row"><span>#${i+1}</span><strong>${char(r.username||'DRIVER')}${r.owner?'<span class="owner-tag">OWNER</span>':''}</strong><b>${fmt(Math.max(0,Number(r[key])||0))} ${unit}</b></div>`).join(''):'NO SCORES YET';document.getElementById('xpLeaderboard').innerHTML=table(xp,'lifetime_xp','XP');document.getElementById('spentLeaderboard').innerHTML=table(spent,'coins_spent','DC');}catch(e){if(mode==='leaderboard'){document.getElementById('xpLeaderboard').textContent='Could not load ranks: '+e.message;document.getElementById('spentLeaderboard').textContent='CHECK DATABASE SETUP';}}
 }
+function openDriftPassPurchase(){
+ if(hasDriftPass()){notify('DRIFT PASS ALREADY OWNED');return;}
+ const balance=Math.max(0,state.wallet+purchased.coins);
+ const shortfall=Math.max(0,DRIFT_PASS_COST-balance);
+ modalKind='driftpass';dom.overlay.classList.remove('hidden');
+ dom.modal.innerHTML=`<div class="kicker">DRIFT PASS // IN-GAME PURCHASE</div><h2>UNLOCK PREMIUM</h2>
+ <p class="muted" style="margin:14px 0">Unlock the premium reward track using Drift Coins. No real-money payment.</p>
+ <div class="purchase-panel"><div><small>YOUR WALLET</small><h3>${fmt(balance)} DC</h3><small>DRIFT PASS PRICE</small><h3>${fmt(DRIFT_PASS_COST)} DC</h3></div></div>
+ ${shortfall?`<p class="notice" role="status" style="margin-top:14px">You need ${fmt(shortfall)} more DC. Drift and bank XP to earn them.</p>`:'<p class="notice" role="status" style="margin-top:14px">Confirm to deduct 15,000 DC once and unlock permanent premium access.</p>'}
+ <div class="modal-actions"><button type="button" class="btn ghost" data-close>CANCEL</button>${shortfall?'<button type="button" class="btn primary" data-page="game">EARN DRIFT COINS</button>':'<button type="button" class="btn primary drift-pass-buy-btn" data-confirm-drift-pass>CONFIRM BUY • 15,000 DC</button>'}</div>`;
+}
 function renderBattlePass(){
  const level=levelFromXP(state.lifetimeXP),unlocked=BATTLE_PASS.filter(cosmeticUnlocked).length;
  const all=[...BATTLE_PASS,...PREMIUM_PASS];
@@ -529,12 +540,12 @@ function renderBattlePass(){
  };
  dom.screen.innerHTML=header('DRIFT PASS','SEASON 01 // STREET LEGENDS',
   'Two reward tracks. Level up for free cosmetics; premium rewards unlock using earned Drift Coins. Select ANY reward to preview it.')+`
- <div class="pass-banner panel"><div><div class="kicker">FREE TRACK + PREMIUM TRACK // 30 LEVELS EACH</div><h3>LEVEL ${level} <span>DRIVER</span></h3><p>${unlocked} / ${BATTLE_PASS.length} FREE REWARDS. ${next?`Next: ${next.name}, Level ${next.level}`:'All free rewards unlocked!'}</p></div><div class="pass-banner-actions"><span class="premium-lock">PREMIUM <strong>${hasDriftPass()?'OWNED':'LOCKED'}</strong></span><button class="btn ghost" data-premium-guide>${hasDriftPass()?'PASS OWNED':'BUY PASS • ${fmt(DRIFT_PASS_COST)} DC'}</button></div></div>
+ <div class="pass-banner panel"><div><div class="kicker">FREE TRACK + PREMIUM TRACK // 30 LEVELS EACH</div><h3>LEVEL ${level} <span>DRIVER</span></h3><p>${unlocked} / ${BATTLE_PASS.length} FREE REWARDS. ${next?`Next: ${next.name}, Level ${next.level}`:'All free rewards unlocked!'}</p></div><div class="pass-banner-actions"><span class="premium-lock">PREMIUM <strong>${hasDriftPass()?'OWNED':'LOCKED'}</strong></span><small class="drift-pass-wallet">YOUR WALLET: <strong>${fmt(state.wallet+purchased.coins)} DC</strong></small><button type="button" class="btn primary drift-pass-buy-btn" data-buy-drift-pass ${hasDriftPass()?'disabled':''}>${hasDriftPass()?'✓ DRIFT PASS OWNED':'BUY DRIFT PASS • '+fmt(DRIFT_PASS_COST)+' DC'}</button>${!hasDriftPass()&&state.wallet+purchased.coins<DRIFT_PASS_COST?`<small class="drift-pass-shortfall">Need ${fmt(DRIFT_PASS_COST-state.wallet-purchased.coins)} more DC</small>`:''}</div></div>
  <div class="pass-preview-studio panel">
    <div class="pass-preview-visual"><div class="kicker">LIVE 3D REWARD PREVIEW</div><div id="passCarMount" class="pass-car-mount"><div class="showroom-fallback">3D PREVIEW</div></div><span>DRAG TO ROTATE // PREVIEWS ARE FREE</span></div>
    <div class="pass-preview-info"><span class="pass-level-label">${isPremium?'PREMIUM':'FREE'} TRACK / LEVEL ${item.level}</span><h2>${char(item.name)}</h2><div class="pass-chip">${item.type.toUpperCase()}</div><p>See this ${item.type} on your ${char(getSelected().name)} before unlocking. ${isPremium?'Buy Drift Pass with 15,000 earned Drift Coins to access premium rewards.':'Reach the level to earn it for free.'}</p>
      <div class="pass-reward-sample" style="--reward-color:${item.color}"><span class="sample-dot"></span><strong>${char(item.color.toUpperCase())}</strong><span>${owned?'✓ OWNED':isPremium?(hasDriftPass()?'REACH LEVEL '+item.level:'PREMIUM LOCKED'):'LEVEL '+item.level+' REQUIRED'}</span></div>
-     ${isPremium?`<button class="btn primary" ${owned?`data-pass-equip="${item.id}"`:hasDriftPass()?'disabled':'data-premium-guide'}>${owned?'EQUIP REWARD':hasDriftPass()?'REACH LEVEL '+item.level:'BUY DRIFT PASS • ${fmt(DRIFT_PASS_COST)} DC'}</button>`:`<button class="btn primary" data-pass-equip="${item.id}" ${owned?'':'disabled'}>${owned?'EQUIP ON CURRENT CAR':'REACH LEVEL '+item.level+' TO UNLOCK'}</button>`}
+     ${isPremium?`<button class="btn primary" ${owned?`data-pass-equip="${item.id}"`:hasDriftPass()?'disabled':'data-buy-drift-pass'}>${owned?'EQUIP REWARD':hasDriftPass()?'REACH LEVEL '+item.level:'BUY DRIFT PASS • ${fmt(DRIFT_PASS_COST)} DC'}</button>`:`<button class="btn primary" data-pass-equip="${item.id}" ${owned?'':'disabled'}>${owned?'EQUIP ON CURRENT CAR':'REACH LEVEL '+item.level+' TO UNLOCK'}</button>`}
    </div>
  </div>
  <div class="collection-header"><div><div class="kicker">DUAL REWARD TRACK</div><h3>FREE + PREMIUM DRIFT PASS</h3></div><span class="collection-hint">SCROLL SIDEWAYS TO SEE MORE LEVELS</span></div>
@@ -545,7 +556,7 @@ function renderBattlePass(){
 function renderCoins(){
  dom.screen.innerHTML=header('DRIFT COINS','EARN CURRENCY • NO REAL MONEY','Get Drift Coins by drifting, banking XP and leveling up. The Drift Pass also uses earned DC.')+`
  <div class="coin-banner panel panel-pad"><div class="kicker">YOUR EARNED BALANCE</div><strong>${fmt(state.wallet)} DC</strong><p>Spend Drift Coins on cars, upgrades, cosmetics and the Drift Pass. Earn 1 DC for every 5 XP you bank, plus level bonuses.</p></div>
- <div class="coin-pack-grid"><div class="coin-pack panel panel-pad"><div class="kicker">01 • DRIFT</div><h3>BANK YOUR <span>XP</span></h3><p class="muted">Drive, hold clean drifts and bank your runs to earn Drift Coins.</p><button class="btn primary" data-page="game">START DRIVING</button></div><div class="coin-pack panel panel-pad"><div class="kicker">02 • LEVEL UP</div><h3>UNLOCK <span>BONUSES</span></h3><p class="muted">Level rewards include more Drift Coins.</p><button class="btn ghost" data-page="leaderboard">VIEW PROGRESS</button></div><div class="coin-pack panel panel-pad"><div class="kicker">03 • DRIFT PASS</div><h3>${fmt(DRIFT_PASS_COST)} <span>DC</span></h3><p class="muted">Unlock the premium track with earned Drift Coins.</p><button class="btn primary" data-page="battlepass">VIEW DRIFT PASS</button></div></div>
+ <div class="coin-pack-grid"><div class="coin-pack panel panel-pad"><div class="kicker">01 • DRIFT</div><h3>BANK YOUR <span>XP</span></h3><p class="muted">Drive, hold clean drifts and bank your runs to earn Drift Coins.</p><button class="btn primary" data-page="game">START DRIVING</button></div><div class="coin-pack panel panel-pad"><div class="kicker">02 • LEVEL UP</div><h3>UNLOCK <span>BONUSES</span></h3><p class="muted">Level rewards include more Drift Coins.</p><button class="btn ghost" data-page="leaderboard">VIEW PROGRESS</button></div><div class="coin-pack panel panel-pad"><div class="kicker">03 • DRIFT PASS</div><h3>${fmt(DRIFT_PASS_COST)} <span>DC</span></h3><p class="muted">Unlock the premium track with earned Drift Coins.</p><button class="btn primary" data-buy-drift-pass>BUY DRIFT PASS</button></div></div>
  ${purchased.coins>0?`<p class="notice" style="margin-top:16px">You also have ${fmt(purchased.coins)} DC from previous purchases. They remain available in the garage and shop. New real-money purchases are disabled; Drift Pass requires earned DC.</p>`:''}
  <p class="notice" style="margin-top:16px">No payment details needed. Drift Coins are earned by playing.</p>`;
 }
@@ -669,9 +680,14 @@ document.addEventListener('click',async e=>{
  if(t.dataset.shopBuy){const item=COSMETIC_SHOP.find(x=>x.id===t.dataset.shopBuy);if(!item)return;if(shopOwns(item)){notify('YOU ALREADY OWN THIS COSMETIC');return;}if(!await payWithPurchasedCoins(item.price)){notify('NOT ENOUGH DRIFT COINS');return;}state.shopOwned ||= [];state.shopOwned.push(item.id);save();cashRefresh();notify(item.name.toUpperCase()+' PURCHASED');renderShop();return;}
  if(t.dataset.shopEquip){const item=COSMETIC_SHOP.find(x=>x.id===t.dataset.shopEquip);if(!item||!shopOwns(item))return;const slot=COSMETIC_SLOT[item.type],cs=carSave(state.selected);cs[slot]=item.color;save();game?.setCarPreviewCosmetics(state.selected);notify(item.name.toUpperCase()+' EQUIPPED');renderShop();return;}
 
- if(t.dataset.premiumGuide!==undefined){
-  if(hasDriftPass()){notify('YOU ALREADY OWN THE DRIFT PASS');return;}
-  if(!pay(DRIFT_PASS_COST)){notify('NOT ENOUGH EARNED DRIFT COINS • NEED '+fmt(DRIFT_PASS_COST)+' DC');return;}state.driftPassOwned=true;save();cashRefresh();notify('DRIFT PASS UNLOCKED • '+fmt(DRIFT_PASS_COST)+' DC');renderBattlePass();return;
+ if(t.dataset.buyDriftPass!==undefined||t.dataset.premiumGuide!==undefined){openDriftPassPurchase();return;}
+ if(t.dataset.confirmDriftPass!==undefined){
+  if(hasDriftPass()){closeModal();notify('DRIFT PASS ALREADY OWNED');return;}
+  t.disabled=true;
+  const success=await payWithPurchasedCoins(DRIFT_PASS_COST);
+  if(!success){t.disabled=false;openDriftPassPurchase();notify('NOT ENOUGH DRIFT COINS TO BUY DRIFT PASS');return;}
+  state.driftPassOwned=true;save();cashRefresh();closeModal();renderBattlePass();
+  notify('DRIFT PASS PURCHASED • PREMIUM REWARDS UNLOCKED');return;
  }
  if(t.dataset.passPreview){passPreviewId=t.dataset.passPreview;renderBattlePass();return;}
  if(t.dataset.passEquip){const item=[...BATTLE_PASS,...PREMIUM_PASS].find(i=>i.id===t.dataset.passEquip);if(!item||(item.premium?!(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=item.level):!cosmeticUnlocked(item)))return;
