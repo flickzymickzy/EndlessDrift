@@ -136,12 +136,14 @@ export function createCar(spec,color,options={}){
  const headlights=[];
  if(!traffic){
   for(const side of [-1,1]){
-   const light=new THREE.SpotLight(0xd7f4ff,18,52,.31,.72,1.7);
+   const light=new THREE.SpotLight(0xe6f6ff,92,105,.49,.68,1.45);
    light.castShadow=false;
    light.position.set(side*w*.31,.80,half+.17);
-   const target=new THREE.Object3D();target.position.set(side*w*.37,-.48,half+29);
+   const target=new THREE.Object3D();target.position.set(side*w*.29,-1.0,half+17);
    root.add(light,target);light.target=target;
    headlights.push(light);
+   const pool=new THREE.Mesh(new THREE.CircleGeometry(5.2,32),new THREE.MeshBasicMaterial({color:0xc7ebff,transparent:true,opacity:.055,depthWrite:false,side:THREE.DoubleSide}));
+   pool.rotation.x=-Math.PI/2;pool.position.set(side*w*.45,-.035,half+14);root.add(pool);
   }
  }
  const headlampStyle=(spec.id.length+spec.hp)%3;
