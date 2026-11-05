@@ -205,9 +205,20 @@ export function createCar(spec,color,options={}){
    if(pattern===2)box(parts,w*.23,.025,.04,shared.chrome,0,.78,-half-.109,.006);
    const plate=new THREE.Mesh(new THREE.PlaneGeometry(.62,.20),plateMaterial(spec.name));plate.position.set(0,.72,-half-.11);plate.rotation.y=Math.PI;parts.add(plate);
  }
+ if(!traffic){
+   // Hood shut-lines, sculpted sill strips, roof aerial and rear parking details.
+   for(const side of [-1,1]){
+     box(parts,.016,.018,l*.30,shared.smoked,side*w*.43,hoodY+.08,half-l*.23,.004);
+     box(parts,.025,.028,l*.48,shared.smoked,side*w*.49,.34,-l*.035,.006);
+     box(parts,w*.035,.014,.17,shared.red,side*w*.32,.70,-half-.13,.004);
+   }
+   box(parts,.025,.17,.025,shared.smoked,0,topY+.12,rearHigh-.23,.009);
+   box(parts,w*.47,.022,.025,shared.chrome,0,trunkY+.09,-half+.07,.006);
+ }
  // Customization is physical geometry, not a text-only menu.
  const aeroMat=new THREE.MeshStandardMaterial({color:0x141c25,metalness:.65,roughness:.28});
  const titanium=new THREE.MeshStandardMaterial({color:0x647da0,metalness:.88,roughness:.22});
+ const exhaustFlames=[];
  if(!traffic){
   // Distinctive front treatments, hood lines and sculpted fender accents for each model.
   const signature=(spec.id.split('').reduce((n,c)=>n+c.charCodeAt(0),0)%4);
@@ -254,6 +265,12 @@ export function createCar(spec,color,options={}){
     const tip=new THREE.Mesh(new THREE.CylinderGeometry(exhaustStyle==='quad'?.09:.105,exhaustStyle==='quad'?.09:.105,.34,14,1,true),colorMat);
     tip.rotation.x=Math.PI/2;tip.position.set(x,.47,-half-.22);parts.add(tip);
     const center=new THREE.Mesh(new THREE.CircleGeometry(exhaustStyle==='quad'?.075:.09,14),shared.grille);center.position.set(x,.47,-half-.405);center.rotation.y=Math.PI;parts.add(center);
+    // Two-layer procedural exhaust pop, scaled and animated during acceleration.
+    for(const layer of [0,1]){
+      const flame=new THREE.Mesh(new THREE.ConeGeometry(layer===0?.115:.068,layer===0?.48:.31,9),new THREE.MeshBasicMaterial({color:layer===0?0xff691f:0x82dafa,transparent:true,opacity:.78,depthWrite:false,blending:THREE.AdditiveBlending}));
+      flame.rotation.x=-Math.PI/2;flame.position.set(x,.47,-half-(layer===0?.70:.63));flame.visible=false;
+      flame.userData.flameOffset=x*21+layer*1.7;parts.add(flame);exhaustFlames.push(flame);
+    }
   }
   // Front LED signatures and lower grille geometry.
   for(const side of [-1,1])box(parts,w*.11,.018,.035,shared.white,side*w*.25,.69,half+.14,.005);
@@ -287,7 +304,7 @@ export function createCar(spec,color,options={}){
  }
  // Underbody light is an optional battle-pass cosmetic, off by default.
  const neon=new THREE.Mesh(new THREE.PlaneGeometry(w*1.48,l*.7),underMat);neon.rotation.x=-Math.PI/2;neon.position.set(0,.028,0);root.add(neon);
- root.userData={wheels,bodyMat:paintMat,rimMat,neonMat:underMat,neon,spec,parts,kind,wing,appearance};
+ root.userData={wheels,bodyMat:paintMat,rimMat,neonMat:underMat,neon,spec,parts,kind,wing,appearance,exhaustFlames:traffic?[]:exhaustFlames};
  if(traffic)root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
  return root;
 }

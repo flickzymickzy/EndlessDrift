@@ -37,19 +37,33 @@ app.innerHTML=`
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
       <div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
-    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 13.0 • SHOWROOM / STUDIO</div>
+    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 15.0 • SHOWROOM / STUDIO</div>
   </section>
   <section id="screen" class="panescreen hidden" aria-live="polite"></section>
   <div id="hud" class="hud hidden">
-    <div class="hud-top"><div class="tag featured-tag"><small>RUN XP • 5 XP = 1 DC <span class="live-dot"></span></small><b id="runScore">0 XP</b></div><div class="tag"><small>COMBO</small><b id="combo">×1.0</b></div><div class="tag"><small>TOTAL NEAR MISSES</small><b id="nearMissCount">0</b></div><div class="tag car-tag"><small>CAR</small><b id="hudCar">SAKURA S13</b></div></div>
+    <div class="hud-top"><div class="tag featured-tag"><small>RUN XP • 5 XP = 1 DC <span class="live-dot"></span></small><b id="runScore">0 XP</b><small id="runEarnedCoins" class="run-coin-preview">EST. +0 DC</small></div><div class="tag"><small>COMBO</small><b id="combo">×1.0</b></div><div class="tag"><small>TOTAL NEAR MISSES</small><b id="nearMissCount">0</b></div><div class="tag car-tag"><small>CAR</small><b id="hudCar">SAKURA S13</b></div></div>
     <div class="level-mini"><span id="hudLevel">LEVEL 1</span><div><b id="hudLevelBar"></b></div><small id="hudLevelProgress">0 / 1500 XP</small></div>
     <div id="nearMissFlash" class="near-miss-flash hidden"><strong id="nearMissTitle">NEAR MISS</strong><span id="nearMissValue">+300 XP</span><small id="nearMissStreak">STREAK ×1</small></div>
     <div id="dispatchMessage" class="dispatch-message hidden" aria-live="polite"><small>POLICE DISPATCH</small><strong id="dispatchText"></strong></div>
-    <div class="hud-top-right"><div id="wanted" class="wanted hidden"><small>POLICE PURSUIT</small><span id="stars">☆☆☆☆☆</span></div><button class="btn small ghost" id="customFromHud">CUSTOMIZE</button></div>
+    <div class="hud-top-right"><div id="wanted" class="wanted hidden"><small>POLICE PURSUIT</small><span id="stars">☆☆☆☆☆</span><div id="policeArrow" class="police-arrow">↓ POLICE 80m</div></div><button class="btn small ghost" id="customFromHud">CUSTOMIZE</button></div>
+    <div id="copGlow" class="cop-glow hidden" aria-hidden="true"></div>
+    <div id="featureNotice" class="feature-notice hidden" aria-live="polite"></div>
     <div class="drift-notice hidden" id="driftNotice"><div class="drift-rating" id="driftRating">CLEAN DRIFT</div><div class="score" id="driftSplash">DRIFT!</div><div class="combo" id="driftAngle">SUSTAIN YOUR DRIFT</div><div class="drift-meter"><i id="driftMeterFill"></i><b id="driftMeterPin"></b></div><small class="drift-meter-note">STEER SMOOTHLY • HOLD A / D TO SLIDE</small></div>
     <div class="hud-bottom-left"><button class="btn" id="pauseHud">PAUSE / MENU</button><button class="btn" data-page="garage">GARAGE</button></div>
     <div class="speed"><div class="speed-number" id="speedNumber">0</div><div class="unit" id="speedUnit">MPH</div><div class="speed-track"><b id="rpmLine"></b></div><div class="speed-bottom"><div><span>GEAR</span> <b id="gear">N</b></div><div><span>RPM</span> <b id="rpm">800</b></div><div><span>BOOST</span> <b id="boost">0%</b></div></div></div>
   </div>
+  <div id="weatherChooser" class="weather-chooser hidden" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
+    <div class="weather-card"><div class="kicker">ENDLESS DRIFT // DRIVE SETUP</div><h2 id="weatherTitle">CHOOSE YOUR WEATHER</h2>
+    <p>Pick the road conditions for this drive. You can change them each time you start.</p>
+    <div class="weather-options">
+      <button type="button" data-weather="clear"><strong>☀ CLEAR DAY</strong><small>Bright daylight and clear skies</small></button>
+      <button type="button" data-weather="rain"><strong>☂ RAIN</strong><small>Rainfall and grey skies</small></button>
+      <button type="button" data-weather="fog"><strong>☁ HEAVY FOG</strong><small>Reduced visibility</small></button>
+      <button type="button" data-weather="night"><strong>☾ NIGHT DRIVE</strong><small>Dark sky and city lights</small></button>
+    </div><button class="btn ghost" id="weatherCancel">CANCEL</button></div>
+  </div>
+  <div id="weatherRain" class="weather-rain hidden" aria-hidden="true"></div>
+  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO ENDLESS DRIFT</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. Choose it once for free. After you rename it, wait 7 days before changing it again.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
   <div id="pauseScreen" class="pause-screen hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
     <div class="pause-card">
       <div class="pause-kicker">ENDLESS DRIFT // GAME STOPPED</div>
@@ -79,7 +93,7 @@ app.innerHTML=`
 </div>`;
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
-let pauseActive=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function cashRefresh(){
@@ -166,7 +180,14 @@ function applyUI(){
 }
 function applyGarageTheme(){const theme=GARAGE_THEMES.find(t=>t.id===state.garageTheme)||GARAGE_THEMES[0];document.documentElement.style.setProperty('--garage-wall',theme.wall);document.documentElement.style.setProperty('--garage-floor',theme.floor);document.documentElement.style.setProperty('--garage-accent',theme.accent);}
 
+function showWeatherChoice(){
+  $('weatherChooser').classList.remove('hidden');
+  document.querySelectorAll('[data-weather]').forEach(b=>b.classList.toggle('selected',b.dataset.weather===chosenWeather));
+}
+function closeWeatherChoice(){$('weatherChooser').classList.add('hidden');}
 function renderPage(page){
+  if(page==='game'&&!weatherApproved){showWeatherChoice();return;}
+  if(page==='game')weatherApproved=false;
   if(page!=='game'&&pauseActive)clearPause();
   if(page!=='game'&&game?.playing){
     if(game.crashState)game.respawn();else game.endRun(false);
@@ -175,7 +196,7 @@ function renderPage(page){
   dom.hero.classList.toggle('hidden',page!=='home');dom.screen.classList.toggle('hidden',page==='home'||page==='game');dom.hud.classList.toggle('hidden',page!=='game');
   document.querySelectorAll('.toplinks button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='game'){
-    game?.audio?.unlock();game?.resetTiming();document.activeElement?.blur?.();
+    game?.audio?.unlock();game?.audio?.setCarProfile(carSave().upgrades,carSave().engineNote||'factory');game?.resetTiming();document.activeElement?.blur?.();
     notify('WASD DRIVE  •  SPACE HANDBRAKE  •  C CAMERA  •  ESC PAUSE');
     return;
   }
@@ -228,7 +249,7 @@ function renderGarage(){
    <div class="showcase-head"><div><div class="kicker">SELECTED MACHINE / 3D PREVIEW</div><h2>${char(car.name)}</h2><p>${char(car.type)} <span class="separator">/</span> ${char(car.kind.toUpperCase())}</p></div><span class="showcase-status">${status}</span></div>
    <div id="garageCarMount" class="garage-car-mount"><div class="showroom-fallback">PREPARING 3D PREVIEW</div></div>
    <div class="showcase-stats"><div><small>HORSEPOWER</small><b>${fmt(car.hp)} HP</b></div><div><small>TOP SPEED</small><b>${fmt(car.top)} MPH</b></div><div><small>HANDLING</small><b>${car.handling}/100</b></div><div><small>WEIGHT</small><b>${fmt(car.weight)} KG</b></div></div>
-   <div class="showcase-actions"><span>DRAG TO ROTATE <span class="separator">•</span> LIVE 3D MODEL</span><div class="showcase-buttons">${owned?`<button class="btn ghost" data-modal="car">PAINT + COSMETICS</button><button class="btn primary" data-tune-car="${car.id}">⚙ TUNE THIS CAR</button>`:`<button class="btn primary" data-confirm-car="${car.id}">UNLOCK FOR ${fmt(car.price)} DC</button>`}</div></div>
+   <div class="showcase-actions"><span>DRAG TO ROTATE <span class="separator">•</span> LIVE 3D MODEL</span><div class="showcase-buttons"><button class="btn ghost" data-rev-car="${car.id}">▶ REV ENGINE</button>${owned?`<button class="btn ghost" data-modal="car">PAINT + COSMETICS</button><button class="btn primary" data-tune-car="${car.id}">⚙ TUNE THIS CAR</button>`:`<button class="btn primary" data-confirm-car="${car.id}">UNLOCK FOR ${fmt(car.price)} DC</button>`}</div></div>
   </div>
   <aside class="panel panel-pad detail-panel showroom-detail"><div class="kicker">DEALERSHIP // SPEC SHEET</div><h3>${char(car.name)}</h3><p class="muted">${char(car.type)}</p><div class="divider"></div>
    ${[['DRIVE TYPE','REAR-WHEEL DRIVE'],['ENGINE',fmt(car.hp)+' HORSEPOWER'],['TOP SPEED',fmt(car.top)+' MPH'],['WEIGHT',fmt(car.weight)+' KG'],['HANDLING',car.handling+'/100']].map(([a,b])=>`<div class="spec-row"><span>${a}</span><strong>${b}</strong></div>`).join('')}
@@ -283,12 +304,12 @@ function renderTune(){
   <div class="tune-layout">
    <div class="tune-studio"><div class="kicker">LIVE BUILD STUDIO</div><h2>${char(spec.name)}</h2><div id="tuneCarMount" class="tune-car-mount"><div class="showroom-fallback">PREPARING 3D PREVIEW</div></div>
     <div class="tune-wallet">DRIFT COINS <strong>${fmt(state.wallet+purchased.coins)} DC</strong><span>PARTS SAVE TO THIS CAR</span></div>
-    <div class="tune-studio-actions"><button class="btn ghost" data-page="garage">← GARAGE</button><button class="btn primary" data-modal="car">DRIFT PASS COSMETICS</button><button class="btn ghost" data-page="shop">STYLE SHOP</button></div>
+    <div class="tune-studio-actions"><button class="btn primary" data-rev-car="${spec.id}">▶ REV ENGINE</button><button class="btn ghost" data-page="garage">← GARAGE</button><button class="btn primary" data-modal="car">DRIFT PASS COSMETICS</button><button class="btn ghost" data-page="shop">STYLE SHOP</button></div>
     <div class="tune-help">DRAG THE CAR TO TURN IT • CHANGES SHOW LIVE</div></div>
    <div class="tune-controls"><div class="tune-tabs"><button data-tune-tab="body" class="${tuneTab==='body'?'active':''}">BODY KITS</button><button data-tune-tab="performance" class="${tuneTab==='performance'?'active':''}">PERFORMANCE</button><button data-tune-tab="paint" class="${tuneTab==='paint'?'active':''}">COLORS + SETUP</button></div>
     <div class="tune-tab-pane ${tuneTab==='body'?'':'hidden'}">${appearance}${bodyCheckout}</div>
     <div class="tune-tab-pane ${tuneTab==='performance'?'':'hidden'}"><div class="upgrade-grid">${upgrades}</div>${upgradeCheckout}</div>
-    <div class="tune-tab-pane ${tuneTab==='paint'?'':'hidden'}"><div class="panel panel-pad"><h3>BODY COLOR</h3><div class="swatch-row">${colorRow(COLORS,'color')}</div><h3>DRIFT SMOKE</h3><div class="swatch-row">${colorRow(SMOKES,'smoke')}</div><h3>ALLOY FINISH</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div><h3>DRIVING SETUP</h3>${[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('')}</div></div>
+    <div class="tune-tab-pane ${tuneTab==='paint'?'':'hidden'}"><div class="panel panel-pad"><h3>BODY COLOR</h3><div class="swatch-row">${colorRow(COLORS,'color')}</div><h3>DRIFT SMOKE</h3><div class="swatch-row">${colorRow(SMOKES,'smoke')}</div><h3>ALLOY FINISH</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div><h3>ENGINE SOUND</h3><div class="engine-sound-options">${[['factory','Factory'],['deep','Deep rumble'],['race','Track exhaust']].map(([id,label])=>`<button class="btn small ghost ${saveCar.engineNote===id?'sound-active':''}" data-tune-sound="${id}">${label}</button>`).join('')}</div><h3>DRIVING SETUP</h3>${[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('')}</div></div>
    </div>
   </div>`;
  mountShowroom('tuneCarMount',spec);if(pendingVisual&&showroom){const [id,variant]=pendingVisual.split('|');showroom.setCar(spec,{...saveCar,appearance:{...saveCar.appearance,[id]:variant}});showroom.render(0.016);}
@@ -342,14 +363,26 @@ function renderCoins(){
  <div class="coin-pack-grid">${COIN_PACKS.map((pack,i)=>`<div class="coin-pack panel panel-pad"><div class="kicker">${i===0?'STARTER PACK':i===1?'STREET PACK':'LEGEND PACK'}</div><h3>${fmt(pack.coins)} <span>DC</span></h3><p class="muted">${pack.price}</p><div class="coin-symbol">DC</div><button class="btn primary" data-coins-guide="${pack.id}">BUY ${pack.price}</button><small>Secure Stripe Checkout • Sign-in required</small></div>`).join('')}</div>
  <div class="notice">A Stripe webhook must be configured on Render to award paid coins. Purchasing only works while logged in. Offline-earned coins and car saves remain browser-local until cloud saves are developed.</div>`;
 }
+function showUsernameGate(profile){
+ const needsChoice=!!profile && profile.username_initialized_at===null;
+ usernameOnboarding=needsChoice;
+ $('usernameOnboarding').classList.toggle('hidden',!needsChoice);
+ if(needsChoice){ if(mode==='game')pauseGame('focus'); const el=$('firstUsername');if(el&&!el.value)el.value=''; }
+}
+async function checkUsernameGate(){
+ if(!cloudConfigured())return;
+ try{const user=await cloudUser();if(!user){showUsernameGate(null);return;}const profile=await cloudProfile();if(profile)showUsernameGate(profile);}
+ catch(err){console.warn('Username setup check:',err.message);}
+}
 async function renderAccount(){
  let user=null;let profile=null;let error='';
  if(cloudConfigured()){try{user=await cloudUser();if(user)profile=await cloudProfile();}catch(e){error=e.message;}}
  activeUsername=profile?.username||'';
+ if(profile)showUsernameGate(profile);
  if(mode!=='account')return;
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Local game saves remain on this browser until secure cloud saving is developed.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
- ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">SAVE USERNAME</button></div></form><p class="notice">Run backend/usernames-v13.sql in Supabase first. Usernames must be unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
+ ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" ${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'disabled':''}>SAVE USERNAME</button></div></form><p class="notice">${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'You can change your username again on '+new Date(new Date(profile.username_changed_at).getTime()+604800000).toLocaleDateString():'First username choice is free. A rename starts a 7-day cooldown. Usernames must be unique.'}</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
  ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Your paid Drift Coin balance and Drift Pass ownership are stored securely online. Locally earned XP, car purchases, and local saves are still browser-based.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
@@ -420,6 +453,10 @@ function updateSettings(){save();applyUI();game?.applyQuality();game?.resetTimin
 // Event delegation keeps controls working after each panel is regenerated.
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
+ if(usernameOnboarding&&t.id!=='onboardingSignOut')return;
+ if(t.id==='onboardingSignOut'){await cloudSignOut();showUsernameGate(null);clearPurchased();cashRefresh();renderPage('account');return;}
+ if(t.dataset.weather){chosenWeather=t.dataset.weather;closeWeatherChoice();game?.applyWeather(chosenWeather);weatherApproved=true;renderPage('game');return;}
+ if(t.id==='weatherCancel'){closeWeatherChoice();return;}
  if(t.id==='pauseHud'){pauseGame();return;}
  if(t.id==='resumeGame'){resumeGame();return;}
  if(t.id==='restartGame'){resumeGame();game?.recover();return;}
@@ -432,6 +469,8 @@ document.addEventListener('click',async e=>{
  if(t.id==='customFromHud'){showModal('car');return;}
  if(t.dataset.coinsGuide){try{await beginCheckout(t.dataset.coinsGuide);}catch(err){notify('CHECKOUT: '+String(err.message||err));}return;}
  if(t.dataset.cloudSignout!==undefined){cloudSignOut().then(()=>{clearPurchased();cashRefresh();notify('LOGGED OUT');renderAccount()}).catch(e=>notify(e.message));return;}
+ if(t.dataset.revCar){game?.revPreview(t.dataset.revCar);return;}
+ if(t.dataset.tuneSound){carSave(tuningCar).engineNote=t.dataset.tuneSound;save();game?.revPreview(tuningCar);renderTune();return;}
  if(t.dataset.shopPreview){shopPreviewId=t.dataset.shopPreview;renderShop();return;}
  if(t.dataset.shopBuy){const item=COSMETIC_SHOP.find(x=>x.id===t.dataset.shopBuy);if(!item)return;if(shopOwns(item)){notify('YOU ALREADY OWN THIS COSMETIC');return;}if(!await payWithPurchasedCoins(item.price)){notify('NOT ENOUGH DRIFT COINS');return;}state.shopOwned ||= [];state.shopOwned.push(item.id);save();cashRefresh();notify(item.name.toUpperCase()+' PURCHASED');renderShop();return;}
  if(t.dataset.shopEquip){const item=COSMETIC_SHOP.find(x=>x.id===t.dataset.shopEquip);if(!item||!shopOwns(item))return;const slot=COSMETIC_SLOT[item.type],cs=carSave(state.selected);cs[slot]=item.color;save();game?.setCarPreviewCosmetics(state.selected);notify(item.name.toUpperCase()+' EQUIPPED');renderShop();return;}
@@ -473,7 +512,7 @@ document.addEventListener('click',async e=>{
  }
  if(t.dataset.commitUpgrade){const u=UPGRADES.find(x=>x.id===t.dataset.commitUpgrade);if(!u)return;const cs=carSave(tuningCar),lv=cs.upgrades[u.id];if(lv>=u.max)return;
    if(!await payWithPurchasedCoins(upgradeCost(u,lv))){notify('NOT ENOUGH DRIFT COINS • BANK MORE DRIFTS');return;}
-   cs.upgrades[u.id]++;pendingUpgrade=null;save();if(tuningCar===state.selected)game?.audio?.setCarProfile(cs.upgrades);cashRefresh();notify(`${u.label.toUpperCase()} LEVEL ${cs.upgrades[u.id]} INSTALLED`);renderTune();return;
+   cs.upgrades[u.id]++;pendingUpgrade=null;save();if(tuningCar===state.selected)game?.audio?.setCarProfile(cs.upgrades,cs.engineNote||'factory');cashRefresh();notify(`${u.label.toUpperCase()} LEVEL ${cs.upgrades[u.id]} INSTALLED`);renderTune();return;
  }
  if(t.dataset.commitVisual){const [id,variant]=t.dataset.commitVisual.split('|');const part=BODY_PARTS.find(p=>p.id===id),opt=part?.options.find(o=>o[0]===variant);if(!part||!opt||!state.owned.includes(tuningCar))return;const cs=carSave(tuningCar),key=id+':'+variant;
    if(opt[2]>0&&!cs.ownedParts.includes(key)){if(!await payWithPurchasedCoins(opt[2])){notify('NOT ENOUGH DRIFT COINS TO INSTALL THIS PART');return;}cs.ownedParts.push(key);}
@@ -502,6 +541,12 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('submit',async e=>{
+ if(e.target.id==='firstUsernameForm'){
+  e.preventDefault();const form=e.target;const button=form.querySelector('button[type=submit]');button.disabled=true;
+  try{const name=String(new FormData(form).get('username')||'').trim();await cloudUpdateUsername(name);activeUsername=name;showUsernameGate(null);notify('WELCOME @'+name.toUpperCase());if(mode==='account')await renderAccount();}
+  catch(err){$('usernameGateError').textContent=String(err.message||err);button.disabled=false;}
+  return;
+ }
  if(e.target.id==='usernameForm'){
   e.preventDefault();const form=e.target,button=form.querySelector('button[type="submit"]');if(button)button.disabled=true;
   try{const username=String(new FormData(form).get('username')||'').trim();await cloudUpdateUsername(username);activeUsername=username;notify('USERNAME SAVED • @'+username);await renderAccount();}
@@ -529,6 +574,7 @@ function bound(action,code){return (state.settings.controls?.[action]||({acceler
 function pressed(action){return !!keys[state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space'}[action])];}
 window.addEventListener('keydown',e=>{
  const code=e.code;
+ if(usernameOnboarding)return;
  if(remapping){e.preventDefault();if(code!=='Escape'){const oldAction=Object.keys(state.settings.controls).find(k=>k!==remapping&&state.settings.controls[k]===code);if(oldAction)state.settings.controls[oldAction]='Unbound';state.settings.controls[remapping]=code;save();notify('NEW CONTROL SAVED');}remapping=null;renderSettings();return;}
  if(mode==='game'&&['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',...Object.values(state.settings.controls)].includes(code))e.preventDefault();
  if(e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;
@@ -551,19 +597,24 @@ class DriftGame{
   this.camera=new THREE.PerspectiveCamera(65,1,.1,1000);
   this.audio=new Soundtrack(()=>state.settings);this.clock=new THREE.Clock();this.accum=0;this.lastRender=0;this.playing=false;this.cameraMode=0;this.preview=undefined;
   this.sun=new THREE.DirectionalLight('#fff4dc',2.7);this.sun.position.set(-90,125,30);this.sun.castShadow=true;this.sun.shadow.mapSize.set(1024,1024);this.sun.shadow.camera.left=-60;this.sun.shadow.camera.right=60;this.sun.shadow.camera.top=60;this.sun.shadow.camera.bottom=-60;this.sun.shadow.normalBias=.035;this.scene.add(this.sun);
-  this.scene.add(new THREE.HemisphereLight('#eaf8ff','#486d67',2));
-  this.world=createWorld(this.scene);
+  this.ambientLight=new THREE.HemisphereLight('#eaf8ff','#486d67',2);this.scene.add(this.ambientLight);
+  this.world=createWorld(this.scene);this.applyWeather('clear');
   this.player={x:0,z:0,vx:0,vz:0,heading:0,yaw:0,steer:0,driftBlend:0,speed:0,angle:0};
   this.run={score:0,active:false,grace:0,combo:1,seconds:0,nearMisses:0,nearMissXP:0};
   this.elapsed=0;this.nearMissStreak=0;this.lastNearMiss=-100;this.nearMissFlashUntil=0;this.invulnerable=1;this.wanted=0;this.chaseTime=0;this.wantedTimer=0;this.dispatchUntil=0;this.searchTimer=0;this.bustTimer=0;this.maxSpeed=0;this.crashState=null;this.crashSparks=[];this.crashDebris=[];
-  this.police=[];this.traffic=[];this.blockade=[];this.blockadeNext=0;this.helicopter=null;this.heliLamp=null;this.heliRotor=null;this.radioTimer=0;this.tireDamage=0;this.fasterEscape=0;this.smokePool=[];this.smokeHead=0;this.smokeTimer=0;this.skids=[];this.skidHead=0;
+  this.police=[];this.traffic=[];this.blockade=[];this.lastBoostCell=-999;this.lastRampCell=-999;this.boostTimer=0;this.airTimer=0;this.airDuration=0;this.blockadeNext=0;this.helicopter=null;this.heliLamp=null;this.heliRotor=null;this.radioTimer=0;this.tireDamage=0;this.fasterEscape=0;this.smokePool=[];this.smokeHead=0;this.smokeTimer=0;this.skids=[];this.skidHead=0;
   this.setPlayerCar();this.setupTraffic();this.setupSmoke();this.setupSkids();this.setupCrashEffects();this.applyQuality();
   this.camera.position.set(6,4.3,-12);this.camera.lookAt(0,1,2);
   window.addEventListener('resize',()=>this.resize());this.resize();
   this.animate=now=>{try{this.frame(now);requestAnimationFrame(this.animate);}catch(e){errorScreen(e);}};
   requestAnimationFrame(this.animate);
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{});}
+ revPreview(carId){
+  const conf=carSave(carId);this.audio?.unlock();this.audio?.setCarProfile(conf.upgrades||{},conf.engineNote||'factory');
+  this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2300;
+  notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
+ }
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory');}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
@@ -583,11 +634,31 @@ class DriftGame{
   this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.sun.castShadow=this.renderer.shadowMap.enabled;
   this.sun.shadow.mapSize.set(quality==='ultra'?2048:1024,quality==='ultra'?2048:1024);
   const fog={short:.004,normal:.0023,long:.00135}[s.drawDistance]||.0023;
-  this.scene.fog.density=fog;
+  this.scene.fog.density=fog;this.applyWeather(chosenWeather);
   const trafficCount={low:8,normal:12,high:16}[s.trafficDensity]||12;
   for(let i=0;i<this.traffic.length;i++){this.traffic[i].enabled=i<trafficCount;this.traffic[i].mesh.visible=i<trafficCount;}
   this.renderer.toneMappingExposure=quality==='low'?1.1:quality==='ultra'?1.28:1.19;
   this.resize();
+ }
+ applyWeather(weather='clear'){
+  this.weather=weather;
+  const styles={
+    clear:{fog:'#8bb0be',density:.0021,sun:2.7,hemi:2,exposure:1.19,horizon:'#9bc5cf',zenith:'#1f578f'},
+    rain:{fog:'#778998',density:.0031,sun:1.05,hemi:1.35,exposure:.94,horizon:'#8998a9',zenith:'#394b61'},
+    fog:{fog:'#afb9bf',density:.011,sun:1.0,hemi:1.65,exposure:1.05,horizon:'#b9c4c9',zenith:'#8999a4'},
+    night:{fog:'#14243f',density:.0037,sun:.22,hemi:.53,exposure:.78,horizon:'#152844',zenith:'#050f23'}
+  };
+  const style=styles[weather]||styles.clear;
+  this.scene.fog.color.set(style.fog);
+  const distanceSetting={short:1.7,normal:1,long:.72}[state.settings.drawDistance]||1;
+  this.scene.fog.density=style.density*distanceSetting;
+  this.scene.background.set(style.fog);
+  this.sun.intensity=style.sun;
+  this.ambientLight.intensity=style.hemi;
+  this.renderer.toneMappingExposure=style.exposure;
+  if(this.world.sky?.material?.uniforms){this.world.sky.material.uniforms.uHorizon.value.set(style.horizon);this.world.sky.material.uniforms.uZenith.value.set(style.zenith);}
+  $('weatherRain')?.classList.toggle('hidden',weather!=='rain');
+  document.body.dataset.weather=weather;
  }
  resetTiming(){this.accum=0;this.clock.getDelta();this.lastRender=0;if(mode==='game')this.restoreEquipped();}
  changeCamera(){this.cameraMode=(this.cameraMode+1)%3;notify(['FOLLOW CAMERA','CLOSE CHASE CAMERA','HOOD CAMERA'][this.cameraMode]);}
@@ -600,7 +671,7 @@ class DriftGame{
  respawn(){
   this.crashState=null;this.endPolice(false);
   const p=this.player;p.x=0;p.z=Math.round(p.z/96)*96;p.vx=p.vz=p.yaw=p.speed=p.angle=p.heading=p.steer=p.driftBlend=0;
-  this.invulnerable=3;this.tireDamage=0;this.nearMissStreak=0;this.drifting=false;
+  this.invulnerable=3;this.tireDamage=0;this.airTimer=0;this.boostTimer=0;this.nearMissStreak=0;this.drifting=false;
   this.run={score:0,active:false,grace:0,combo:1,seconds:0,nearMisses:0,nearMissXP:0};
   if(this.car){this.car.position.set(p.x,0,p.z);this.car.rotation.set(0,0,0);}
   this.crashSparks.forEach(o=>o.mesh.visible=false);this.crashDebris.forEach(o=>o.mesh.visible=false);document.body.classList.remove('impact-active');
@@ -686,10 +757,11 @@ class DriftGame{
   const a=new THREE.Mesh(new THREE.BoxGeometry(.43,.14,.20),new THREE.MeshStandardMaterial({color:swat?0xe6d7a0:0xf52a42,emissive:swat?0xddc482:0xf52a42,emissiveIntensity:3}));
   a.position.set(-.23,2.03,0);const b=new THREE.Mesh(new THREE.BoxGeometry(.43,.14,.20),new THREE.MeshStandardMaterial({color:0x367cff,emissive:0x367cff,emissiveIntensity:3}));b.position.set(.23,2.03,0);mesh.add(a,b);
   if(swat){const shield=new THREE.Mesh(new THREE.BoxGeometry(1.25,.32,.09),new THREE.MeshStandardMaterial({color:'#132335',roughness:.35}));shield.position.set(0,.94,-c.length*.5-.13);mesh.add(shield);}
-  this.scene.add(mesh);return {mesh,x:0,z:0,heading:0,speed:0,lights:[a,b],police:true,swat};
+  const redLight=new THREE.PointLight(0xff2144,swat?2.6:1.7,35,2),blueLight=new THREE.PointLight(0x2c62ff,swat?2.6:1.7,35,2);redLight.position.set(-.45,2.16,-.25);blueLight.position.set(.45,2.16,-.25);mesh.add(redLight,blueLight);
+  this.scene.add(mesh);return {mesh,x:0,z:0,heading:0,speed:0,lights:[a,b],flashLights:[redLight,blueLight],police:true,swat};
  }
  startPolice(){if(this.wanted)return;this.wanted=1;this.chaseTime=0;this.wantedTimer=0;this.searchTimer=0;this.bustTimer=0;this.fasterEscape=0;
-  for(let i=0;i<2;i++){const p=this.createPolice();p.x=[-8,8][i];p.z=this.player.z-85-i*20;p.heading=this.player.heading;p.mesh.position.set(p.x,0,p.z);this.police.push(p);}
+  for(let i=0;i<2;i++){const p=this.createPolice();p.x=[-8,8][i];p.z=this.player.z-37-i*17;p.heading=this.player.heading;p.mesh.position.set(p.x,0,p.z);this.police.push(p);}
   this.dispatchPolice();notify('POLICE PURSUIT • SPEED EXCEEDED 100 KM/H');
  }
  dispatchPolice(){
@@ -716,13 +788,14 @@ class DriftGame{
  }
  createBlockade(){
   this.blockade.forEach(b=>this.scene.remove(b.mesh));this.blockade.length=0;
-  // Always leave driveable gaps. Four separate vehicles across a 32m highway.
-  for(const x of [-11,-5,5,11]){
+  // Stationary police vans. Three lanes blocked; rightmost lane (+12) is OPEN.
+  for(const x of [-12,-4,4]){
    const c=CARS[8],mesh=createCar(c,'#17243a',{traffic:true});mesh.rotation.y=Math.PI/2;
-   const light=new THREE.Mesh(new THREE.BoxGeometry(.78,.10,.25),new THREE.MeshBasicMaterial({color:0x558bff}));light.position.set(0,1.94,0);mesh.add(light);
+   const vanRoof=new THREE.Mesh(new THREE.BoxGeometry(1.75,.58,2.6),new THREE.MeshStandardMaterial({color:0x1c354c,metalness:.33,roughness:.5}));vanRoof.position.set(0,1.77,-.3);mesh.add(vanRoof);
+   const light=new THREE.Mesh(new THREE.BoxGeometry(.78,.10,.25),new THREE.MeshBasicMaterial({color:0x558bff,emissive:0x2269ff,emissiveIntensity:1.4}));light.position.set(0,2.12,-.3);mesh.add(light);
    const vehicle={mesh,x,z:this.player.z+190,speed:0,heading:Math.PI/2,police:true,blockade:true};mesh.position.set(vehicle.x,0,vehicle.z);this.scene.add(mesh);this.blockade.push(vehicle);
   }
-  this.blockadeNext=this.elapsed+27;notify('POLICE ROADBLOCK AHEAD • USE THE GAPS');
+  this.blockadeNext=this.elapsed+27;notify('STATIONARY VAN ROADBLOCK • RIGHT LANE OPEN');
  }
  updateBlockade(dt){
   if(!this.wanted||this.wanted<3)return;
@@ -769,8 +842,12 @@ class DriftGame{
    if(this.crashState){this.updateCrash(dt);this.accum=0;}
    else{this.accum+=dt;const STEP=1/90;let n=0;while(this.accum>=STEP&&n++<6){this.tick(STEP);this.accum-=STEP;if(this.crashState)break;}if(n>5)this.accum=0;}
   }
-  else{this.elapsed+=dt*.13;this.updateTraffic(dt*.16);this.updatePoliceLights();}
-  this.updateSmoke(dt);this.world.update(this.player.z);this.updateCamera(dt);
+  else{this.accum=0;} // Freeze EVERYTHING before Play or while browsing the garage.
+  const revActive=!this.playing&&performance.now()<(this.previewRevEnd||0);
+  if(revActive){const revPhase=Math.min(1,(performance.now()-this.previewRevStart)/2300),rpm=1100+5800*Math.sin(Math.PI*revPhase);this.audio?.updateEngine(rpm,revPhase<.65?1:.1,0);}
+  else if(!this.playing)this.audio?.updateEngine(850,0,0);
+  if(!this.playing)for(const f of this.car?.userData?.exhaustFlames||[])f.visible=false;
+  this.updateSmoke(this.playing?dt:0);this.world.update(this.player.z);this.updateCamera(this.playing?dt:0.016);
   this.audio?.update(this.playing?this.wanted:0);this.renderer.render(this.scene,this.camera);if(showroom)showroom.render(dt);this.updateHUD();
  }
  currentStats(){return performanceStats(getSelected(),carSave().upgrades);}
@@ -791,7 +868,8 @@ class DriftGame{
   p.lastGear=estimatedGear;
   p.shiftTimer=Math.max(0,(p.shiftTimer||0)-dt);
   // Transmission and clutch upgrades shorten actual in-game power interruptions.
-  if(throttle)longitudinal+=maxAccel*dt*(p.shiftTimer>0?.40:1.08);
+  if(throttle)longitudinal+=maxAccel*dt*(p.shiftTimer>0?.40:1.08)*(this.boostTimer>0?1.7:1);
+  this.boostTimer=Math.max(0,this.boostTimer-dt);this.airTimer=Math.max(0,this.airTimer-dt);
 
   if(brake){if(longitudinal>2)longitudinal-=stats.brake*dt;else longitudinal-=maxAccel*.55*dt;}
   const drag=.00042*longitudinal*Math.abs(longitudinal)+.021*longitudinal;
@@ -813,17 +891,26 @@ class DriftGame{
   const fw2=Math.sin(p.heading),fz2=Math.cos(p.heading),rx2=Math.cos(p.heading),rz2=-Math.sin(p.heading);
   p.vx=fw2*longitudinal+rx2*lateral;p.vz=fz2*longitudinal+rz2*lateral;
   const prevPlayerZ=p.z;
-  p.x+=p.vx*dt;p.z+=p.vz*dt;
+  p.x+=p.vx*dt;p.z+=p.vz*dt;this.checkRoadFeatures(dt);
   p.speed=Math.hypot(p.vx,p.vz);p.angle=dynamics.slip;
   const engineRpm=900+Math.min(7600,Math.abs(longitudinal)*235+(throttle?700:0)+((p.shiftTimer||0)>0?400:0));
   this.audio?.updateEngine(engineRpm,Number(throttle),mphNow);
   this.maxSpeed=Math.max(this.maxSpeed,Math.round(mphNow));
   if(Math.abs(p.x)>16.3){p.x=THREE.MathUtils.clamp(p.x,-16.3,16.3);if(p.speed>4.5&&this.invulnerable<=0){this.crash('HIGHWAY BARRIER IMPACT');return;}p.vx*=-.15;p.vz*=.72;}
-  if(this.car){this.car.position.set(p.x,Math.sin(this.elapsed*9)*.007,p.z);this.car.rotation.y=p.heading;animateWheels(this.car,dt,longitudinal*dt,p.steer);}
+  if(this.car){this.car.position.set(p.x,this.airTimer>0?Math.sin(Math.PI*(1-this.airTimer/this.airDuration))*1.5:Math.sin(this.elapsed*9)*.007,p.z);this.car.rotation.y=p.heading;this.car.rotation.x=this.airTimer>0?-0.09*Math.cos(Math.PI*(1-this.airTimer/this.airDuration)):0;animateWheels(this.car,dt,longitudinal*dt,p.steer);
+   const upgraded=carSave().upgrades||{};
+   const flameChance=throttle&&Math.abs(longitudinal)>7?(this.boostTimer>0?.95:.44+Math.min(.33,(upgraded.turbo||0)*.065+(upgraded.exhaustPerformance||0)*.06)):0;
+   const flicker=Math.sin(this.elapsed*38)*.5+.5;
+   for(const flame of this.car.userData.exhaustFlames||[]){
+     const firing=flameChance>0&&Math.sin(this.elapsed*21+flame.userData.flameOffset)>1-flameChance*1.55;
+     flame.visible=!!firing;
+     if(firing){flame.scale.set(.65+flicker*.45,.52+flicker*.85,.65+flicker*.45);flame.material.opacity=.65+flicker*.27;}
+   }
+  }
   this.updateTraffic(dt);this.updatePolice(dt);this.updateBlockade(dt);this.updateHelicopter(dt);
   if(this.invulnerable<=0){for(const a of [...this.traffic,...this.police,...this.blockade]){
     if(a.enabled===false)continue;
-    const w1=(getSelected().width||1.8)*.50,w2=(a.mesh.userData.spec?.width||1.8)*.50;const l1=(getSelected().length||4.5)*.43,l2=(a.mesh.userData.spec?.length||4.5)*.43;
+    const w1=(getSelected().width||1.8)*.50,w2=(a.blockade?(a.mesh.userData.spec?.length||5.1):(a.mesh.userData.spec?.width||1.8))*.50;const l1=(getSelected().length||4.5)*.43,l2=(a.blockade?(a.mesh.userData.spec?.width||1.8):(a.mesh.userData.spec?.length||4.5))*.43;
     if(Math.abs(a.x-p.x)<(w1+w2)*.94&&Math.abs(a.z-p.z)<(l1+l2)*.90){if(p.speed>3.5||Math.abs(p.vz-(a.speed||0))>6){this.crash(a.swat?'SWAT VEHICLE IMPACT':a.police?'POLICE VEHICLE IMPACT':'TRAFFIC COLLISION');break;}p.vz*=.18;p.vx*=-.1;}
   }}
   if(this.crashState)return;
@@ -834,12 +921,24 @@ class DriftGame{
    this.run.combo=Math.min(8,1+this.run.seconds*.37);
    // V10 XP economy: slow XP accrual and only 1 Drift Coin per 5 banked XP.
    const driftStyleBonus=p.angle>=24&&p.angle<=46?1.18:1;
-   this.run.score+=dt*(3.5+p.angle*.43)*(mphNow/65)*this.run.combo*.14*driftStyleBonus;
+   this.run.score+=dt*(6+p.angle*.72)*(mphNow/65)*this.run.combo*.6*driftStyleBonus;
    this.spawnSmoke(dt);
   } else if(this.run.active){this.run.grace-=dt;if(this.run.grace<=0)this.endRun(false);}
+  if(mphNow>35&&!drift){if(!this.run.active){this.run={score:0,active:true,grace:2.25,combo:1,seconds:0,nearMisses:0,nearMissXP:0};}this.run.grace=Math.max(this.run.grace,2.25);this.run.score+=dt*(1.6+mphNow*.04);}
   this.drifting=drift;
   if(kph(p.speed)>=100 && !this.wanted)this.startPolice();
  }
+ checkRoadFeatures(dt){
+  if(!this.playing||this.crashState)return;
+  const p=this.player;
+  if(p.speed<8)return;
+  const feature=(at,lane,cell,last)=>{const n=Math.round((p.z-at)/96);return Math.abs(p.z-(n*96+at))<2.0&&Math.abs(p.x-lane)<2.7&&n!==this[last]?n:null;};
+  const boost=feature(-20,12,0,'lastBoostCell');
+  if(boost!==null){this.lastBoostCell=boost;this.boostTimer=3.4;const forward=new THREE.Vector2(Math.sin(p.heading),Math.cos(p.heading));p.vx+=forward.x*13;p.vz+=forward.y*13;this.run.active=true;this.run.grace=2.6;this.run.score+=85;this.showFeature('BOOST PAD  +85 XP',2.8);}
+  const ramp=feature(25,-4,0,'lastRampCell');
+  if(ramp!==null){this.lastRampCell=ramp;this.airDuration=1.15;this.airTimer=this.airDuration;this.run.active=true;this.run.grace=2.6;this.run.score+=120;this.showFeature('RAMP JUMP  +120 XP',2.8);}
+ }
+ showFeature(text,duration=2){$('featureNotice').textContent=text;$('featureNotice').classList.remove('hidden');this.featureUntil=this.elapsed+duration;}
  checkNearMisses(previousPlayerZ){
   const p=this.player;
   if(mph(p.speed)<45||p.vz<22||Math.abs(p.heading)>0.9)return;
@@ -857,7 +956,7 @@ class DriftGame{
    else this.nearMissStreak=1;
    this.lastNearMiss=this.elapsed;
    const perfect=clearance<3;
-   const base=Math.round((perfect?10:6)+Math.min(7,mph(p.speed)*.045));
+   const base=Math.round((perfect?55:35)+Math.min(25,mph(p.speed)*.14));
    const multiplier=Math.min(2,1+(this.nearMissStreak-1)*.115);
    const gained=Math.round(base*multiplier);
    if(!this.run.active){this.run={score:0,active:true,grace:0,combo:1,seconds:0,nearMisses:0,nearMissXP:0};}
@@ -886,7 +985,7 @@ class DriftGame{
    state.nearMissXP+=Math.floor(this.run.nearMissXP*multiplier);
    if(this.run.seconds>.3)state.drifts++;
    state.bestDrift=Math.max(state.bestDrift,received);save();earnedXP(result);
-   if(!crashed)notify(`RUN BANKED • +${fmt(received)} XP / +${fmt(result.coins||0)} DRIFT COINS`);
+   if(!crashed)notify(`BANKED +${fmt(received)} XP / EARNED +${fmt(result.coins||0)} DC`);
   }
   this.run={score:0,active:false,grace:0,combo:1,seconds:0,nearMisses:0,nearMissXP:0};
   return breakdown;
@@ -903,7 +1002,7 @@ class DriftGame{
    a.mesh.position.set(a.x,0,a.z);animateWheels(a.mesh,dt,a.speed*dt,0);
   }
  }
- updatePoliceLights(){for(const p of this.police){p.lights[0].visible=Math.sin(this.elapsed*17)>0;p.lights[1].visible=!p.lights[0].visible;}}
+ updatePoliceLights(){for(const p of this.police){const red=Math.sin(this.elapsed*19)>0;p.lights[0].visible=red;p.lights[1].visible=!red;if(p.flashLights){p.flashLights[0].visible=red;p.flashLights[1].visible=!red;}}}
  updatePolice(dt){if(!this.wanted)return;
   this.chaseTime+=dt;
   // Wanted stars rise from sustained dangerous driving, not only long chases.
@@ -915,17 +1014,17 @@ class DriftGame{
   let closest=Infinity,visible=0;
   for(let i=0;i<this.police.length;i++){
    const a=this.police[i],dx=p.x-a.x,dz=p.z-a.z,dist=Math.hypot(dx,dz);closest=Math.min(closest,dist);
-   const behind=dist>235;const targetX=behind?a.x:p.x+(a.swat&&dist<55?(i%2?1.4:-1.4):0);
+   const behind=dist>235;const targetX=behind?a.x:p.x+(a.swat&&dist<55?(i%2?.35:-.35):0);
    const desired=Math.atan2(targetX-a.x,p.z-a.z);const correction=Math.atan2(Math.sin(desired-a.heading),Math.cos(desired-a.heading));
    a.heading+=THREE.MathUtils.clamp(correction,-(a.swat?1.1:1.25)*dt,(a.swat?1.1:1.25)*dt);
    // Patrols are slower than most tuned performance cars. No forced teleporting.
-   const cap=[0,34,37,40,44,49][this.wanted]+(a.swat?3:0);
-   const targetSpeed=Math.min(cap,Math.max(15,dist>80?cap:Math.max(10,p.speed*.70)));
+   const cap=Math.max([0,35,39,44,49,55][this.wanted]+(a.swat?9:0),Math.min(p.speed*(a.swat?1.12:1.01),a.swat?84:69));
+   const targetSpeed=Math.min(cap,Math.max(15,dist>80?cap:Math.max(10,p.speed*(a.swat?1.0:.78))));
    a.speed=THREE.MathUtils.damp(a.speed,targetSpeed,.75,dt);
    a.x+=Math.sin(a.heading)*a.speed*dt;a.z+=Math.cos(a.heading)*a.speed*dt;
    a.mesh.position.set(a.x,0,a.z);a.mesh.rotation.y=a.heading;
    animateWheels(a.mesh,dt,a.speed*dt,correction);
-   if(dist<130)visible++;
+   if(dist<145)visible++;
    if(a.swat&&dist<26&&this.elapsed-(a.lastShot||0)>8){a.lastShot=this.elapsed;
      // Simulated non-graphic tactical tire damage. Slower acceleration until escaped.
      if(dist<18){this.tireDamage=Math.min(1,this.tireDamage+.25);notify('SWAT TIRE HIT • HANDLING REDUCED');this.audio?.impact();}
@@ -936,16 +1035,17 @@ class DriftGame{
   if(this.bustTimer>2.7){this.crash('BUSTED BY POLICE');return;}
   // Outrunning patrols is an actual escape method, even with a helicopter.
   if(fast&&p.speed>Math.max(...this.police.map(a=>a.speed),0)+10)this.fasterEscape+=dt;else this.fasterEscape=Math.max(0,this.fasterEscape-dt*.75);
-  if(closest>120)this.searchTimer+=dt;else this.searchTimer=Math.max(0,this.searchTimer-dt*1.6);
-  const fastThreshold=this.wanted>=4?9:5;
-  const distanceThreshold=this.wanted>=4?15:10;
-  if(this.chaseTime>20&&(this.fasterEscape>fastThreshold+8||this.searchTimer>distanceThreshold+6))this.endPolice(true);
+  if(closest>135)this.searchTimer+=dt;else this.searchTimer=Math.max(0,this.searchTimer-dt*1.6);
+  const fastThreshold=this.wanted>=4?13:6;
+  const distanceThreshold=this.wanted>=4?24:11; // helicopter extends the search at 4/5 stars
+  if(this.chaseTime>26&&(this.fasterEscape>fastThreshold||this.searchTimer>distanceThreshold))this.endPolice(true);
+  this.nearestPolice=closest;
  }
  updateCamera(dt){const p=this.player;let dx,dy,dz,lookX,lookY,lookZ;const h=p.heading;
   if(mode!=='game'){
     const ang=.18+Math.sin(this.elapsed*.55)*.25;
     dx=p.x+Math.sin(h+ang)*7;dy=3.3;dz=p.z-Math.cos(h+ang)*10;lookX=p.x;lookY=1;lookZ=p.z+1.2;
-  }else if(this.cameraMode===2){dx=p.x+Math.sin(h)*1.23;dy=1.3;dz=p.z+Math.cos(h)*1.23;lookX=p.x+Math.sin(h)*20;lookY=1.3;lookZ=p.z+Math.cos(h)*20;}
+  }else if(this.cameraMode===2){dx=p.x+Math.sin(h)*.23;dy=1.63+(this.airTimer>0?.25:0);dz=p.z+Math.cos(h)*.90;lookX=p.x+Math.sin(h)*32;lookY=1.15;lookZ=p.z+Math.cos(h)*32;}
   else{const dist=this.cameraMode===1?5.9:8.9;const height=this.cameraMode===1?2.5:3.9;
    dx=p.x-Math.sin(h)*dist;dy=height;dz=p.z-Math.cos(h)*dist;lookX=p.x+Math.sin(h)*4.4;lookY=1.1;lookZ=p.z+Math.cos(h)*4.4;}
   if(this.crashState){
@@ -965,8 +1065,9 @@ class DriftGame{
   const rpm=Math.min(8000,Math.round(850+Math.abs(mph(p.speed))*41));
   $('rpm').textContent=String(rpm);$('rpmLine').style.width=`${Math.min(100,rpm/80)}%`;
   $('gear').textContent=p.speed<.7?'N':(p.vx*Math.sin(p.heading)+p.vz*Math.cos(p.heading))<0?'R':String(Math.min(6,Math.floor(mph(p.speed)/32)+1));
-  $('boost').textContent=(carSave().upgrades.turbo>0||carSave().upgrades.supercharger>0)?Math.round(Math.min(100,mph(p.speed)/1.8))+'%':'N/A';
-  $('runScore').textContent=fmt(this.run.score)+' XP';$('nearMissCount').textContent=fmt(state.nearMisses);
+  $('boost').textContent=this.boostTimer>0?('PAD '+Math.ceil(this.boostTimer)+'s'):(carSave().upgrades.turbo>0||carSave().upgrades.supercharger>0)?Math.round(Math.min(100,mph(p.speed)/1.8))+'%':'N/A';
+  $('runScore').textContent=fmt(this.run.score)+' XP';$('runEarnedCoins').textContent='EST. +'+fmt(Math.floor(this.run.score/5))+' DC';
+  $('featureNotice').classList.toggle('hidden',!(this.featureUntil>this.elapsed));$('nearMissCount').textContent=fmt(state.nearMisses);
   if(this.elapsed>this.nearMissFlashUntil)$('nearMissFlash').classList.add('hidden');$('combo').textContent='×'+this.run.combo.toFixed(1);
   $('driftNotice').classList.toggle('hidden',!this.drifting);
   $('driftSplash').textContent=fmt(this.run.score);
@@ -975,8 +1076,12 @@ class DriftGame{
   $('driftMeterPin').style.left=Math.min(100,p.angle/75*100)+'%';
   $('driftAngle').textContent=`${p.angle>=24&&p.angle<=46?'PERFECT SLIDE':p.angle>46?'WIDE ANGLE':'CLEAN DRIFT'} • ${Math.round(p.angle)}° • ${this.run.combo.toFixed(1)}× COMBO`;
   $('wanted').classList.toggle('hidden',!this.wanted);$('stars').textContent='★'.repeat(this.wanted)+'☆'.repeat(Math.max(0,5-this.wanted));if(this.elapsed>this.dispatchUntil)$('dispatchMessage').classList.add('hidden');
+  const closest=this.police.reduce((best,a)=>Math.hypot(a.x-p.x,a.z-p.z)<Math.hypot((best?.x??99999)-p.x,(best?.z??99999)-p.z)?a:best,null);
+  const dist=closest?Math.hypot(closest.x-p.x,closest.z-p.z):Infinity;
+  if(closest){const lx=closest.x-p.x,lz=closest.z-p.z;const side=lx*Math.cos(p.heading)-lz*Math.sin(p.heading),ahead=lx*Math.sin(p.heading)+lz*Math.cos(p.heading);const arrow=Math.abs(side)>Math.abs(ahead)*.65?(side>0?'→':'←'):(ahead>0?'↑':'↓');$('policeArrow').textContent=arrow+' POLICE '+Math.round(dist)+'m';}
+  $('copGlow').classList.toggle('hidden',!this.wanted||dist>145);$('copGlow').style.opacity=String(Math.min(.28,Math.max(.04,(145-dist)/620))); 
  }
 }
 
-try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}}
+try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}}
 catch(e){errorScreen(e);}

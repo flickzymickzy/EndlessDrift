@@ -449,3 +449,33 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 .username-panel{margin:15px 0;border:1px solid #5df2cc40;border-radius:14px;background:#0c2531bf;padding:17px}.username-panel h3{margin:8px 0 5px;color:#9effdc;overflow-wrap:anywhere}.username-panel .muted{font-size:12px;line-height:1.7}.username-panel .notice{margin-top:12px}
 .username-form{margin-top:15px}.username-form label{display:block;font-size:11px;font-weight:850;letter-spacing:.09em;margin-bottom:8px}.username-input-row{display:flex;flex-wrap:wrap;gap:8px}.username-input-row input{flex:1;min-width:170px;background:#06141e;border:1px solid #4d717a;color:white;border-radius:8px;padding:12px}.username-input-row .btn{flex:0 0 auto}
 @media(max-width:650px){.pause-buttons{grid-template-columns:1fr}.pause-buttons .btn:first-child{grid-column:auto}.dispatch-message{top:175px;right:12px;width:min(280px,70vw)}}
+
+/* V14: first-login gating, wanted cues, road feature messages and audio controls */
+.username-onboarding{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(3,9,18,.96);backdrop-filter:blur(16px);pointer-events:auto}
+.username-onboarding.hidden{display:none!important}
+.onboarding-card{width:min(520px,95vw);padding:32px;background:linear-gradient(145deg,#101f30,#07141f);border:1px solid #79f5cf6e;border-radius:20px;box-shadow:0 24px 90px #000e;color:#fff}
+.onboarding-card h2{font:900 clamp(32px,7vw,51px)/.99 'Barlow Condensed',sans-serif;margin:12px 0}
+.onboarding-card p{color:#9db7c8;line-height:1.7;font-size:14px}
+.onboarding-card label{display:block;color:#9efbe2;letter-spacing:.1em;font-size:11px;font-weight:900;margin:16px 0 8px}
+.onboarding-card input{display:block;width:100%;background:#03111d;color:#fff;border:1px solid #6be5c866;border-radius:9px;font-size:17px;padding:15px;margin-bottom:12px}
+.onboarding-card .btn{width:100%;margin:5px 0}.onboarding-card #usernameGateError{color:#ff8295;min-height:20px}
+.run-coin-preview{display:block!important;color:#b8f9d9!important;font-weight:900;margin-top:4px;letter-spacing:.05em}
+.police-arrow{color:#f2fbff;font-size:11px;font-weight:900;text-align:center;margin-top:5px;padding:6px 9px;border:1px solid #638afc55;border-radius:5px;background:#07192c}
+.cop-glow{position:absolute;inset:0;z-index:2;pointer-events:none!important;background:linear-gradient(90deg,rgba(242,25,47,.22),transparent 27%,transparent 72%,rgba(45,89,242,.22));mix-blend-mode:screen;animation:policePulse .36s infinite alternate}
+@keyframes policePulse{from{filter:hue-rotate(0deg)}to{filter:hue-rotate(40deg)}}
+.feature-notice{position:absolute;left:50%;top:30%;transform:translateX(-50%);z-index:8;padding:12px 25px;border-radius:9px;background:#071920ea;color:#86ffe3;font-weight:900;letter-spacing:.08em;text-align:center;pointer-events:none}
+.engine-sound-options{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 18px}.engine-sound-options .sound-active{outline:2px solid #61e9bf;background:#183b38}
+
+/* V15: weather choice is required before starting each new drive */
+.weather-chooser{position:fixed;inset:0;z-index:700;background:rgba(1,8,19,.90);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(13px)}
+.weather-chooser.hidden,.weather-rain.hidden{display:none!important}
+.weather-card{width:min(700px,95vw);background:linear-gradient(140deg,#142735,#08121c);border:1px solid #335363;border-radius:22px;padding:35px;color:#f2fbff;box-shadow:0 24px 100px #000b}
+.weather-card h2{font-size:clamp(28px,5vw,48px);line-height:1.1;margin:12px 0}
+.weather-card p{color:#9cbbca;font-size:14px;margin:10px 0 23px}
+.weather-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.weather-options button{appearance:none;background:#142936;border:1px solid #355364;border-radius:13px;padding:22px 17px;text-align:left;color:#e9faff;cursor:pointer;display:flex;flex-direction:column;gap:9px;transition:.15s}
+.weather-options button:hover,.weather-options button.selected{background:#183a42;border-color:#62f4d1;transform:translateY(-1px)}
+.weather-options strong{font-size:16px;letter-spacing:.05em}.weather-options small{font-size:12px;color:#95bbc7}
+.weather-rain{position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.43;background-image:repeating-linear-gradient(107deg,transparent 0 49px,rgba(177,222,242,.3) 50px,transparent 51px,transparent 65px),repeating-linear-gradient(107deg,transparent 0 93px,rgba(193,226,250,.25) 94px,transparent 96px,transparent 125px);background-size:160px 230px,200px 295px;animation:driftRain .45s linear infinite}
+@keyframes driftRain{from{background-position:0 0,0 0}to{background-position:-45px 230px,-65px 295px}}
+@media(max-width:540px){.weather-card{padding:19px}.weather-options{grid-template-columns:1fr}.weather-options button{padding:14px}}

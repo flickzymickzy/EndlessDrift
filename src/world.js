@@ -47,8 +47,9 @@ export function createWorld(scene){
  // Giant sky dome follows the moving player; smoother horizon than a flat background.
  const sky=new THREE.Mesh(new THREE.SphereGeometry(850,32,16),new THREE.ShaderMaterial({
   side:THREE.BackSide,depthWrite:false,
+  uniforms:{uHorizon:{value:new THREE.Color('#9bc5cf')},uZenith:{value:new THREE.Color('#1f578f')}},
   vertexShader:'varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-  fragmentShader:'varying vec3 vPos;void main(){float h=clamp(normalize(vPos).y*.5+.5,0.,1.);vec3 horizon=vec3(.61,.77,.81);vec3 zenith=vec3(.12,.34,.59);gl_FragColor=vec4(mix(horizon,zenith,smoothstep(.40,1.,h)),1.);}'
+  fragmentShader:'varying vec3 vPos;uniform vec3 uHorizon;uniform vec3 uZenith;void main(){float h=clamp(normalize(vPos).y*.5+.5,0.,1.);gl_FragColor=vec4(mix(uHorizon,uZenith,smoothstep(.40,1.,h)),1.);}'
  }));sky.frustumCulled=false;scene.add(sky);
  scene.fog=new THREE.FogExp2('#8bb0be',.0021);
  const ground=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000),new THREE.MeshStandardMaterial({color:0x647e73,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.105;ground.receiveShadow=true;scene.add(ground);
@@ -94,6 +95,15 @@ export function createWorld(scene){
        const canopy=new THREE.Mesh(new THREE.IcosahedronGeometry(1.65,0),leafMat);canopy.position.set(x,3,z);g.add(canopy);
      }
    }
+   // Marked boost strip in the outer right lane and a short jump ramp in lane -4.
+   const boost=new THREE.Group();
+   const pad=new THREE.Mesh(new THREE.BoxGeometry(2.8,.055,4.6),new THREE.MeshStandardMaterial({color:0x12393b,metalness:.4,roughness:.4,emissive:0x04c5ba,emissiveIntensity:.38}));pad.position.y=.06;boost.add(pad);
+   for(const z of [-1.65,-.4,.85,2.1]){const bar=new THREE.Mesh(new THREE.BoxGeometry(2.32,.06,.24),new THREE.MeshBasicMaterial({color:0x63ffdd}));bar.position.set(0,.1,z);boost.add(bar);}
+   boost.position.set(12,0,-20);g.add(boost);
+   const ramp=new THREE.Group();
+   const wedge=new THREE.Mesh(new THREE.BoxGeometry(3.3,.23,5.3),new THREE.MeshStandardMaterial({color:0xeab45d,metalness:.5,roughness:.55}));wedge.rotation.x=-.095;wedge.position.y=.20;ramp.add(wedge);
+   const arrow=new THREE.Mesh(new THREE.BoxGeometry(2.2,.04,.38),new THREE.MeshBasicMaterial({color:0x191f28}));arrow.position.set(0,.48,1.45);ramp.add(arrow);
+   ramp.position.set(-4,0,25);g.add(ramp);
    // Highway gantry, reflective posts, and overhead direction signs.
    if(i%3===0){
      for(const x of [-18,18])put(g,box(.22,6,.22),poleMat,x,3,22);
@@ -112,5 +122,5 @@ export function createWorld(scene){
    chunks.forEach((g,i)=>{g.position.z=(center+i-5)*SEG;});
  }
  update(0);
- return {update,ground,chunks,roadHalf:16.3};
+ return {update,ground,sky,chunks,roadHalf:16.3};
 }
