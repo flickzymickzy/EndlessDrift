@@ -514,7 +514,7 @@ button{transition:transform .16s ease,border-color .16s ease,background .16s eas
 /* V19: thumb-friendly controls, responsive tablet/phone HUD and iOS safe areas. */
 .touch-controls{display:none}
 @media (pointer:coarse), (hover:none){
- .touch-controls{display:block;position:fixed;inset:0;z-index:42;pointer-events:none}
+ .touch-controls{display:block;position:fixed;inset:0;z-index:26;pointer-events:none}
  .touch-controls button{
    pointer-events:auto;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
    -webkit-tap-highlight-color:transparent;cursor:pointer;
