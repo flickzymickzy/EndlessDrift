@@ -29,7 +29,7 @@ const leafMat=new THREE.MeshStandardMaterial({color:0x264b48,roughness:1});
 const sidewalkMat=new THREE.MeshStandardMaterial({color:0x404a53,roughness:1});
 const buildingMats=['#283543','#334656','#33404a','#455563','#263d48','#3a394d'].map(color=>new THREE.MeshStandardMaterial({color,roughness:.85}));
 const windowMat=new THREE.MeshBasicMaterial({color:0x8cd7ea,transparent:true,opacity:.30});
-function createSign(text='ENDLESS DRIFT'){
+function createSign(text='DRIFT ENDLESSLY'){
  const can=document.createElement('canvas');can.width=512;can.height=160;const c=can.getContext('2d');
  c.fillStyle='#0b2d39';c.fillRect(0,0,512,160);
  c.strokeStyle='#7de8dc';c.lineWidth=10;c.strokeRect(5,5,502,150);

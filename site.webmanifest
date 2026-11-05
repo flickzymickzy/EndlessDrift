@@ -1,10 +1,17 @@
 {
-  "name": "Endless Drift",
-  "short_name": "Endless Drift",
+  "name": "Drift Endlessly",
+  "short_name": "Drift Endlessly",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07131b",
   "theme_color": "#5cf2c9",
-  "description": "Endless Drift - drive, drift, earn coins, tune cars, and unlock rewards.",
-  "icons": []
+  "description": "Drift Endlessly - earn Drift Coins by drifting and unlock Drift Pass with in-game currency.",
+  "icons": [
+    {
+      "src": "/assets/drift-endlessly-logo.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

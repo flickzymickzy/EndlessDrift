@@ -1,4 +1,4 @@
-// ENDLESS DRIFT: website + Stripe Checkout + verified webhook. Server-only credentials go in Render Environment.
+// DRIFT ENDLESSLY: website + Stripe Checkout + verified webhook. Server-only credentials go in Render Environment.
 import http from 'node:http';
 import {readFile, stat} from 'node:fs/promises';
 import path from 'node:path';
@@ -45,7 +45,7 @@ async function supabase(resource,{method='GET',payload,admin=true,token}={}){
 }
 async function userFromRequest(req){
  const match=/^Bearer ([\w.-]+)$/.exec(req.headers.authorization||'');
- if(!match)throw new Error('Log in to your ENDLESS DRIFT account first');
+ if(!match)throw new Error('Log in to your DRIFT ENDLESSLY account first');
  const user=await supabase('/auth/v1/user',{admin:false,token:match[1]});
  if(!/^[0-9a-f-]{36}$/.test(user?.id||''))throw new Error('Invalid account session');
  return user;
@@ -270,16 +270,9 @@ async function publicAnnouncements(res){
 async function api(req,res,route){
  try{
   // Public, read-only configuration check: never returns credential values.
-  if(route==='/api/payment-status'&&req.method==='GET'){
-   const required=['STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','SUPABASE_SECRET_KEY','SITE_URL'];
-   const missing=required.filter(name=>!process.env[name]);
-   if(liveStripe){
-    for(const name of ['STRIPE_PRICE_STARTER','STRIPE_PRICE_STREET','STRIPE_PRICE_LEGEND','STRIPE_PRICE_DRIFT_PASS'])
-     if(!process.env[name])missing.push(name);
-    if(process.env.STRIPE_LIVE_CHECKOUT_ENABLED!=='true')missing.push('STRIPE_LIVE_CHECKOUT_ENABLED');
-   }
-   return json(res,missing.length?503:200,{paymentServer:'v19',mode:liveStripe?'live':'sandbox',status:missing.length?'configuration_missing':'ready',missing});
-  }
+   // Free-to-play beta: all new real-money checkout sessions are disabled.
+   if(route==='/api/checkout')return json(res,410,{error:'Real-money purchases are disabled. Earn Drift Coins by playing.'});
+   if(route==='/api/payment-status'&&req.method==='GET')return json(res,200,{paymentServer:'disabled',mode:'game-only',status:'checkout_disabled'});
   if(route.startsWith('/api/player/')||route.startsWith('/api/runs/'))return await playerStatusApi(req,res,route);
   if(route==='/api/leaderboard'&&req.method==='GET')return await leaderboardApi(res,new URL(req.url,'http://localhost').searchParams.get('sort'));
   if(route==='/api/announcements'&&req.method==='GET')return await publicAnnouncements(res);
@@ -355,4 +348,4 @@ http.createServer(async(req,res)=>{
   const details=await stat(target);if(!details.isFile())throw Error('Not a file');
   const file=await readFile(target);res.writeHead(200,{'Content-Type':mime[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache','X-Content-Type-Options':'nosniff'});if(req.method==='HEAD')return res.end();return res.end(file);
  }catch(e){return json(res,404,{error:'File not found'});}
-}).listen(port,'0.0.0.0',()=>console.log(`ENDLESS DRIFT website listening on port ${port}; payment config ${stripeSecret?'set':'not set'}`));
+}).listen(port,'0.0.0.0',()=>console.log(`DRIFT ENDLESSLY website listening on port ${port}; payment config ${stripeSecret?'set':'not set'}`));

@@ -1,6 +1,6 @@
 {
-  "name": "endless-drift",
-  "version": "19.0.0",
+  "name": "drift-endlessly",
+  "version": "20.0.0",
   "private": true,
   "type": "module",
   "scripts": {

@@ -4,10 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#08101a" />
-  <meta name="description" content="ENDLESS DRIFT — drift physics, Drift Pass cosmetics, Drift Coins and near-miss challenges." />
-  <title>ENDLESS DRIFT | Drive, Drift & Tune</title>
+  <meta name="description" content="DRIFT ENDLESSLY — drift physics, Drift Pass cosmetics, Drift Coins and near-miss challenges." />
+  <title>Just Drift Endlessly</title>
+  <link rel="icon" type="image/png" sizes="128x128" href="./assets/drift-endlessly-logo.png" />
+  <link rel="apple-touch-icon" href="./assets/drift-endlessly-logo.png" />
+  <link rel="manifest" href="./site.webmanifest" />
+  <meta name="apple-mobile-web-app-title" content="Drift Endlessly" />
   <link rel="stylesheet" href="./src/style.css" />
-  <script src="https://js.stripe.com/dahlia/stripe.js"></script>
   <script type="importmap">
   {"imports": {
     "three": "./vendor/three.module.js",
@@ -16,14 +19,7 @@
   </script>
 </head>
 <body>
-  <div id="app"><div style="color:white;background:#08101a;min-height:100vh;padding:15vh 8vw;font:700 30px system-ui">ENDLESS DRIFT <div style="font-size:16px;margin-top:18px;font-weight:400">Loading game... If this stays here, open Terminal and make sure <code>node server.js</code> is running.</div></div></div>
-  <section id="stripeCheckoutOverlay" class="stripe-checkout-overlay" hidden role="dialog" aria-modal="true" aria-label="Secure payment">
-    <div class="stripe-checkout-panel">
-      <header class="stripe-checkout-header"><h2>SECURE CHECKOUT</h2><button id="stripeCheckoutClose" type="button" aria-label="Close checkout">CLOSE</button></header>
-      <p id="stripeCheckoutStatus" role="status">Loading payment form…</p>
-      <div id="checkout-form"></div>
-    </div>
-  </section>
+  <div id="app"><div style="color:white;background:#08101a;min-height:100vh;padding:12vh 6vw;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font:700 24px system-ui"><img src="./assets/drift-endlessly-logo.png" width="128" height="128" alt="Drift Endlessly loading logo" style="width:min(220px,52vw);height:auto;object-fit:contain;margin-bottom:12px"/><div style="letter-spacing:.16em">DRIFT ENDLESSLY <span style="font-size:10px;padding:5px 8px;background:#e6293a;border-radius:5px;vertical-align:middle">BETA</span></div><div style="font-size:14px;margin-top:18px;font-weight:400;color:#c5d5dc">LOADING GAME...</div></div></div>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-name: ENDLESS DRIFT checks
+name: DRIFT ENDLESSLY checks
 on:
   push:
     branches: [main, v19-mobile-audio-admin]

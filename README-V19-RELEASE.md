@@ -1,3 +1,5 @@
+> **V19 archive.** V20 BETA disables new real-money checkout and sells Drift Pass for 15,000 earned DC. See README-V20-BETA.md.
+
 # ENDLESS DRIFT V19: release guide
 
 Your game can be shared immediately at https://endlessdrift.onrender.com once the deployment is Live.

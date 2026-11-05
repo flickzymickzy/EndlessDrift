@@ -11,15 +11,17 @@ import {crashMultiplier} from './penalties.js';
 import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
 import {performanceStats,upgradePreview,PERFORMANCE_FIELDS} from './performance.js';
 import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned,cloudLoadGameSave,cloudSaveGameSave,cloudAccessToken} from './cloud.js';
-import {purchased,clearPurchased,refreshPurchased,beginCheckout,spendPurchased} from './payments.js';
+import {purchased,clearPurchased,refreshPurchased,spendPurchased} from './payments.js';
 
+const DRIFT_PASS_COST=15000;
+const hasDriftPass=()=>state.driftPassOwned===true||purchased.driftPass===true;
 const app=document.querySelector('#app');
 if(!app)throw new Error('Missing #app element. Check index.html.');
 app.innerHTML=`
 <canvas id="view" aria-label="3D drifting game"></canvas><div id="tone"></div>
 <div id="ui">
   <header class="topbar">
-    <div class="brand">ENDLESS <span>DRIFT</span><small>DRIVE // DRIFT // EARN</small></div>
+    <div class="brand">DRIFT <span>ENDLESSLY</span><b class="beta-label">BETA</b><small>DRIVE // DRIFT // EARN</small></div>
     <nav class="toplinks" aria-label="Main navigation">
       <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="coins">COINS</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button><button id="adminNav" data-page="admin" class="hidden">ADMIN</button>
     </nav>
@@ -33,7 +35,7 @@ app.innerHTML=`
   <section id="hero" class="hero">
     <div class="hero-inner">
       <div class="kicker">FREE TO PLAY • XP LEVELS • DRIFT COIN ECONOMY</div>
-      <h1>ENDLESS<br/><span>DRIFT</span></h1>
+      <h1>DRIFT<br/><span>ENDLESSLY</span></h1>
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
       <div id="lastRunBanked" class="last-run-banked hidden"></div><div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
@@ -68,7 +70,7 @@ app.innerHTML=`
     <div class="speed"><div class="speed-number" id="speedNumber">0</div><div class="unit" id="speedUnit">MPH</div><div class="speed-track"><b id="rpmLine"></b></div><div class="speed-bottom"><div><span>GEAR</span> <b id="gear">N</b></div><div><span>RPM</span> <b id="rpm">800</b></div><div><span>BOOST</span> <b id="boost">0%</b></div></div></div>
   </div>
   <div id="weatherChooser" class="weather-chooser hidden" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
-    <div class="weather-card"><div class="kicker">ENDLESS DRIFT // DRIVE SETUP</div><h2 id="weatherTitle">CHOOSE YOUR WEATHER</h2>
+    <div class="weather-card"><div class="kicker">DRIFT ENDLESSLY // DRIVE SETUP</div><h2 id="weatherTitle">CHOOSE YOUR WEATHER</h2>
     <p>Pick the road conditions for this drive. You can change them each time you start.</p>
     <div class="weather-options">
       <button type="button" data-weather="clear"><strong>☀ CLEAR DAY</strong><small>Bright daylight and clear skies</small></button>
@@ -78,10 +80,10 @@ app.innerHTML=`
     </div><button class="btn ghost" id="weatherCancel">CANCEL</button></div>
   </div>
   <div id="weatherRain" class="weather-rain hidden" aria-hidden="true"></div>
-  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO ENDLESS DRIFT</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. Choose it once for free. After you rename it, wait 7 days before changing it again.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
+  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO DRIFT ENDLESSLY</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. Choose it once for free. After you rename it, wait 7 days before changing it again.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
   <div id="pauseScreen" class="pause-screen hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
     <div class="pause-card">
-      <div class="pause-kicker">ENDLESS DRIFT // GAME STOPPED</div>
+      <div class="pause-kicker">DRIFT ENDLESSLY // GAME STOPPED</div>
       <h2 id="pauseTitle">PAUSED<span> / /</span></h2>
       <p id="pauseReason">Your run is frozen. Resume whenever you're ready.</p>
       <div class="pause-status"><span id="pauseCar">CURRENT RIDE</span><span id="pauseXP">0 RUN XP</span><span id="pauseCoins">+0 DC</span></div>
@@ -250,11 +252,11 @@ async function renderAdmin(){
   const data=await res.json();
   if(mode!=='admin')return;
   dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Broadcast messages, customize your game and inspect sandbox stats.')+`
-   <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">VERIFIED PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
+   <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">LEGACY PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">LEGACY SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
    <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Public announcements appear for everyone online and expire after 24 hours.</p><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
-   <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create Stripe purchases or bank payouts. Police mode is local to your current drive.</p></div>
+   <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create bank payouts. Police mode is local to your current drive.</p></div>
    <div class="panel panel-pad"><div class="kicker">ADMIN GIFTS</div><h3>GIVE DRIFT COINS</h3>
-    <p class="notice">Grant game-earned DC to an existing driver username. Maximum 500,000 per action. Does not affect Stripe paid coins.</p>
+    <p class="notice">Grant game-earned DC to an existing driver username. Maximum 500,000 per action. Does not affect legacy paid coins.</p>
     <form id="adminCoinsForm" class="admin-control-form">
       <input name="username" maxlength="24" autocomplete="off" placeholder="Player username" pattern="[A-Za-z0-9_]{3,24}" required/>
       <input name="amount" type="number" min="1" max="500000" step="1" placeholder="Amount of DC" required/>
@@ -262,7 +264,7 @@ async function renderAdmin(){
     </form><p id="adminCoinsResult" class="notice" role="status"></p>
    </div>
    <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (1–5000)</option><option value="coins">/givecoins (1–500,000)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
-   <div class="panel panel-pad"><div class="kicker">RECENT CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
+   <div class="panel panel-pad"><div class="kicker">HISTORICAL CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
 function bankAndExit(){
@@ -344,7 +346,7 @@ function resumeGame(){
  game?.resetTiming();game?.audio?.unlock();
 }
 function clearPause(){pauseActive=false;$('pauseScreen').classList.add('hidden');Object.keys(keys).forEach(key=>keys[key]=false);}
-function errorScreen(err){console.error('Endless Drift error:',err);const msg=String(err?.stack||err?.message||err);
+function errorScreen(err){console.error('Drift Endlessly error:',err);const msg=String(err?.stack||err?.message||err);
  let old=document.getElementById('fatal-error');if(old)return;
  const el=document.createElement('div');el.className='error';el.id='fatal-error';el.innerHTML=`<div class="error-panel"><div class="kicker">GAME STARTUP ERROR</div><h2>Something went wrong</h2><p style="margin:17px 0;line-height:1.8">The game couldn't load. Refresh your website or check the deployment logs in Render. If this continues, copy the error below into ChatGPT.</p><pre></pre><button class="btn primary" onclick="location.reload()">RELOAD GAME</button></div>`;
  el.querySelector('pre').textContent=msg;document.body.appendChild(el);
@@ -514,42 +516,38 @@ function renderBattlePass(){
  const all=[...BATTLE_PASS,...PREMIUM_PASS];
  const item=all.find(i=>i.id===passPreviewId)||BATTLE_PASS[0];
  const isPremium=Boolean(item.premium);
- // Paid entitlements must eventually come from an authenticated payment backend.
- const owned=isPremium?(purchased.driftPass&&level>=item.level):cosmeticUnlocked(item);
+ // Drift Pass access uses earned Drift Coins and existing cloud saves; recognize historical purchases.
+ const owned=isPremium?(hasDriftPass()&&level>=item.level):cosmeticUnlocked(item);
  const next=BATTLE_PASS.find(i=>!cosmeticUnlocked(i));
- const tierCard=(reward)=>{const free=!reward.premium,ready=free?cosmeticUnlocked(reward):(purchased.driftPass&&level>=reward.level),selected=reward.id===item.id;
+ const tierCard=(reward)=>{const free=!reward.premium,ready=free?cosmeticUnlocked(reward):(hasDriftPass()&&level>=reward.level),selected=reward.id===item.id;
   return `<button class="pass-tier pass-v10-tier ${selected?'pass-selected':''} ${ready?'unlocked':'locked'} ${!free?'premium-tier':''}" data-pass-preview="${reward.id}" aria-pressed="${selected}">
    <div class="pass-top"><span>${free?'FREE':'PREMIUM'}</span><span>${ready?'✓ UNLOCKED':free?'LEVEL '+reward.level+' 🔒':'🔒'}</span></div>
    <div class="reward-preview reward-${reward.type}" style="--reward-color:${reward.color}"><div class="reward-symbol"></div></div>
    <div class="pass-type">${reward.type.toUpperCase()}</div><h3>${char(reward.name)}</h3>
-   <p>${ready?'OWNED':free?'UNLOCK AT LEVEL '+reward.level:(purchased.driftPass?'REACH LEVEL '+reward.level:'PREMIUM REQUIRED')}</p>
+   <p>${ready?'OWNED':free?'UNLOCK AT LEVEL '+reward.level:(hasDriftPass()?'REACH LEVEL '+reward.level:'PREMIUM REQUIRED')}</p>
   </button>`;
  };
  dom.screen.innerHTML=header('DRIFT PASS','SEASON 01 // STREET LEGENDS',
-  'Two reward tracks. Level up for free cosmetics; premium rewards need a verified real-money purchase. Select ANY reward to preview it.')+`
- <div class="pass-banner panel"><div><div class="kicker">FREE TRACK + PREMIUM TRACK // 30 LEVELS EACH</div><h3>LEVEL ${level} <span>DRIVER</span></h3><p>${unlocked} / ${BATTLE_PASS.length} FREE REWARDS. ${next?`Next: ${next.name}, Level ${next.level}`:'All free rewards unlocked!'}</p></div><div class="pass-banner-actions"><span class="premium-lock">PREMIUM <strong>${purchased.driftPass?'OWNED':'LOCKED'}</strong></span><button class="btn ghost" data-premium-guide>${purchased.driftPass?'PASS OWNED':'BUY PASS • AED 34.99'}</button></div></div>
+  'Two reward tracks. Level up for free cosmetics; premium rewards unlock using earned Drift Coins. Select ANY reward to preview it.')+`
+ <div class="pass-banner panel"><div><div class="kicker">FREE TRACK + PREMIUM TRACK // 30 LEVELS EACH</div><h3>LEVEL ${level} <span>DRIVER</span></h3><p>${unlocked} / ${BATTLE_PASS.length} FREE REWARDS. ${next?`Next: ${next.name}, Level ${next.level}`:'All free rewards unlocked!'}</p></div><div class="pass-banner-actions"><span class="premium-lock">PREMIUM <strong>${hasDriftPass()?'OWNED':'LOCKED'}</strong></span><button class="btn ghost" data-premium-guide>${hasDriftPass()?'PASS OWNED':'BUY PASS • ${fmt(DRIFT_PASS_COST)} DC'}</button></div></div>
  <div class="pass-preview-studio panel">
    <div class="pass-preview-visual"><div class="kicker">LIVE 3D REWARD PREVIEW</div><div id="passCarMount" class="pass-car-mount"><div class="showroom-fallback">3D PREVIEW</div></div><span>DRAG TO ROTATE // PREVIEWS ARE FREE</span></div>
-   <div class="pass-preview-info"><span class="pass-level-label">${isPremium?'PREMIUM':'FREE'} TRACK / LEVEL ${item.level}</span><h2>${char(item.name)}</h2><div class="pass-chip">${item.type.toUpperCase()}</div><p>See this ${item.type} on your ${char(getSelected().name)} before unlocking. ${isPremium?'Premium access requires a secure payment and server-verified ownership.':'Reach the level to earn it for free.'}</p>
-     <div class="pass-reward-sample" style="--reward-color:${item.color}"><span class="sample-dot"></span><strong>${char(item.color.toUpperCase())}</strong><span>${owned?'✓ OWNED':isPremium?(purchased.driftPass?'REACH LEVEL '+item.level:'PREMIUM LOCKED'):'LEVEL '+item.level+' REQUIRED'}</span></div>
-     ${isPremium?`<button class="btn primary" ${owned?`data-pass-equip="${item.id}"`:purchased.driftPass?'disabled':'data-premium-guide'}>${owned?'EQUIP REWARD':purchased.driftPass?'REACH LEVEL '+item.level:'BUY DRIFT PASS • AED 34.99'}</button>`:`<button class="btn primary" data-pass-equip="${item.id}" ${owned?'':'disabled'}>${owned?'EQUIP ON CURRENT CAR':'REACH LEVEL '+item.level+' TO UNLOCK'}</button>`}
+   <div class="pass-preview-info"><span class="pass-level-label">${isPremium?'PREMIUM':'FREE'} TRACK / LEVEL ${item.level}</span><h2>${char(item.name)}</h2><div class="pass-chip">${item.type.toUpperCase()}</div><p>See this ${item.type} on your ${char(getSelected().name)} before unlocking. ${isPremium?'Buy Drift Pass with 15,000 earned Drift Coins to access premium rewards.':'Reach the level to earn it for free.'}</p>
+     <div class="pass-reward-sample" style="--reward-color:${item.color}"><span class="sample-dot"></span><strong>${char(item.color.toUpperCase())}</strong><span>${owned?'✓ OWNED':isPremium?(hasDriftPass()?'REACH LEVEL '+item.level:'PREMIUM LOCKED'):'LEVEL '+item.level+' REQUIRED'}</span></div>
+     ${isPremium?`<button class="btn primary" ${owned?`data-pass-equip="${item.id}"`:hasDriftPass()?'disabled':'data-premium-guide'}>${owned?'EQUIP REWARD':hasDriftPass()?'REACH LEVEL '+item.level:'BUY DRIFT PASS • ${fmt(DRIFT_PASS_COST)} DC'}</button>`:`<button class="btn primary" data-pass-equip="${item.id}" ${owned?'':'disabled'}>${owned?'EQUIP ON CURRENT CAR':'REACH LEVEL '+item.level+' TO UNLOCK'}</button>`}
    </div>
  </div>
  <div class="collection-header"><div><div class="kicker">DUAL REWARD TRACK</div><h3>FREE + PREMIUM DRIFT PASS</h3></div><span class="collection-hint">SCROLL SIDEWAYS TO SEE MORE LEVELS</span></div>
- <div class="pass-v10-wrap"><div class="pass-v10-rail-labels"><div>LEVEL</div><div>FREE</div><div>PREMIUM <span>${purchased.driftPass?'✓':'🔒'}</span></div></div><div class="pass-v10-scroll"><div class="pass-v10-grid">${BATTLE_PASS.map((free,i)=>`<div class="pass-v10-column"><div class="pass-v10-level ${level>=free.level?'pass-v10-reached':''}">${free.level}${level===free.level?' • YOU':''}</div>${tierCard(free)}${tierCard(PREMIUM_PASS[i])}</div>`).join('')}</div></div></div>
- <p class="notice" style="margin-top:19px">Drift Pass requires a signed-in player and server-verified Stripe purchase. Premium rewards become available as you reach their levels. Until live payments are activated, Stripe runs in Sandbox.</p>`;
+ <div class="pass-v10-wrap"><div class="pass-v10-rail-labels"><div>LEVEL</div><div>FREE</div><div>PREMIUM <span>${hasDriftPass()?'✓':'🔒'}</span></div></div><div class="pass-v10-scroll"><div class="pass-v10-grid">${BATTLE_PASS.map((free,i)=>`<div class="pass-v10-column"><div class="pass-v10-level ${level>=free.level?'pass-v10-reached':''}">${free.level}${level===free.level?' • YOU':''}</div>${tierCard(free)}${tierCard(PREMIUM_PASS[i])}</div>`).join('')}</div></div></div>
+ <p class="notice" style="margin-top:19px">Drift Pass costs 15,000 earned Drift Coins, not real money. Ownership is saved with your garage. Premium rewards unlock when you reach the required level.</p>`;
  previewCosmetic(state.selected,item,'passCarMount');
 }
-const COIN_PACKS=[
- {id:'starter',coins:1500,price:'AED 9.99'},
- {id:'street',coins:5000,price:'AED 24.99'},
- {id:'legend',coins:12000,price:'AED 49.99'},
-];
 function renderCoins(){
- dom.screen.innerHTML=header('DRIFT COINS','CURRENCY STORE • STRIPE CHECKOUT','Sign in under Account before buying. Stripe Checkout handles payment. Purchased coins are saved securely in your Supabase account.')+`
- <div class="coin-banner panel panel-pad"><div class="kicker">YOUR CURRENT BALANCE</div><strong>${fmt(state.wallet+purchased.coins)} DC</strong><p>${fmt(state.wallet)} earned on this browser + ${fmt(purchased.coins)} purchased on your account. Online coins require a login to spend.</p></div>
- <div class="coin-pack-grid">${COIN_PACKS.map((pack,i)=>`<div class="coin-pack panel panel-pad"><div class="kicker">${i===0?'STARTER PACK':i===1?'STREET PACK':'LEGEND PACK'}</div><h3>${fmt(pack.coins)} <span>DC</span></h3><p class="muted">${pack.price}</p><div class="coin-symbol">DC</div><button class="btn primary" data-coins-guide="${pack.id}">BUY ${pack.price}</button><small>Secure Stripe Checkout • Sign-in required</small></div>`).join('')}</div>
- <div class="notice">A Stripe webhook must be configured on Render to award paid coins. Purchasing only works while logged in. Earned coins and cars are tied to your driver account. Visitors start with a fresh guest save.</div>`;
+ dom.screen.innerHTML=header('DRIFT COINS','EARN CURRENCY • NO REAL MONEY','Get Drift Coins by drifting, banking XP and leveling up. The Drift Pass also uses earned DC.')+`
+ <div class="coin-banner panel panel-pad"><div class="kicker">YOUR EARNED BALANCE</div><strong>${fmt(state.wallet)} DC</strong><p>Spend Drift Coins on cars, upgrades, cosmetics and the Drift Pass. Earn 1 DC for every 5 XP you bank, plus level bonuses.</p></div>
+ <div class="coin-pack-grid"><div class="coin-pack panel panel-pad"><div class="kicker">01 • DRIFT</div><h3>BANK YOUR <span>XP</span></h3><p class="muted">Drive, hold clean drifts and bank your runs to earn Drift Coins.</p><button class="btn primary" data-page="game">START DRIVING</button></div><div class="coin-pack panel panel-pad"><div class="kicker">02 • LEVEL UP</div><h3>UNLOCK <span>BONUSES</span></h3><p class="muted">Level rewards include more Drift Coins.</p><button class="btn ghost" data-page="leaderboard">VIEW PROGRESS</button></div><div class="coin-pack panel panel-pad"><div class="kicker">03 • DRIFT PASS</div><h3>${fmt(DRIFT_PASS_COST)} <span>DC</span></h3><p class="muted">Unlock the premium track with earned Drift Coins.</p><button class="btn primary" data-page="battlepass">VIEW DRIFT PASS</button></div></div>
+ ${purchased.coins>0?`<p class="notice" style="margin-top:16px">You also have ${fmt(purchased.coins)} DC from previous purchases. They remain available in the garage and shop. New real-money purchases are disabled; Drift Pass requires earned DC.</p>`:''}
+ <p class="notice" style="margin-top:16px">No payment details needed. Drift Coins are earned by playing.</p>`;
 }
 function showUsernameGate(profile){
  const needsChoice=!!profile && profile.username_initialized_at===null;
@@ -573,7 +571,7 @@ async function renderAccount(){
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
  ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'You can change your username again on '+new Date(new Date(profile.username_changed_at).getTime()+604800000).toLocaleDateString():'First username choice is free. A rename starts a 7-day cooldown. Usernames must be unique.'}</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
- ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Your paid Drift Coin balance and Drift Pass ownership are stored securely online. Earned XP, cars, and tuning are saved per account in Supabase. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
+ ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Earned Drift Coins, Drift Pass ownership, XP, cars, and tuning are saved with your signed-in garage. Legacy paid balances are retained where applicable. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
  const select=(name,label,items)=>`<div class="setting"><label for="setting-${name}">${label}</label><select id="setting-${name}" data-setting="${name}">${items.map(([v,t])=>`<option value="${v}" ${String(s[name])===String(v)?'selected':''}>${t}</option>`).join('')}</select></div>`;
@@ -607,7 +605,7 @@ function renderSettings(){const s=state.settings;
  ${select('policeRadio','POLICE RADIO DISPATCH',[['true','On'],['false','Off']])}
  ${slider('musicVolume','MUSIC VOLUME',0,100,5,'%')}
  ${slider('effectsVolume','SOUND EFFECTS',0,100,5,'%')}
- </div><div class="divider"></div><div class="kicker">SAVE DATA / WEBSITE MIGRATION</div><p class="notice" style="margin:12px 0">Moving from localhost to endless-drift.com uses a different browser save area. Export your save here, then import it on your new website to keep cars, XP, Drift Pass rewards and upgrades.</p><div class="save-actions"><button class="btn primary" data-save-export>DOWNLOAD SAVE BACKUP</button><button class="btn ghost" data-save-import>IMPORT SAVE BACKUP</button><input id="saveFileInput" class="hidden" type="file" accept=".json,application/json" /></div><p class="notice" style="margin-top:18px">Controls can be rebound above. Original instrumental audio starts after you click Play. No licensed songs included. Lower settings for slower Macs. Shadows, resolution, particles and traffic density affect the actual game rendering.</p></div>`;
+ </div><div class="divider"></div><div class="kicker">SAVE DATA / WEBSITE MIGRATION</div><p class="notice" style="margin:12px 0">Moving from localhost to another domain uses a different browser save area. Export your save here, then import it on your new website to keep cars, XP, Drift Pass rewards and upgrades.</p><div class="save-actions"><button class="btn primary" data-save-export>DOWNLOAD SAVE BACKUP</button><button class="btn ghost" data-save-import>IMPORT SAVE BACKUP</button><input id="saveFileInput" class="hidden" type="file" accept=".json,application/json" /></div><p class="notice" style="margin-top:18px">Controls can be rebound above. Original instrumental audio starts after you click Play. No licensed songs included. Lower settings for slower Macs. Shadows, resolution, particles and traffic density affect the actual game rendering.</p></div>`;
 }
 function themeModal(){
  dom.modal.innerHTML=`<div class="screen-head"><div><div class="kicker">GARAGE CUSTOMIZATION</div><h2>GARAGE DESIGN</h2></div><button class="btn small ghost" data-close>✕</button></div><p class="muted" style="margin:0 0 20px">Pick a look for your garage menu. Saved for future updates and garage scenes.</p><div class="car-grid">${GARAGE_THEMES.map(t=>`<button class="car-tile" data-theme="${t.id}" style="min-height:120px;background:linear-gradient(135deg,${t.wall},${t.floor})"><div style="height:14px;width:70%;background:${t.accent};border-radius:3px;box-shadow:0 0 24px ${t.accent}55"></div><h3 style="margin-top:20px">${t.name}</h3><div class="sub">${state.garageTheme===t.id?'✓ SELECTED':'APPLY THEME'}</div></button>`).join('')}</div><div class="modal-actions"><button class="btn" data-close>CLOSE</button></div>`;
@@ -615,14 +613,14 @@ function themeModal(){
 function carModal(){
  const car=CARS.find(c=>c.id===customizedCar)||getSelected(),cs=carSave(customizedCar);
  const preview=cosmeticPreview,selectedItem=preview?.id?[...BATTLE_PASS,...PREMIUM_PASS].find(i=>i.id===preview.id):null;
- const eligible=!selectedItem||(selectedItem.premium?(purchased.driftPass&&levelFromXP(state.lifetimeXP)>=selectedItem.level):cosmeticUnlocked(selectedItem));
+ const eligible=!selectedItem||(selectedItem.premium?(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=selectedItem.level):cosmeticUnlocked(selectedItem));
  const section=(type,label,free)=>{
   const rewards=[...BATTLE_PASS,...PREMIUM_PASS].filter(i=>i.type===type);
   return `<div class="cosmetic-section"><h3>${label}</h3><div class="swatch-row">${free.map(c=>{
    const current=cs[COSMETIC_SLOT[type]]===c,active=preview?.type===type&&preview.color===c;
    return `<button class="swatch ${current?'active':''} ${active?'preview-selected':''}" data-preview-free="${type}|${c}" title="Preview ${label}: ${c}" aria-label="Preview ${label} ${c}" style="background:${c==='off'?'linear-gradient(135deg,#202935 45%,#ff5454 46%,#ff5454 54%,#202935 55%)':c}"></button>`;
   }).join('')}</div><div class="cosmetic-grid">${rewards.map(item=>{
-    const owned=item.premium?(purchased.driftPass&&levelFromXP(state.lifetimeXP)>=item.level):cosmeticUnlocked(item),selected=cs[COSMETIC_SLOT[type]]===item.color,active=preview?.id===item.id;
+    const owned=item.premium?(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=item.level):cosmeticUnlocked(item),selected=cs[COSMETIC_SLOT[type]]===item.color,active=preview?.id===item.id;
     return `<button class="cosmetic-item ${owned?'':'locked'} ${selected?'selected':''} ${active?'preview-selected':''}" data-preview-cosmetic="${item.id}"><span class="cosmetic-color" style="background:${item.color}"></span><strong>${char(item.name)}</strong><small>${active?'PREVIEWING':owned?(selected?'EQUIPPED':'UNLOCKED'):(item.premium?'PREMIUM LOCKED':'PREVIEW • LVL '+item.level)}</small></button>`;
   }).join('')}</div></div>`;
  };
@@ -663,7 +661,7 @@ document.addEventListener('click',async e=>{
  if(t.dataset.saveImport!==undefined){document.getElementById('saveFileInput')?.click();return;}
  if(t.id==='garageDesign'){showModal('garage');return;}
  if(t.id==='customFromHud'){showModal('car');return;}
- if(t.dataset.coinsGuide){try{await beginCheckout(t.dataset.coinsGuide);}catch(err){notify('CHECKOUT: '+String(err.message||err));}return;}
+ /* New real-money coin purchases disabled in V20 BETA. */
  if(t.dataset.cloudSignout!==undefined){try{await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();notify('LOGGED OUT');renderAccount();}catch(e){notify(e.message);}return;}
  if(t.dataset.revCar){game?.revPreview(t.dataset.revCar);return;}
  if(t.dataset.tuneSound){carSave(tuningCar).engineNote=t.dataset.tuneSound;save();game?.revPreview(tuningCar);renderTune();return;}
@@ -672,11 +670,11 @@ document.addEventListener('click',async e=>{
  if(t.dataset.shopEquip){const item=COSMETIC_SHOP.find(x=>x.id===t.dataset.shopEquip);if(!item||!shopOwns(item))return;const slot=COSMETIC_SLOT[item.type],cs=carSave(state.selected);cs[slot]=item.color;save();game?.setCarPreviewCosmetics(state.selected);notify(item.name.toUpperCase()+' EQUIPPED');renderShop();return;}
 
  if(t.dataset.premiumGuide!==undefined){
-  if(purchased.driftPass){notify('YOU ALREADY OWN THE DRIFT PASS');return;}
-  try{await beginCheckout('drift_pass');}catch(err){notify('CHECKOUT: '+String(err.message||err));}return;
+  if(hasDriftPass()){notify('YOU ALREADY OWN THE DRIFT PASS');return;}
+  if(!pay(DRIFT_PASS_COST)){notify('NOT ENOUGH EARNED DRIFT COINS • NEED '+fmt(DRIFT_PASS_COST)+' DC');return;}state.driftPassOwned=true;save();cashRefresh();notify('DRIFT PASS UNLOCKED • '+fmt(DRIFT_PASS_COST)+' DC');renderBattlePass();return;
  }
  if(t.dataset.passPreview){passPreviewId=t.dataset.passPreview;renderBattlePass();return;}
- if(t.dataset.passEquip){const item=[...BATTLE_PASS,...PREMIUM_PASS].find(i=>i.id===t.dataset.passEquip);if(!item||(item.premium?!(purchased.driftPass&&levelFromXP(state.lifetimeXP)>=item.level):!cosmeticUnlocked(item)))return;
+ if(t.dataset.passEquip){const item=[...BATTLE_PASS,...PREMIUM_PASS].find(i=>i.id===t.dataset.passEquip);if(!item||(item.premium?!(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=item.level):!cosmeticUnlocked(item)))return;
    const slot=COSMETIC_SLOT[item.type],cs=carSave(state.selected);cs[slot]=item.color;save();game?.setCarPreviewCosmetics(state.selected);renderBattlePass();notify(item.name.toUpperCase()+' EQUIPPED ON '+getSelected().name.toUpperCase());return;}
  if(t.dataset.previewCosmetic){const item=[...BATTLE_PASS,...PREMIUM_PASS].find(i=>i.id===t.dataset.previewCosmetic);if(!item)return;
    cosmeticPreview={id:item.id,type:item.type,color:item.color,name:item.name};carModal();return;}
@@ -684,7 +682,7 @@ document.addEventListener('click',async e=>{
    cosmeticPreview={type,color,name:color==='off'?'Underglow Off':type.toUpperCase()+' • '+color.toUpperCase()};carModal();return;}
  if(t.dataset.clearCosmeticPreview!==undefined){cosmeticPreview=null;carModal();return;}
  if(t.dataset.applyCosmetic!==undefined){if(!cosmeticPreview)return;const item=cosmeticPreview.id?[...BATTLE_PASS,...PREMIUM_PASS].find(i=>i.id===cosmeticPreview.id):null;
-   if(item&&(item.premium?!(purchased.driftPass&&levelFromXP(state.lifetimeXP)>=item.level):!cosmeticUnlocked(item))){notify(item.premium?'DRIFT PASS OR LEVEL NOT UNLOCKED':'REACH DRIFT PASS LEVEL '+item.level+' TO UNLOCK');return;}
+   if(item&&(item.premium?!(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=item.level):!cosmeticUnlocked(item))){notify(item.premium?'DRIFT PASS OR LEVEL NOT UNLOCKED':'REACH DRIFT PASS LEVEL '+item.level+' TO UNLOCK');return;}
    const cs=carSave(customizedCar);cs[COSMETIC_SLOT[cosmeticPreview.type]]=cosmeticPreview.color;save();game?.setCarPreviewCosmetics(customizedCar);
    notify(cosmeticPreview.name.toUpperCase()+' EQUIPPED');cosmeticPreview=null;carModal();return;}
  if(t.dataset.tuneCar){if(!state.owned.includes(t.dataset.tuneCar))return;tuningCar=t.dataset.tuneCar;tuneTab='performance';pendingUpgrade=null;pendingVisual=null;renderPage('tune');return;}
@@ -722,7 +720,7 @@ document.addEventListener('click',async e=>{
  if(t.dataset.freeNeon){carSave(customizedCar).neon=t.dataset.freeNeon;save();game?.setCarPreviewCosmetics(customizedCar);carModal();return;}
  if(t.dataset.cosmetic){
    const cosmetic=[...BATTLE_PASS,...PREMIUM_PASS].find(item=>item.id===t.dataset.cosmetic);
-   if(!cosmetic||(cosmetic.premium?!(purchased.driftPass&&levelFromXP(state.lifetimeXP)>=cosmetic.level):!cosmeticUnlocked(cosmetic))){notify('UNLOCK THIS COSMETIC BY LEVELING UP OR BUYING THE DRIFT PASS');return;}
+   if(!cosmetic||(cosmetic.premium?!(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=cosmetic.level):!cosmeticUnlocked(cosmetic))){notify('UNLOCK THIS COSMETIC BY LEVELING UP OR BUYING THE DRIFT PASS');return;}
    const cs=carSave(customizedCar);const slot={paint:'color',smoke:'smoke',rims:'rims',neon:'neon'}[cosmetic.type];
    cs[slot]=cosmetic.color;save();game?.setCarPreviewCosmetics(customizedCar);carModal();notify(cosmetic.name.toUpperCase()+' EQUIPPED');return;
  }

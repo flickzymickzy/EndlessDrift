@@ -1,9 +1,10 @@
 import {CARS, UPGRADES, BATTLE_PASS, BODY_PARTS, levelFromXP, levelReward} from './data.js';
 const KEY='endless-drift-save-v3'; // stable across versions: existing cars and balances preserved
-const starting={wallet:2500,lifetimeXP:0,spent:0,bestDrift:0,drifts:0,crashes:0,escapes:0,nearMisses:0,nearMissXP:0,bestNearMiss:0,levelRewardsClaimed:0,unlockedCosmetics:[],shopOwned:[],owned:[CARS[0].id],selected:CARS[0].id,cars:{},settings:{quality:'high',units:'mph',fps:'60',steering:1,driftAssist:true,driftStyle:'arcade',uiScale:100,smoke:true,uiTheme:'mint',hudLayout:'classic',speedStyle:'digital',hudOpacity:92,renderScale:100,shadows:true,particles:'medium',drawDistance:'normal',trafficDensity:'normal',cameraShake:70,music:true,musicVolume:60,effectsVolume:65,policeRadio:true,controls:{accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space',camera:'KeyC',recover:'KeyR',pause:'Escape'}},garageTheme:'carbon',garageDecor:'neon'};
+const starting={driftPassOwned:false,wallet:2500,lifetimeXP:0,spent:0,bestDrift:0,drifts:0,crashes:0,escapes:0,nearMisses:0,nearMissXP:0,bestNearMiss:0,levelRewardsClaimed:0,unlockedCosmetics:[],shopOwned:[],owned:[CARS[0].id],selected:CARS[0].id,cars:{},settings:{quality:'high',units:'mph',fps:'60',steering:1,driftAssist:true,driftStyle:'arcade',uiScale:100,smoke:true,uiTheme:'mint',hudLayout:'classic',speedStyle:'digital',hudOpacity:92,renderScale:100,shadows:true,particles:'medium',drawDistance:'normal',trafficDensity:'normal',cameraShake:70,music:true,musicVolume:60,effectsVolume:65,policeRadio:true,controls:{accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space',camera:'KeyC',recover:'KeyR',pause:'Escape'}},garageTheme:'carbon',garageDecor:'neon'};
 function copy(o){return JSON.parse(JSON.stringify(o));}
 function sanitize(input){
  const s={...copy(starting),...input};
+ s.driftPassOwned=input?.driftPassOwned===true;
  for(const key of ['wallet','lifetimeXP','spent','bestDrift','drifts','crashes','escapes','nearMisses','nearMissXP','bestNearMiss'])s[key]=Math.max(0,Math.round(Number(s[key])||0));
  // Existing v3/v4 saves already have XP; never grant retrospective level rewards.
  s.levelRewardsClaimed=Number.isFinite(Number(input?.levelRewardsClaimed))?Math.max(0,Math.floor(Number(input.levelRewardsClaimed))):levelFromXP(s.lifetimeXP);
@@ -81,10 +82,10 @@ export function getSelected(){return CARS.find(c=>c.id===state.selected)||CARS[0
 export function cosmeticUnlocked(item){return state.unlockedCosmetics.includes(item.id)||levelFromXP(state.lifetimeXP)>=item.level;}
 
 // Save portability for moving from localhost to a public custom domain.
-export function exportSave(){return JSON.stringify({game:'ENDLESS DRIFT',version:10,exportedAt:new Date().toISOString(),save:state},null,2);}
+export function exportSave(){return JSON.stringify({game:'DRIFT ENDLESSLY',version:10,exportedAt:new Date().toISOString(),save:state},null,2);}
 export function importSave(json){
  const incoming=JSON.parse(json);
- if(incoming?.game!=='ENDLESS DRIFT'||!incoming.save||typeof incoming.save!=='object')throw new Error('Not an ENDLESS DRIFT save backup');
+ if(!['DRIFT ENDLESSLY','ENDLESS DRIFT'].includes(incoming?.game)||!incoming.save||typeof incoming.save!=='object')throw new Error('Not a DRIFT ENDLESSLY save backup');
  const clean=sanitize(incoming.save);
  Object.keys(state).forEach(k=>delete state[k]);Object.assign(state,clean);save();return true;
 }
