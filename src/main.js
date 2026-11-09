@@ -58,7 +58,14 @@ app.innerHTML=`
     <button type="button" data-touch="pause" aria-label="Pause game">PAUSE</button>
     <button type="button" data-touch="bank" aria-label="Bank this run and exit">BANK + EXIT</button>
   </div>
-  <div class="touch-steer touch-group" role="group" aria-label="Steering">
+  <div class="touch-dpad" role="group" aria-label="Four-arrow touch controls">
+    <button type="button" class="dpad-up" data-touch="accelerate" aria-label="Accelerate with up arrow">↑</button>
+    <button type="button" class="dpad-left" data-touch="left" aria-label="Steer left with arrow">←</button>
+    <button type="button" class="dpad-right" data-touch="right" aria-label="Steer right with arrow">→</button>
+    <button type="button" class="dpad-down" data-touch="brake" aria-label="Brake with down arrow">↓</button>
+   </div>
+   <div class="touch-dpad-drift"><button type="button" data-touch="handbrake" aria-label="Hold handbrake to drift">DRIFT</button></div>
+   <div class="touch-steer touch-group" role="group" aria-label="Steering">
     <button type="button" data-touch="left" aria-label="Steer left">◀</button><button type="button" data-touch="right" aria-label="Steer right">▶</button>
   </div>
   <div class="touch-pedals touch-group" role="group" aria-label="Driving pedals">
@@ -90,7 +97,7 @@ app.innerHTML=`
     </div>
    </div>
   </div>
-  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO DRIFT ENDLESSLY</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. You can rename your driver whenever you want. Names must be unique.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
+  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO DRIFT ENDLESSLY</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. You can rename your driver whenever you want. Names must be unique.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSkip">SKIP FOR NOW</button><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
   <div id="pauseScreen" class="pause-screen hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
     <div class="pause-card">
       <div class="pause-kicker">DRIFT ENDLESSLY // GAME STOPPED</div>
@@ -125,7 +132,7 @@ const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
 let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;
 let adminPanelHidden=false;try{adminPanelHidden=localStorage.getItem('ed-hide-admin-tab')==='1';}catch{}
-let deviceChoiceOpen=false;
+let deviceChoiceOpen=false;let skippedUsernameGate=false;
 let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};const touchHeld=Object.create(null),touchPointers=new Map();let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -285,7 +292,7 @@ async function renderAdmin(){
    <form id="adminXpForm" class="admin-control-form"><input name="username" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Player username" required/>
    <input name="amount" type="number" min="1" step="1" placeholder="Custom amount of XP" required/>
    <button class="btn primary" type="submit">GIVE XP</button></form><p id="adminXpResult" class="notice" role="status"></p></div>
-   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="boost">/boost (1.75× speed)</option><option value="slow">/slow (0.5× speed)</option><option value="resetpowers">/resetpowers (restore defaults)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
+   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="boost">/boost (1.75× speed)</option><option value="slow">/slow (0.5× speed)</option><option value="resetpowers">/resetpowers (restore defaults)</option><option value="unboost">/unboost (normal speed)</option><option value="superboost">/superboost (max legal speed)</option><option value="superjump">/superjump (3× jump)</option><option value="unjump">/unjump (normal jumps)</option><option value="unstuck">/unstuck (recover car)</option><option value="restore">/restore (repair + clear wanted + unfreeze)</option><option value="godon">/godon (invincible)</option><option value="godoff">/godoff (normal damage)</option><option value="unmorph">/unmorph (return to car)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
    <div class="panel panel-pad"><div class="kicker">HISTORICAL CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
@@ -405,6 +412,7 @@ function applyUI(){
  document.documentElement.style.setProperty('--touch-scale',String(Math.max(.8,Math.min(1.25,(Number(s.touchSize)||100)/100))));
  document.body.dataset.hudLayout=s.hudLayout||'classic';
  document.body.dataset.speedStyle=s.speedStyle||'digital';
+ document.documentElement.dataset.touchLayout=s.touchLayout==='pedals'?'pedals':'arrows';
  applyScale();
 }
 function applyGarageTheme(){const theme=GARAGE_THEMES.find(t=>t.id===state.garageTheme)||GARAGE_THEMES[0];document.documentElement.style.setProperty('--garage-wall',theme.wall);document.documentElement.style.setProperty('--garage-floor',theme.floor);document.documentElement.style.setProperty('--garage-accent',theme.accent);}
@@ -422,7 +430,7 @@ function renderPage(page){
   if(page!=='game'&&game?.playing){
     if(game.crashState)game.respawn();else game.endRun(false);
   }
-  mode=page; game&&(game.playing=page==='game');dom.screen.classList.toggle('garage-mode',page==='garage');
+  mode=page;document.body.classList.toggle('game-active',page==='game');game&&(game.playing=page==='game');dom.screen.classList.toggle('garage-mode',page==='garage');
   dom.hero.classList.toggle('hidden',page!=='home');dom.screen.classList.toggle('hidden',page==='home'||page==='game');dom.hud.classList.toggle('hidden',page!=='game');
   document.querySelectorAll('.toplinks button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
   if(page==='game'){
@@ -602,7 +610,7 @@ function renderBattlePass(){
  previewCosmetic(state.selected,item,'passCarMount');
 }
 function showUsernameGate(profile){
- const needsChoice=!!profile && profile.username_initialized_at===null;
+ const needsChoice=!!profile && profile.username_initialized_at===null&&!skippedUsernameGate;
  usernameOnboarding=needsChoice;
  $('usernameOnboarding').classList.toggle('hidden',!needsChoice);
  if(needsChoice){ if(mode==='game')pauseGame('focus'); const el=$('firstUsername');if(el&&!el.value)el.value=''; }
@@ -651,6 +659,7 @@ function renderSettings(){const s=state.settings;
  ${slider('steering','STEERING SENSITIVITY',.5,1.8,.1)}
  ${slider('cameraShake','CAMERA SHAKE STRENGTH',0,100,5,'%')}
   ${slider('touchSize','TOUCH CONTROL SIZE',80,125,5,'%')}
+  ${select('touchLayout','PHONE / TABLET BUTTONS',[['arrows','FOUR ARROWS + DRIFT'],['pedals','GAS / BRAKE + STEERING']])}
  </div><div class="divider"></div><div class="kicker">CUSTOM KEYBOARD CONTROLS</div>
  <p class="notice">Click a binding, then press your new key. Escape cancels. The changes save automatically.</p>
  <div class="controls-grid">${Object.entries({accelerate:'Accelerate',brake:'Brake / reverse',left:'Steer left',right:'Steer right',handbrake:'Handbrake / drift',camera:'Change camera',recover:'Respawn / recover',pause:'Pause / menu'}).map(([key,label])=>`<button class="control-bind" data-bind="${key}"><span>${label}</span><kbd>${(s.controls?.[key]||'UNBOUND').replace('Key','').replace('Arrow','').replace('Digit','')}</kbd></button>`).join('')}</div><button class="btn ghost small" data-reset-keys>RESET CONTROLS</button>
@@ -699,7 +708,7 @@ document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
  if(t.dataset.chooseDevice){chooseDevice(t.dataset.chooseDevice);return;}
   if(deviceChoiceOpen)return;
-  if(usernameOnboarding&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
+  if(usernameOnboarding&&t.id!=='onboardingSkip'&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
  if(t.id==='adminVerifyCancel'){$('adminVerifyOverlay').classList.add('hidden');return;}
  if(t.dataset.adminVisibility!==undefined){
    adminPanelHidden=!adminPanelHidden;try{localStorage.setItem('ed-hide-admin-tab',adminPanelHidden?'1':'0');}catch{}
@@ -711,7 +720,8 @@ document.addEventListener('click',async e=>{
  if(t.dataset.adminCops!==undefined){if(!game)return;game.adminInfiniteCops=!game.adminInfiniteCops;if(game.adminInfiniteCops&&game.playing){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}notify(game.adminInfiniteCops?'MAXIMUM PURSUIT ENABLED':'MAXIMUM PURSUIT DISABLED');return;}
  if(t.dataset.adminWeather!==undefined){renderPage('home');$('weatherChooser').classList.remove('hidden');return;}
  if(t.dataset.adminHide){try{await adminRequest('/api/admin/announcement/hide',{id:Number(t.dataset.adminHide)});await renderAdmin();await fetchAnnouncements();}catch(err){notify(err.message);}return;}
- if(t.id==='onboardingSignOut'){await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();showUsernameGate(null);renderPage('account');return;}
+ if(t.id==='onboardingSkip'){skippedUsernameGate=true;showUsernameGate(null);notify('YOU CAN CHANGE YOUR USERNAME LATER IN ACCOUNT');return;}
+ if(t.id==='onboardingSignOut'){skippedUsernameGate=false;await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();showUsernameGate(null);renderPage('account');return;}
  if(t.dataset.weather){chosenWeather=t.dataset.weather;closeWeatherChoice();game?.applyWeather(chosenWeather);weatherApproved=true;renderPage('game');return;}
  if(t.id==='weatherCancel'){closeWeatherChoice();return;}
  if(t.id==='bankExit'||t.id==='bankExitPaused'){bankAndExit();return;}
@@ -944,6 +954,19 @@ touchPanel?.addEventListener('pointerdown',event=>{
  if(action==='bank')$(pauseActive?'bankExitPaused':'bankExit')?.click();
 });
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])touchPanel?.addEventListener(eventName,event=>releaseTouch(event.pointerId));
+// iOS/Safari can release a captured pointer outside the button. Clear stuck actions.
+for(const eventName of ['pointerup','pointercancel'])document.addEventListener(eventName,event=>releaseTouch(event.pointerId),true);
+touchPanel?.addEventListener('pointermove',event=>{
+ const entry=touchPointers.get(event.pointerId);if(!entry)return;
+ const next=document.elementFromPoint(event.clientX,event.clientY)?.closest('button[data-touch]');
+ if(!next||next===entry.button||!drivingTouchActions.has(next.dataset.touch))return;
+ touchHeld[entry.action]=Math.max(0,(touchHeld[entry.action]||1)-1);
+ entry.button.toggleAttribute('data-held',!!touchHeld[entry.action]);
+ entry.button.setAttribute('aria-pressed',touchHeld[entry.action]?'true':'false');
+ entry.button=next;entry.action=next.dataset.touch;
+ touchHeld[entry.action]=(touchHeld[entry.action]||0)+1;
+ next.setAttribute('data-held','');next.setAttribute('aria-pressed','true');
+});
 window.addEventListener('blur',clearTouchDriving);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTouchDriving();});
 
@@ -1261,12 +1284,12 @@ class DriftGame{
   p.lastGear=estimatedGear;
   p.shiftTimer=Math.max(0,(p.shiftTimer||0)-dt);
   // Transmission and clutch upgrades shorten actual in-game power interruptions.
-  if(throttle)longitudinal+=maxAccel*dt*(p.shiftTimer>0?.40:1.08)*(this.boostTimer>0?1.7:1);
+  if(throttle){const headroom=Math.max(0,topSpeed-Math.max(0,longitudinal));const taper=Math.max(.16,Math.min(1,headroom/Math.max(1,topSpeed*.16)));longitudinal+=maxAccel*taper*dt*(p.shiftTimer>0?.40:1.08)*(this.boostTimer>0?1.7:1);}
   this.boostTimer=Math.max(0,this.boostTimer-dt);this.airTimer=Math.max(0,this.airTimer-dt);
 
   if(brake){if(longitudinal>2)longitudinal-=stats.brake*dt;else longitudinal-=maxAccel*.55*dt;}
   // Handbrake slows the car while letting the rear slide into a controlled drift.
-  if(handbrake){const force=Math.max(5,stats.brake*.42);if(longitudinal>4)longitudinal=Math.max(4,longitudinal-force*dt);else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);}
+  if(handbrake){const force=Math.max(6,stats.brake*.60);if(longitudinal>5)longitudinal=Math.max(5,longitudinal-force*dt);else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);}
   const drag=.00042*longitudinal*Math.abs(longitudinal)+.021*longitudinal;
   longitudinal-=drag*dt;
   longitudinal=THREE.MathUtils.clamp(longitudinal,-15,topSpeed);

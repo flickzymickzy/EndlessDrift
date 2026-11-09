@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {MAX_VEHICLE_SPEED_MPH} from './src/performance.js';
 const main=readFileSync('./src/main.js','utf8'),server=readFileSync('./server.js','utf8'),
  css=readFileSync('./src/style.css','utf8'),html=readFileSync('./index.html','utf8');
-assert.equal(MAX_VEHICLE_SPEED_MPH,300);
+assert.equal(MAX_VEHICLE_SPEED_MPH,280);
 for(const key of ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'])assert.match(main,new RegExp(key));
 for(const name of ['phone','tablet','desktop'])assert.match(main,new RegExp('data-choose-device="'+name+'"'));
 assert.match(main,/data-device-change/);
@@ -20,7 +20,7 @@ assert.match(server,/const competitive=rows\.filter\(row=>!owners\.has\(row\.use
 const xpCase=server.split("case 'xp':{")[1].split("case 'coins':{")[0];
 assert.doesNotMatch(xpCase,/ed_record_ranked_xp/);
 assert.match(server,/MAX_ADMIN_GRANT=Number\.MAX_SAFE_INTEGER/);
-assert.match(html,/src="\.\/src\/main\.js\?v=27"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=28"/);
 assert.match(main,/class="beta-label">BETA/);
 assert.match(html,/>BETA</);
 console.log('V26 checks passed: controls, custom rims, beta label, mobile mode, safe admin gifts, and fair rankings.');

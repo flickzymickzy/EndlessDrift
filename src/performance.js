@@ -1,5 +1,5 @@
 // Single source of truth for driving physics and the garage upgrade comparison UI.
-export const MAX_VEHICLE_SPEED_MPH=300;
+export const MAX_VEHICLE_SPEED_MPH=280;
 const MPH_PER_MPS=2.2369362921;
 // Values are game-balancing estimates, not manufacturer-certified specifications.
 export const PERFORMANCE_FIELDS=[

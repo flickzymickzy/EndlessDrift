@@ -7,7 +7,7 @@ const main=readFileSync('./src/main.js','utf8');
 assert.equal((main.match(/capVehicleVelocity\(p,topSpeed\)/g)||[]).length,2,'Speed must be capped before movement and after boost pads');
 assert.match(main,/const topSpeed=vehicleSpeedLimitMps\(stats\.top,this\.adminSpeedMultiplier\|\|1\)/);
 assert.match(main,/capVehicleVelocity\(p,vehicleSpeedLimitMps\(this\.currentStats\(\)\.top,this\.adminSpeedMultiplier\|\|1\)\)/);
-assert.equal(MAX_VEHICLE_SPEED_MPH,300);
+assert.equal(MAX_VEHICLE_SPEED_MPH,280);
 assert.match(main,/this\.checkRoadFeatures\(dt\);[\s\S]*?capVehicleVelocity\(p,topSpeed\)/);
 const fullUpgrades=Object.fromEntries(UPGRADES.map(u=>[u.id,u.max]));
 const fastest=CARS.reduce((a,b)=>a.top>b.top?a:b);
@@ -42,7 +42,7 @@ for(const car of CARS){
   assert.ok(stats.top<=MAX_VEHICLE_SPEED_MPH,'Garage speed stat exceeds physical ceiling');
   for(const multiplier of [1,1.5,3]){
    const limit=vehicleSpeedLimitMps(stats.top,multiplier);
-   assert.ok(limit*2.2369362921<=300+1e-8,'Admin speed override bypasses cap');
+   assert.ok(limit*2.2369362921<=280+1e-8,'Admin speed override bypasses cap');
    const v={vx:0,vz:0,speed:0};
    for(let frame=0;frame<5000;frame++){
     v.vz+=stats.acceleration/90*multiplier*1.08;
@@ -54,6 +54,6 @@ for(const car of CARS){
   }
  }
 }
-assert.equal(Math.round(vehicleSpeedLimitMps(300.262,3)*2.2369362921),300);
+assert.equal(Math.round(vehicleSpeedLimitMps(280.262,3)*2.2369362921),280);
 assert.equal(vehicleSpeedLimitMps(NaN,3),0);
-console.log('300 MPH hard speed limiter verified across all cars, all upgrades, boost impulses, admin speeds and extended acceleration.');
+console.log('280 MPH hard speed limiter verified across all cars, all upgrades, boost impulses, admin speeds and extended acceleration.');

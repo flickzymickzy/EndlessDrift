@@ -229,6 +229,20 @@ async function adminModerationApi(req,res,route,user){
   case 'clearwanted':patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
   case 'boost':patch.speed_multiplier=1.75;break;
   case 'slow':patch.speed_multiplier=.5;break;
+  case 'unboost':patch.speed_multiplier=1;break;
+  case 'superboost':patch.speed_multiplier=3;break;
+  case 'superjump':patch.jump_multiplier=3;break;
+  case 'unjump':patch.jump_multiplier=1;break;
+  case 'unstuck':patch.respawn_version=Number(before.respawn_version||0)+1;break;
+  case 'godon':patch.god_mode=true;break;
+  case 'godoff':patch.god_mode=false;break;
+  case 'unmorph':patch.shape='car';patch.morph_expires_at=null;break;
+  case 'restore':{
+   patch.frozen=false;patch.god_mode=false;patch.speed_multiplier=1;patch.jump_multiplier=1;
+   patch.shape='car';patch.morph_expires_at=null;
+   patch.repair_version=Number(before.repair_version||0)+1;
+   patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
+  }
   case 'resetpowers':{
    patch.frozen=false;patch.god_mode=false;patch.speed_multiplier=1;
    patch.jump_multiplier=1;patch.shape='car';patch.morph_expires_at=null;
@@ -249,7 +263,7 @@ async function adminModerationApi(req,res,route,user){
    patch.coins_grant_total=existing+amount;
    break;
   }
-  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted boost slow resetpowers xp coins'});
+  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted boost slow resetpowers unboost superboost superjump unjump unstuck godon godoff unmorph restore xp coins'});
  }
  await supabase('/rest/v1/ed_player_controls?on_conflict=user_id',{method:'POST',payload:{user_id:target.id,...patch}});
  if(command==='coins'){
