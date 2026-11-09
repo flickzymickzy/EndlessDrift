@@ -8,7 +8,10 @@ const html=readFileSync(new URL('./index.html',import.meta.url),'utf8');
 assert.match(main,/touchPanel\?\.addEventListener\('pointerdown'/);
 for(const action of ['accelerate','brake','left','right','handbrake','camera','pause','recover','bank'])
  assert.match(main,new RegExp('data-touch="'+action+'"'));
-assert.match(main,/function pressed\(action\)\{return !!touchHeld\[action\]/);
+assert.match(main,/function pressed\(action\)\{/);
+assert.match(main,/!!touchHeld\[action\]/);
+assert.match(main,/ArrowLeft/);
+assert.match(main,/ArrowRight/);
 assert.match(main,/maxLag=this\.cameraMode/);
 assert.doesNotMatch(main,/65\+Math\.min\(10,mph\(p\.speed\)\/26\)/);
 assert.match(style,/\.touch-controls\{display:none\}/);
