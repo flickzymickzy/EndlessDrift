@@ -31,3 +31,9 @@ assert.notEqual(first.cylinders,next.cylinders);
 assert.equal(next.turbo,1);
 assert.match(readFileSync(new URL('./src/audio.js',import.meta.url),'utf8'),/exhaustPop\(strength=1\)/);
 console.log('V19 regression checks passed: mobile controls, chase camera, audio profiles, protected DC gifts and Stripe routes.');
+
+assert.doesNotMatch(server.split("case 'xp':{")[1].split("case 'coins':{")[0],/ed_record_ranked_xp/);
+assert.match(server,/case 'repair'/);
+assert.match(server,/case 'respawn'/);
+assert.match(server,/case 'clearwanted'/);
+assert.match(server,/MAX_ADMIN_GRANT=Number\.MAX_SAFE_INTEGER/);

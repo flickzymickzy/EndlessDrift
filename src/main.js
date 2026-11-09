@@ -21,7 +21,7 @@ app.innerHTML=`
 <canvas id="view" aria-label="3D drifting game"></canvas><div id="tone"></div>
 <div id="ui">
   <header class="topbar">
-    <div class="brand">DRIFT <span>ENDLESSLY</span><small>DRIVE // DRIFT // EARN</small></div>
+    <div class="brand">DRIFT <span>ENDLESSLY</span><b class="beta-label">BETA</b><small>DRIVE // DRIFT // EARN</small></div>
     <nav class="toplinks" aria-label="Main navigation">
       <button data-page="home" class="active">HOME</button><button data-page="game">DRIVE</button><button data-page="garage">GARAGE</button><button data-page="shop">SHOP</button><button data-page="battlepass">DRIFT PASS</button><button data-page="leaderboard">RANKS</button><button data-page="account">ACCOUNT</button><button data-page="settings">SETTINGS</button><button id="adminNav" data-page="admin" class="hidden">ADMIN</button>
     </nav>
@@ -39,7 +39,7 @@ app.innerHTML=`
       <p class="hero-sub">No finish line. No limits. Build your dream garage, chain massive drifts, earn near-miss XP and Drift Coins, and outrun the cops.</p><div class="home-level" id="homeLevel">LEVEL 1 · ROOKIE DRIVER</div>
       <div id="lastRunBanked" class="last-run-banked hidden"></div><div class="hero-actions"><button class="btn primary" data-page="game">▶ START DRIVING</button><button class="btn ghost" data-page="garage">EXPLORE GARAGE</button></div>
       <div class="hero-stats"><div><strong>${CARS.length}</strong><small>CARS TO COLLECT</small></div><div><strong>100 KM/H</strong><small>POLICE PURSUITS</small></div><div><strong>∞</strong><small>ENDLESS HIGHWAY</small></div></div>
-    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • VERSION 19.0 • SHOWROOM / STUDIO</div>
+    </div><div class="hero-footer">ARCADE DRIFT EXPERIENCE • BETA • SHOWROOM / STUDIO</div>
   </section>
   <section id="screen" class="panescreen hidden" aria-live="polite"></section>
   <div id="hud" class="hud hidden">
@@ -50,8 +50,8 @@ app.innerHTML=`
     <div class="hud-top-right"><div id="wanted" class="wanted hidden"><small>POLICE PURSUIT</small><span id="stars">☆☆☆☆☆</span><div id="policeArrow" class="police-arrow">↓ POLICE 80m</div></div><button class="btn small ghost" id="customFromHud">CUSTOMIZE</button></div>
     <div id="copGlow" class="cop-glow hidden" aria-hidden="true"></div>
     <div id="featureNotice" class="feature-notice hidden" aria-live="polite"></div>
-    <div class="drift-notice hidden" id="driftNotice"><div class="drift-rating" id="driftRating">CLEAN DRIFT</div><div class="score" id="driftSplash">DRIFT!</div><div class="combo" id="driftAngle">SUSTAIN YOUR DRIFT</div><div class="drift-meter"><i id="driftMeterFill"></i><b id="driftMeterPin"></b></div><small class="drift-meter-note">STEER SMOOTHLY • HOLD A / D TO SLIDE</small></div>
-    <details class="controls-hint"><summary>CONTROLS</summary><div><b>W / ↑</b> Drive<br><b>S / ↓</b> Brake<br><b>A / D</b> Steer<br><b>SPACE</b> Drift<br><b>C</b> Camera<br><b>R</b> Recover<br><b>ESC</b> Pause</div></details><div id="touchControls" class="touch-controls" aria-label="Touch driving controls">
+    <div class="drift-notice hidden" id="driftNotice"><div class="drift-rating" id="driftRating">CLEAN DRIFT</div><div class="score" id="driftSplash">DRIFT!</div><div class="combo" id="driftAngle">SUSTAIN YOUR DRIFT</div><div class="drift-meter"><i id="driftMeterFill"></i><b id="driftMeterPin"></b></div><small class="drift-meter-note">STEER WITH A/D OR ARROWS • HOLD DRIFT TO SLIDE</small></div>
+    <details class="controls-hint"><summary>CONTROLS</summary><div><b>W / ↑</b> Drive<br><b>S / ↓</b> Brake<br><b>A / D / ← →</b> Steer<br><b>SPACE</b> Drift<br><b>C</b> Camera<br><b>R</b> Recover<br><b>ESC</b> Pause</div></details><div id="touchControls" class="touch-controls" aria-label="Touch driving controls">
   <div class="touch-tools" role="group" aria-label="Game actions">
     <button type="button" data-touch="camera" aria-label="Change camera">CAM</button>
     <button type="button" data-touch="recover" aria-label="Recover vehicle">RESET</button>
@@ -80,7 +80,17 @@ app.innerHTML=`
     </div><button class="btn ghost" id="weatherCancel">CANCEL</button></div>
   </div>
   <div id="weatherRain" class="weather-rain hidden" aria-hidden="true"></div>
-  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO DRIFT ENDLESSLY</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. Choose it once for free. After you rename it, wait 7 days before changing it again.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
+  <div id="deviceChooser" class="device-chooser hidden" role="dialog" aria-modal="true" aria-labelledby="deviceChooserTitle">
+   <div class="device-chooser-card"><div class="kicker">DRIFT ENDLESSLY • GAME SETUP</div><h2 id="deviceChooserTitle">WHAT ARE YOU PLAYING ON?</h2>
+    <p>Choose your device for the best controls. Change this anytime in Settings.</p>
+    <div class="device-choice-options">
+     <button type="button" data-choose-device="desktop"><strong>DESKTOP / LAPTOP</strong><small>WASD and arrow keys • keyboard</small></button>
+     <button type="button" data-choose-device="phone"><strong>PHONE</strong><small>Big touch controls • optimized graphics</small></button>
+     <button type="button" data-choose-device="tablet"><strong>TABLET</strong><small>Touch steering • balanced graphics</small></button>
+    </div>
+   </div>
+  </div>
+  <div id="usernameOnboarding" class="username-onboarding hidden" role="dialog" aria-modal="true" aria-label="Choose your username"><div class="onboarding-card"><div class="kicker">WELCOME TO DRIFT ENDLESSLY</div><h2>CHOOSE YOUR USERNAME</h2><p>This will be your public driver name. You can rename your driver whenever you want. Names must be unique.</p><form id="firstUsernameForm"><label for="firstUsername">YOUR DRIVER NAME</label><input id="firstUsername" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit">START DRIVING</button><p id="usernameGateError" class="muted" role="alert"></p></form><button class="btn ghost" type="button" id="onboardingSignOut">LOG OUT</button></div></div>
   <div id="pauseScreen" class="pause-screen hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
     <div class="pause-card">
       <div class="pause-kicker">DRIFT ENDLESSLY // GAME STOPPED</div>
@@ -114,7 +124,9 @@ app.innerHTML=`
 const $=id=>document.getElementById(id);
 const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay:$('overlay'),modal:$('modal')};
 let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;
-let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let adminPanelHidden=false;try{adminPanelHidden=localStorage.getItem('ed-hide-admin-tab')==='1';}catch{}
+let deviceChoiceOpen=false;
+let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};const touchHeld=Object.create(null),touchPointers=new Map();let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 setSaveHook((owner,snapshot)=>{
@@ -188,25 +200,31 @@ async function checkAdminPermissions(){
  try{const response=await fetch('/api/admin/me',{headers:{Authorization:`Bearer ${token}`}});
   if(response.ok){const data=await response.json();adminEnabled=data.admin===true;ownerEnabled=data.owner===true;}
  }catch(err){console.warn('Admin authorization check:',err.message);}
- $('adminNav').classList.toggle('hidden',!adminEnabled);
+ $('adminNav').classList.toggle('hidden',!adminEnabled||adminPanelHidden);
 }
 
 async function refreshPlayerControlState(){
  const owner=getSaveOwner(),access=await cloudAccessToken();
- if(!owner||!access){kickVersionSeen=null;playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0};return;}
+ if(!owner||!access){kickVersionSeen=null;playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0};return;}
  try{
   const response=await fetch('/api/player/status',{headers:{Authorization:'Bearer '+access},cache:'no-store'});
   if(!response.ok)return;
   const data=await response.json(),status=data.status||{},kick=Number(status.kick_version||0);
   if(kickVersionSeen!==null&&kick>kickVersionSeen&&mode==='game'){notify('KICKED BY ADMIN');renderPage('account');}
-  kickVersionSeen=kick;playerControlState={...playerControlState,...status};
+  kickVersionSeen=kick;
+   const previousControls=playerControlState;
+   playerControlState={...playerControlState,...status};
+   const bumped=(name)=>Number(status[name]||0)>Number(previousControls[name]||0);
+   if(game&&bumped('respawn_version')){if(game.crashState)game.respawn();else game.recover();notify('ADMIN RESPAWN');}
+   if(game&&bumped('repair_version')){game.tireDamage=0;game.invulnerable=Math.max(game.invulnerable,2);notify('ADMIN REPAIRED VEHICLE');}
+   if(game&&bumped('clear_wanted_version')){if(game.wanted)game.endPolice(false);notify('ADMIN CLEARED WANTED LEVEL');}
   if(game){game.adminFrozen=!!status.frozen;game.adminGodMode=!!status.god_mode;game.adminSpeedMultiplier=Math.max(.5,Math.min(3,Number(status.speed_multiplier)||1));game.adminJumpMultiplier=Math.max(.5,Math.min(3,Number(status.jump_multiplier)||1));game.applyMorph?.(status.shape||'car');}
   const total=Number(status.xp_grant_total||0),done=Number(state.adminXpApplied||0);
-  if(total>done){state.lifetimeXP+=total-done;state.adminXpApplied=total;save();cashRefresh();notify('ADMIN XP GRANTED +'+fmt(total-done));}
+  if(total>done){const gift=Math.max(0,Math.min(Number.MAX_SAFE_INTEGER-state.lifetimeXP,total-done));state.lifetimeXP+=gift;state.adminXpApplied=total;save();cashRefresh();notify('ADMIN XP GRANTED +'+fmt(gift));}
   const coinTotal=Math.max(0,Number(status.coins_grant_total)||0),appliedCoins=Math.max(0,Number(state.adminCoinsApplied)||0);
   if(coinTotal>appliedCoins){
-   const gift=Math.min(2000000000,coinTotal-appliedCoins);
-   state.wallet=Math.min(2000000000,state.wallet+gift);
+   const gift=Math.max(0,Math.min(Number.MAX_SAFE_INTEGER-state.wallet,coinTotal-appliedCoins));
+   state.wallet+=gift;
    state.adminCoinsApplied=coinTotal;save();cashRefresh();notify('ADMIN GIFT +'+fmt(gift)+' DC');
   }
   if(status.banned&&mode==='game'){renderPage('account');notify('ACCOUNT BANNED FROM ONLINE PLAY');}
@@ -256,14 +274,18 @@ async function renderAdmin(){
    <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Public announcements appear for everyone online and expire after 24 hours.</p><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
    <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create bank payouts. Police mode is local to your current drive.</p></div>
    <div class="panel panel-pad"><div class="kicker">ADMIN GIFTS</div><h3>GIVE DRIFT COINS</h3>
-    <p class="notice">Grant game-earned DC to an existing driver username. Maximum 500,000 per action. Does not affect legacy paid coins.</p>
+    <p class="notice">Gift any positive whole amount of earned game DC to a player. Large gifts are limited only by safe number storage. Does not affect real-money records.</p>
     <form id="adminCoinsForm" class="admin-control-form">
       <input name="username" maxlength="24" autocomplete="off" placeholder="Player username" pattern="[A-Za-z0-9_]{3,24}" required/>
-      <input name="amount" type="number" min="1" max="500000" step="1" placeholder="Amount of DC" required/>
+      <input name="amount" type="number" min="1" step="1" placeholder="Custom amount of DC" required/>
       <button class="btn primary" type="submit">GIVE DC</button>
     </form><p id="adminCoinsResult" class="notice" role="status"></p>
    </div>
-   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (1–50,000)</option><option value="coins">/givecoins (1–500,000)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
+   <div class="panel panel-pad"><div class="kicker">ADMIN XP GIFTS • UNRANKED</div><h3>GIVE CUSTOM XP</h3><p class="notice">XP granted here increases a player's level but never counts toward competitive XP rankings.</p>
+   <form id="adminXpForm" class="admin-control-form"><input name="username" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Player username" required/>
+   <input name="amount" type="number" min="1" step="1" placeholder="Custom amount of XP" required/>
+   <button class="btn primary" type="submit">GIVE XP</button></form><p id="adminXpResult" class="notice" role="status"></p></div>
+   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
    <div class="panel panel-pad"><div class="kicker">HISTORICAL CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
@@ -353,6 +375,28 @@ function errorScreen(err){console.error('Drift Endlessly error:',err);const msg=
 }
 window.addEventListener('error',e=>{if(e.message&&!e.message.includes('ResizeObserver'))errorScreen(e.error||e.message);});
 window.addEventListener('unhandledrejection',e=>errorScreen(e.reason));
+
+function chooseDevice(device){
+ const safe=['desktop','phone','tablet'].includes(device)?device:'desktop';
+ document.documentElement.dataset.device=safe;
+ try{localStorage.setItem('ed-device-mode',safe);sessionStorage.setItem('ed-device-chosen','1');}catch{}
+ deviceChoiceOpen=false;$('deviceChooser').classList.add('hidden');
+ clearTouchDriving();
+ if(safe==='phone')Object.assign(state.settings,{quality:'low',fps:'60',renderScale:75,shadows:false,particles:'low',drawDistance:'short',trafficDensity:'low',cameraShake:20});
+ else if(safe==='tablet')Object.assign(state.settings,{quality:'medium',fps:'60',renderScale:90,shadows:false,particles:'medium',trafficDensity:'normal',cameraShake:35});
+ save();applyUI();game?.applyQuality();game?.resize();
+ if(mode==='settings')renderSettings();
+ notify((safe==='desktop'?'KEYBOARD':safe.toUpperCase()+' TOUCH')+' CONTROLS READY');
+}
+function showDeviceChooser(force=false){
+ try{if(!force&&sessionStorage.getItem('ed-device-chosen')==='1')return;}catch{}
+ deviceChoiceOpen=true;$('deviceChooser').classList.remove('hidden');
+}
+try{
+ const savedDevice=localStorage.getItem('ed-device-mode');
+ document.documentElement.dataset.device=['phone','tablet','desktop'].includes(savedDevice)?savedDevice:(matchMedia('(pointer:coarse)').matches?(Math.min(innerWidth,innerHeight)<600?'phone':'tablet'):'desktop');
+}catch{document.documentElement.dataset.device='desktop';}
+
 function applyScale(){document.documentElement.style.setProperty('--scale',String((Number(state.settings.uiScale)||100)/100));}
 function applyUI(){
  const s=state.settings,theme={mint:'#5cf2c9',orange:'#ff9165',blue:'#6dbdff',purple:'#b598ff',red:'#ff6c7d'};
@@ -384,7 +428,7 @@ function renderPage(page){
   if(playerControlState.banned){notify('ACCOUNT BANNED • CONTACT ADMIN');return;}
     if(game?.adminInfiniteCops){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}
     game?.audio?.unlock();game?.audio?.setCarProfile(carSave().upgrades,carSave().engineNote||'factory',getSelected());game?.resetTiming();document.activeElement?.blur?.();
-    notify('WASD DRIVE  •  SPACE HANDBRAKE  •  C CAMERA  •  ESC PAUSE');
+    notify('WASD OR ARROWS • SPACE DRIFT • C CAMERA • ESC PAUSE');
     return;
   }
   if(page==='garage')renderGarage();
@@ -497,18 +541,22 @@ function renderTune(){
     <div class="tune-help">DRAG THE CAR TO TURN IT • CHANGES SHOW LIVE</div></div>
    <div class="tune-controls"><div class="tune-tabs"><button data-tune-tab="body" class="${tuneTab==='body'?'active':''}">BODY KITS</button><button data-tune-tab="performance" class="${tuneTab==='performance'?'active':''}">PERFORMANCE</button><button data-tune-tab="paint" class="${tuneTab==='paint'?'active':''}">COLORS + SETUP</button></div>
     <div class="tune-tab-pane ${tuneTab==='body'?'':'hidden'}">${appearance}${bodyCheckout}</div>
-    <div class="tune-tab-pane ${tuneTab==='performance'?'':'hidden'}"><div class="upgrade-grid">${upgrades}</div>${upgradeCheckout}</div>
+    <button class="btn ghost" data-modal="car">CUSTOMIZE RIM COLORS + PAINT</button><div class="tune-tab-pane ${tuneTab==='performance'?'':'hidden'}"><div class="upgrade-grid">${upgrades}</div>${upgradeCheckout}</div>
     <div class="tune-tab-pane ${tuneTab==='paint'?'':'hidden'}"><div class="panel panel-pad"><h3>BODY COLOR</h3><div class="swatch-row">${colorRow(COLORS,'color')}</div><h3>DRIFT SMOKE</h3><div class="swatch-row">${colorRow(SMOKES,'smoke')}</div><h3>ALLOY FINISH</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div><h3>ENGINE SOUND</h3><div class="engine-sound-options">${[['factory','Factory'],['deep','Deep rumble'],['race','Track exhaust']].map(([id,label])=>`<button class="btn small ghost ${saveCar.engineNote===id?'sound-active':''}" data-tune-sound="${id}">${label}</button>`).join('')}</div><h3>DRIVING SETUP</h3>${[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('')}</div></div>
    </div>
   </div>`;
  mountShowroom('tuneCarMount',spec);if(pendingVisual&&showroom){const [id,variant]=pendingVisual.split('|');showroom.setCar(spec,{...saveCar,appearance:{...saveCar.appearance,[id]:variant}});showroom.render(0.016);}
 }
 async function renderLeaderboard(){
- dom.screen.innerHTML=header('GLOBAL RANKS','LIFETIME XP / COINS SPENT','Lifetime XP rankings use online scores. The Most Coins Spent board uses synced garage spending totals and is not anti-cheat verified.')+`
+ dom.screen.innerHTML=header('GLOBAL RANKS','GAMEPLAY XP / COINS SPENT','Only gameplay XP counts toward competitive rankings. Owner accounts have a separate unranked display.')+`
+ <div class="panel panel-pad unranked-owner"><div class="kicker">OWNER PROFILE • UNRANKED</div><div id="ownerLeaderboardProfile">LOADING…</div><p class="notice">Owner scores and admin-gifted XP never affect the numbered leaderboard.</p></div>
  <div class="ranks-grid"><section class="panel panel-pad"><div class="kicker">GLOBAL LEADERBOARD</div><h3>TOP XP EARNED</h3><div id="xpLeaderboard" class="leaderboard-table">LOADING...</div></section><section class="panel panel-pad"><div class="kicker">GLOBAL LEADERBOARD</div><h3>MOST COINS SPENT</h3><div id="spentLeaderboard" class="leaderboard-table">LOADING...</div></section></div>
  <div class="panel panel-pad" style="margin-top:16px"><h3>YOUR LOCAL STATS</h3><div class="spec-row"><span>XP EARNED</span><strong>${fmt(state.lifetimeXP)} XP</strong></div><div class="spec-row"><span>DRIFT COINS SPENT</span><strong>${fmt(state.spent)} DC</strong></div><p class="notice">The Most Coins Spent board reads saved spending synced from each driver account. These are game-only statistics and have not been anti-cheat verified.</p></div>`;
- if(!cloudConfigured()){document.getElementById('xpLeaderboard').textContent='CONNECT SUPABASE TO LOAD GLOBAL RANKS';document.getElementById('spentLeaderboard').textContent='NOT CONFIGURED';return;}
- try{const [xp,spent]=await Promise.all([cloudBoard('lifetime_xp'),cloudBoard('coins_spent')]);if(mode!=='leaderboard')return;const table=(rows,key,unit)=>rows.length?rows.map((r,i)=>`<div class="rank-row"><span>#${i+1}</span><strong>${char(r.username||'DRIVER')}${r.owner?'<span class="owner-tag">OWNER</span>':''}</strong><b>${fmt(Math.max(0,Number(r[key])||0))} ${unit}</b></div>`).join(''):'NO SCORES YET';document.getElementById('xpLeaderboard').innerHTML=table(xp,'lifetime_xp','XP');document.getElementById('spentLeaderboard').innerHTML=table(spent,'coins_spent','DC');}catch(e){if(mode==='leaderboard'){document.getElementById('xpLeaderboard').textContent='Could not load ranks: '+e.message;document.getElementById('spentLeaderboard').textContent='CHECK DATABASE SETUP';}}
+ if(!cloudConfigured()){document.getElementById('xpLeaderboard').textContent='CONNECT SUPABASE TO LOAD GLOBAL RANKS';document.getElementById('spentLeaderboard').textContent='NOT CONFIGURED';document.getElementById('ownerLeaderboardProfile').textContent='OFFLINE';return;}
+ try{const [xp,spent]=await Promise.all([cloudBoard('lifetime_xp'),cloudBoard('coins_spent')]);if(mode!=='leaderboard')return;const table=(rows,key,unit)=>rows.length?rows.map((r,i)=>`<div class="rank-row"><span>#${i+1}</span><strong>${char(r.username||'DRIVER')}${r.owner?'<span class="owner-tag">OWNER</span>':''}</strong><b>${fmt(Math.max(0,Number(r[key])||0))} ${unit}</b></div>`).join(''):'NO SCORES YET';const owner=xp.find(r=>r.owner)||spent.find(r=>r.owner);
+  document.getElementById('ownerLeaderboardProfile').innerHTML=owner?`<div class="owner-showcase"><strong>${char(owner.username||'OWNER')} <span class="owner-tag">OWNER • UNRANKED</span></strong><small>Gameplay XP: ${fmt(owner.lifetime_xp)} • DC spent: ${fmt(owner.coins_spent)}</small></div>`:'OWNER PROFILE NOT AVAILABLE';
+  document.getElementById('xpLeaderboard').innerHTML=table(xp.filter(r=>!r.owner),'lifetime_xp','XP');
+  document.getElementById('spentLeaderboard').innerHTML=table(spent.filter(r=>!r.owner),'coins_spent','DC');}catch(e){if(mode==='leaderboard'){document.getElementById('xpLeaderboard').textContent='Could not load ranks: '+e.message;document.getElementById('spentLeaderboard').textContent='CHECK DATABASE SETUP';}}
 }
 function openDriftPassPurchase(){
  if(hasDriftPass()){notify('DRIFT PASS ALREADY OWNED');return;}
@@ -573,7 +621,7 @@ async function renderAccount(){
  if(mode!=='account')return;
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
- ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">${profile?.username_changed_at&&Date.now()<new Date(profile.username_changed_at).getTime()+604800000?'You can change your username again on '+new Date(new Date(profile.username_changed_at).getTime()+604800000).toLocaleDateString():'First username choice is free. A rename starts a 7-day cooldown. Usernames must be unique.'}</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
+ ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">Rename anytime. Usernames must remain unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
  ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Earned Drift Coins, Drift Pass ownership, XP, cars, and tuning are saved with your signed-in garage. Legacy paid balances are retained where applicable. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
@@ -594,6 +642,7 @@ function renderSettings(){const s=state.settings;
  ${slider('hudOpacity','HUD OPACITY',45,100,5,'%')}
  ${slider('uiScale','INTERFACE SIZE',75,125,5,'%')}
  </div><div class="divider"></div><div class="kicker">DRIVING / CONTROL</div><div class="settings-grid">
+ <div class="setting"><label for="device-mode-setting">DEVICE / CONTROLS</label><select id="device-mode-setting" data-device-change><option value="desktop" ${document.documentElement.dataset.device==='desktop'?'selected':''}>DESKTOP / LAPTOP</option><option value="phone" ${document.documentElement.dataset.device==='phone'?'selected':''}>PHONE TOUCH</option><option value="tablet" ${document.documentElement.dataset.device==='tablet'?'selected':''}>TABLET TOUCH</option></select></div>
  ${select('units','SPEED UNIT',[['mph','MPH'],['kph','KM/H']])}
  ${select('driftAssist','DRIFT ASSIST',[['true','On — easier control'],['false','Off — more freedom']])}
  ${select('driftStyle','DRIFT HANDLING',[['street','Street — smooth and controllable'],['arcade','Arcade — big easy angles'],['pro','Pro — realistic / challenging']])}
@@ -608,7 +657,8 @@ function renderSettings(){const s=state.settings;
  ${select('policeRadio','POLICE RADIO DISPATCH',[['true','On'],['false','Off']])}
  ${slider('musicVolume','MUSIC VOLUME',0,100,5,'%')}
  ${slider('effectsVolume','SOUND EFFECTS',0,100,5,'%')}
- </div><div class="divider"></div><div class="kicker">SAVE DATA / WEBSITE MIGRATION</div><p class="notice" style="margin:12px 0">Moving from localhost to another domain uses a different browser save area. Export your save here, then import it on your new website to keep cars, XP, Drift Pass rewards and upgrades.</p><div class="save-actions"><button class="btn primary" data-save-export>DOWNLOAD SAVE BACKUP</button><button class="btn ghost" data-save-import>IMPORT SAVE BACKUP</button><input id="saveFileInput" class="hidden" type="file" accept=".json,application/json" /></div><p class="notice" style="margin-top:18px">Controls can be rebound above. Original instrumental audio starts after you click Play. No licensed songs included. Lower settings for slower Macs. Shadows, resolution, particles and traffic density affect the actual game rendering.</p></div>`;
+ </div>${adminEnabled?`<div class="divider"></div><div class="kicker">ADMIN TAB VISIBILITY</div><p class="notice">Hiding the Admin tab does not change your server verified permissions.</p><button class="btn ghost" data-admin-visibility>${adminPanelHidden?'SHOW ADMIN TAB':'HIDE ADMIN TAB'}</button>`:''}
+ <div class="divider"></div><div class="kicker">SAVE DATA / WEBSITE MIGRATION</div><p class="notice" style="margin:12px 0">Moving from localhost to another domain uses a different browser save area. Export your save here, then import it on your new website to keep cars, XP, Drift Pass rewards and upgrades.</p><div class="save-actions"><button class="btn primary" data-save-export>DOWNLOAD SAVE BACKUP</button><button class="btn ghost" data-save-import>IMPORT SAVE BACKUP</button><input id="saveFileInput" class="hidden" type="file" accept=".json,application/json" /></div><p class="notice" style="margin-top:18px">Controls can be rebound above. Original instrumental audio starts after you click Play. No licensed songs included. Lower settings for slower Macs. Shadows, resolution, particles and traffic density affect the actual game rendering.</p></div>`;
 }
 function themeModal(){
  dom.modal.innerHTML=`<div class="screen-head"><div><div class="kicker">GARAGE CUSTOMIZATION</div><h2>GARAGE DESIGN</h2></div><button class="btn small ghost" data-close>✕</button></div><p class="muted" style="margin:0 0 20px">Pick a look for your garage menu. Saved for future updates and garage scenes.</p><div class="car-grid">${GARAGE_THEMES.map(t=>`<button class="car-tile" data-theme="${t.id}" style="min-height:120px;background:linear-gradient(135deg,${t.wall},${t.floor})"><div style="height:14px;width:70%;background:${t.accent};border-radius:3px;box-shadow:0 0 24px ${t.accent}55"></div><h3 style="margin-top:20px">${t.name}</h3><div class="sub">${state.garageTheme===t.id?'✓ SELECTED':'APPLY THEME'}</div></button>`).join('')}</div><div class="modal-actions"><button class="btn" data-close>CLOSE</button></div>`;
@@ -632,6 +682,7 @@ function carModal(){
  ${section('paint','BODY PAINT',COLORS)}
  ${section('smoke','DRIFT SMOKE',SMOKES)}
  ${section('rims','ALLOY RIMS',BASE_RIMS)}
+ <div class="rim-color-custom"><label for="customRimColor">CUSTOM RIM COLOR</label><input id="customRimColor" data-rim-color type="color" value="${/^#[0-9a-f]{6}$/i.test(cs.rims)?cs.rims:'#d0d9e2'}"/><span>Choose any color • free and saved to this car</span></div>
  ${section('neon','UNDERGLOW NEONS',BASE_NEONS)}
  <p class="notice">Cosmetics never expire or disappear when you buy cars. Locked Drift Pass rewards can be previewed now and equipped after leveling up.</p>
  <div class="modal-actions"><button class="btn" data-page="battlepass">DRIFT PASS REWARDS</button><button class="btn primary" data-close>DONE</button></div>`;
@@ -644,9 +695,17 @@ function updateSettings(){save();applyUI();game?.applyQuality();game?.resetTimin
 // Event delegation keeps controls working after each panel is regenerated.
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
- if(usernameOnboarding&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
+ if(t.dataset.chooseDevice){chooseDevice(t.dataset.chooseDevice);return;}
+  if(deviceChoiceOpen)return;
+  if(usernameOnboarding&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
  if(t.id==='adminVerifyCancel'){$('adminVerifyOverlay').classList.add('hidden');return;}
- if(t.dataset.adminRefill!==undefined){try{const v=await adminRequest('/api/admin/refill',{});state.wallet=v.wallet;save();cashRefresh();notify('ADMIN DC REFILLED');}catch(err){notify(err.message);}return;}
+ if(t.dataset.adminVisibility!==undefined){
+   adminPanelHidden=!adminPanelHidden;try{localStorage.setItem('ed-hide-admin-tab',adminPanelHidden?'1':'0');}catch{}
+   $('adminNav').classList.toggle('hidden',!adminEnabled||adminPanelHidden);
+   if(mode==='admin'&&adminPanelHidden)renderPage('settings');else if(mode==='settings')renderSettings();
+   notify(adminPanelHidden?'ADMIN TAB HIDDEN • ACCESS KEPT':'ADMIN TAB VISIBLE');return;
+  }
+  if(t.dataset.adminRefill!==undefined){try{const v=await adminRequest('/api/admin/refill',{});state.wallet=v.wallet;save();cashRefresh();notify('ADMIN DC REFILLED');}catch(err){notify(err.message);}return;}
  if(t.dataset.adminCops!==undefined){if(!game)return;game.adminInfiniteCops=!game.adminInfiniteCops;if(game.adminInfiniteCops&&game.playing){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}notify(game.adminInfiniteCops?'MAXIMUM PURSUIT ENABLED':'MAXIMUM PURSUIT DISABLED');return;}
  if(t.dataset.adminWeather!==undefined){renderPage('home');$('weatherChooser').classList.remove('hidden');return;}
  if(t.dataset.adminHide){try{await adminRequest('/api/admin/announcement/hide',{id:Number(t.dataset.adminHide)});await renderAdmin();await fetchAnnouncements();}catch(err){notify(err.message);}return;}
@@ -757,12 +816,22 @@ document.addEventListener('submit',async e=>{
  }
 
 
+ if(e.target.id==='adminXpForm'){
+  e.preventDefault();
+  const form=e.target,fields=new FormData(form),amount=Number(fields.get('amount')),username=String(fields.get('username')||'').trim();
+  const button=form.querySelector('[type=submit]'),result=$('adminXpResult');
+  if(!Number.isSafeInteger(amount)||amount<1){result.textContent='Enter a positive whole XP amount';return;}
+  button.disabled=true;result.textContent='Granting unranked XP…';
+  try{await adminRequest('/api/admin/moderate',{command:'xp',username,value:amount});result.textContent='GIFTED '+fmt(amount)+' XP TO @'+username+' • NOT RANKED';form.reset();}
+  catch(err){result.textContent='XP GIFT FAILED: '+String(err.message||err);}
+  finally{button.disabled=false;}return;
+ }
  if(e.target.id==='adminCoinsForm'){
   e.preventDefault();
   const form=e.target,button=form.querySelector('[type=submit]'),fields=new FormData(form);
   const username=String(fields.get('username')||'').trim(),amount=Number(fields.get('amount'));
   const result=$('adminCoinsResult');
-  if(!Number.isSafeInteger(amount)||amount<1||amount>500000){result.textContent='Enter 1 to 500,000 DC';return;}
+  if(!Number.isSafeInteger(amount)||amount<1){result.textContent='Enter a positive whole DC amount';return;}
   button.disabled=true;result.textContent='Sending gift...';
   try{
    await adminRequest('/api/admin/moderate',{command:'coins',username,value:amount});
@@ -799,12 +868,21 @@ document.addEventListener('submit',async e=>{
  if(e.target.id!=='accountForm')return;e.preventDefault();
  const f=e.target,form=new FormData(f),email=String(form.get('email')||'').trim(),password=String(form.get('password')||''),username=String(form.get('username')||'').trim();
  for(const b of f.querySelectorAll('button'))b.disabled=true;
- try{if(loginAction==='signup'){if(!/^[A-Za-z0-9_]{3,24}$/.test(username))throw new Error('Username: 3–24 letters, numbers or underscores');const result=await cloudSignUp(email,password,username);notify(result?.session?'ACCOUNT CREATED':'ACCOUNT CREATED • CHECK YOUR EMAIL');}else{await cloudSignIn(email,password);notify('SIGNED IN');}await activateIdentity();await renderAccount();syncPaidState();}
+ try{if(loginAction==='signup'){if(!/^[A-Za-z0-9_]{3,24}$/.test(username))throw new Error('Username: 3–24 letters, numbers or underscores');const result=await cloudSignUp(email,password,username);notify(result?.session?'ACCOUNT CREATED':'ACCOUNT CREATED • CHECK YOUR EMAIL');}else{await cloudSignIn(email,password);notify('SIGNED IN');}await activateIdentity();await renderAccount();syncPaidState();showDeviceChooser(true);}
  catch(err){notify('ACCOUNT: '+err.message);for(const b of f.querySelectorAll('button'))b.disabled=false;}
 });
-document.addEventListener('change',async e=>{if(e.target.id!=='saveFileInput')return;try{const file=e.target.files?.[0];if(!file)return;importSave(await file.text());selectedPreview=state.selected;tuningCar=state.selected;cashRefresh();applyUI();game?.setPlayerCar();game?.applyQuality();renderPage('settings');notify('SAVE BACKUP IMPORTED SUCCESSFULLY');}catch(err){notify('IMPORT FAILED: '+(err?.message||'INVALID FILE'));}finally{e.target.value='';}});
+document.addEventListener('change',async e=>{if(e.target.dataset.deviceChange){chooseDevice(e.target.value);return;}if(e.target.id!=='saveFileInput')return;try{const file=e.target.files?.[0];if(!file)return;importSave(await file.text());selectedPreview=state.selected;tuningCar=state.selected;cashRefresh();applyUI();game?.setPlayerCar();game?.applyQuality();renderPage('settings');notify('SAVE BACKUP IMPORTED SUCCESSFULLY');}catch(err){notify('IMPORT FAILED: '+(err?.message||'INVALID FILE'));}finally{e.target.value='';}});
 dom.overlay.addEventListener('click',e=>{if(e.target===dom.overlay)closeModal();});
 document.addEventListener('input',e=>{
+ if(e.target.dataset.rimColor){
+  const hex=String(e.target.value||'');
+  if(/^#[0-9a-f]{6}$/i.test(hex)){
+   carSave(customizedCar).rims=hex;cosmeticPreview=null;save();
+   game?.setCarPreviewCosmetics(customizedCar);
+   previewCosmetic(customizedCar,null,'cosmeticPreviewMount');
+  }
+  return;
+ }
  if(e.target.dataset.tune){const key=e.target.dataset.tune,val=Number(e.target.value);carSave(tuningCar).tune[key]=val;const v=$('val-'+key);if(v)v.textContent=`${val}%`;save();return;}
  if(e.target.dataset.setting){let val=e.target.value;const key=e.target.dataset.setting;
    if(['driftAssist','smoke','shadows','music','policeRadio'].includes(key))val=val==='true';
@@ -814,10 +892,14 @@ document.addEventListener('input',e=>{
  }
 });
 function bound(action,code){return (state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space',camera:'KeyC',recover:'KeyR',pause:'Escape'}[action]))===code;}
-function pressed(action){return !!touchHeld[action]||!!keys[state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space'}[action])];}
+function pressed(action){
+ const code=state.settings.controls?.[action]||({accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space'}[action]);
+ const arrow={accelerate:'ArrowUp',brake:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
+ return !!touchHeld[action]||!!keys[code]||!!(arrow[action]&&keys[arrow[action]]);
+}
 window.addEventListener('keydown',e=>{
  const code=e.code;
- if(usernameOnboarding)return;
+ if(usernameOnboarding||deviceChoiceOpen)return;
  if(remapping){e.preventDefault();if(code!=='Escape'){const oldAction=Object.keys(state.settings.controls).find(k=>k!==remapping&&state.settings.controls[k]===code);if(oldAction)state.settings.controls[oldAction]='Unbound';state.settings.controls[remapping]=code;save();notify('NEW CONTROL SAVED');}remapping=null;renderSettings();return;}
  if(mode==='game'&&['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',...Object.values(state.settings.controls)].includes(code))e.preventDefault();
  if(e.target instanceof HTMLInputElement||e.target instanceof HTMLSelectElement)return;
@@ -843,7 +925,7 @@ function releaseTouch(id){
 function clearTouchDriving(){for(const id of [...touchPointers.keys()])releaseTouch(id);for(const action of Object.keys(touchHeld))touchHeld[action]=0;}
 touchPanel?.addEventListener('pointerdown',event=>{
  const button=event.target.closest('button[data-touch]');
- if(!button||mode!=='game'||usernameOnboarding)return;
+ if(!button||mode!=='game'||usernameOnboarding||deviceChoiceOpen)return;
  const action=button.dataset.touch;event.preventDefault();event.stopPropagation();
  game?.audio?.unlock(); // Must happen inside a real touch gesture on iOS.
  if(drivingTouchActions.has(action)){
@@ -1181,6 +1263,8 @@ class DriftGame{
   this.boostTimer=Math.max(0,this.boostTimer-dt);this.airTimer=Math.max(0,this.airTimer-dt);
 
   if(brake){if(longitudinal>2)longitudinal-=stats.brake*dt;else longitudinal-=maxAccel*.55*dt;}
+  // Handbrake slows the car while letting the rear slide into a controlled drift.
+  if(handbrake){const force=Math.max(5,stats.brake*.42);if(longitudinal>4)longitudinal=Math.max(4,longitudinal-force*dt);else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);}
   const drag=.00042*longitudinal*Math.abs(longitudinal)+.021*longitudinal;
   longitudinal-=drag*dt;
   longitudinal=THREE.MathUtils.clamp(longitudinal,-15,topSpeed);
@@ -1413,5 +1497,5 @@ class DriftGame{
  }
 }
 
-try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}fetchAnnouncements();setInterval(fetchAnnouncements,25000);setTimeout(refreshPlayerControlState,1600);setInterval(refreshPlayerControlState,14000);setInterval(sendPlayerTelemetry,11000);setInterval(flushOnlineXP,23000);}
+try{applyUI();applyGarageTheme();cashRefresh();game=new DriftGame();try{showroom=new Showroom();applyUI();}catch(e){console.warn('3D showroom disabled:',e);}renderPage(googleOAuthReturned?'account':'home');checkUsernameGate();syncPaidState();setTimeout(()=>showDeviceChooser(googleOAuthReturned),150);const paymentReturn=new URLSearchParams(location.search).get('checkout');if(paymentReturn){history.replaceState(null,'',location.pathname);if(paymentReturn==='success'){notify('PAYMENT RETURNED • VERIFYING WITH STRIPE');let attempt=0;const check=async()=>{await syncPaidState();if(++attempt<6)setTimeout(check,2000);};setTimeout(check,1500);}else notify('CHECKOUT CANCELED • NO CHARGE');}fetchAnnouncements();setInterval(fetchAnnouncements,25000);setTimeout(refreshPlayerControlState,1600);setInterval(refreshPlayerControlState,14000);setInterval(sendPlayerTelemetry,11000);setInterval(flushOnlineXP,23000);}
 catch(e){errorScreen(e);}

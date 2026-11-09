@@ -16,12 +16,13 @@ export function driftStep({mph=0,longitudinal=0,lateral=0,steer=0,handbrake=fals
  const transitionSnap=(Math.sign(steeringInput||0)!==Math.sign(steer||0)&&Math.abs(steeringInput)>.08&&a>.08)?5.0:8.4;
  const steering=ease(steeringInput,steer*steeringMax*steerScale,transitionSnap+suspension*.55,dt);
  // Lateral speed is deliberate and smooth; grip and drift kit control the upper bound.
- const driftPower=(6.1+Math.min(speed,120)*.084)*handling*(handbrake?1.30:1)/Math.sqrt(grip);
+ const driftPower=(6.1+Math.min(speed,120)*.084)*handling*(handbrake?1.65:1)/Math.sqrt(grip);
  const targetDirection=a>.08?-Math.sign(steering||steer||1):(Math.abs(lateral)>.25?Math.sign(lateral):-Math.sign(steering||1));
  const reversing=Math.sign(lateral||0)!==0&&Math.sign(lateral||0)!==Math.sign(targetDirection||0);
  const slideGoal=targetDirection*driftPower*nextBlend;
  const side=ease(lateral,slideGoal,active?(reversing?1.8:3.25)+differential*.20:4.6+tireUpgrade*.26,dt);
- const newLateral=clamp(side,-(assist?18.5:23),assist?18.5:23);
+ const slideLimit=handbrake?(assist?22:26):(assist?18.5:23);
+ const newLateral=clamp(side,-slideLimit,slideLimit);
  // Stable yaw avoids instantly steering directly into the barrier at highway speed.
  const yawGoal=clamp(steering*.92*(speed>=16?1:.62),-.28,.28)*(assist?.73:1.0);
  const newYaw=ease(yaw,yawGoal,7.8+suspension*.28+stabilityTune*.032,dt);

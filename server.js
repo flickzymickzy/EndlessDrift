@@ -21,6 +21,7 @@ const inviteCode=process.env.ED_ADMIN_ACTIVATION_CODE||'';
 const inviteAnswer=process.env.ED_ADMIN_CHALLENGE_ANSWER||'';
 const inviteQuestion=process.env.ED_ADMIN_CHALLENGE_QUESTION||'Account verification';
 const adminPending=new Map(),adminAttempts=new Map();
+const MAX_ADMIN_GRANT=Number.MAX_SAFE_INTEGER;
 
 const stripe=stripeSecret?new Stripe(stripeSecret,{apiVersion:'2026-03-25.dahlia'}):null;
 const products={
@@ -151,9 +152,9 @@ async function adminApi(req,res,route){
 }
 
 const liveRate=new Map(),bankRate=new Map();
-const emptyControls=()=>({banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0});
+const emptyControls=()=>({banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0});
 async function playerControls(userId){
- const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,morph_expires_at,xp_grant_total,coins_grant_total&limit=1');
+ const rows=await supabase('/rest/v1/ed_player_controls?user_id=eq.'+encodeURIComponent(userId)+'&select=banned,frozen,kick_version,god_mode,speed_multiplier,jump_multiplier,shape,morph_expires_at,xp_grant_total,coins_grant_total,respawn_version,repair_version,clear_wanted_version&limit=1');
  const row={...emptyControls(),...(rows?.[0]||{})};
  if(row.shape!=='car'&&row.morph_expires_at&&Date.now()>Date.parse(row.morph_expires_at))row.shape='car';
  return row;
@@ -223,22 +224,25 @@ async function adminModerationApi(req,res,route,user){
   case 'speed':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Speed must be 0.5–3'});patch.speed_multiplier=n;break;}
   case 'jump':{const n=Number(data.value);if(!Number.isFinite(n)||n<.5||n>3)return json(res,400,{error:'Jump must be 0.5–3'});patch.jump_multiplier=n;break;}
   case 'morph':{const shape=String(data.value||'').toLowerCase();if(!['car','tetris','arcade','toilet'].includes(shape))return json(res,400,{error:'Invalid transformation'});patch.shape=shape;patch.morph_expires_at=shape==='car'?null:new Date(Date.now()+90000).toISOString();break;}
+  case 'repair':patch.repair_version=Number(before.repair_version||0)+1;break;
+  case 'respawn':patch.respawn_version=Number(before.respawn_version||0)+1;break;
+  case 'clearwanted':patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
   case 'xp':{
    const amount=Number(data.value),existing=Number(before.xp_grant_total||0);
-   if(!Number.isSafeInteger(amount)||amount<1||amount>50000)return json(res,400,{error:'Grant 1–50,000 XP per action'});
-   if(!Number.isSafeInteger(existing)||existing+amount>2000000000)return json(res,400,{error:'Admin XP grant limit reached'});
-   await supabase('/rest/v1/rpc/ed_record_ranked_xp',{method:'POST',payload:{p_user:target.id,p_event:randomUUID(),p_xp:amount}});
+   if(!Number.isSafeInteger(amount)||amount<1||amount>MAX_ADMIN_GRANT)return json(res,400,{error:'Use a positive whole XP amount'});
+   if(!Number.isSafeInteger(existing+amount))return json(res,400,{error:'Combined XP exceeds safe integer range'});
+   // Gift XP to the player's garage, never to competitive ranked scores.
    patch.xp_grant_total=existing+amount;
    break;
   }
   case 'coins':{
    const amount=Number(data.value),existing=Number(before.coins_grant_total||0);
-   if(!Number.isSafeInteger(amount)||amount<1||amount>500000)return json(res,400,{error:'Grant 1 to 500,000 game-earned Drift Coins per action'});
-   if(!Number.isSafeInteger(existing)||existing+amount>2000000000)return json(res,400,{error:'Admin grant limit reached'});
+   if(!Number.isSafeInteger(amount)||amount<1||amount>MAX_ADMIN_GRANT)return json(res,400,{error:'Use a positive whole Drift Coin amount'});
+   if(!Number.isSafeInteger(existing+amount))return json(res,400,{error:'Combined DC exceeds safe integer range'});
    patch.coins_grant_total=existing+amount;
    break;
   }
-  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph xp coins'});
+  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted xp coins'});
  }
  await supabase('/rest/v1/ed_player_controls?on_conflict=user_id',{method:'POST',payload:{user_id:target.id,...patch}});
  if(command==='coins'){
@@ -259,7 +263,10 @@ async function leaderboardApi(res,sort='lifetime_xp'){
   const profiles=await supabase('/rest/v1/driver_profiles?select=id,username&id=in.('+admins.map(a=>a.user_id).join(',')+')');
   owners=new Set(profiles.map(p=>p.username));
  }
- return json(res,200,{rows:rows.map(row=>({username:String(row.username||'DRIVER').slice(0,24),lifetime_xp:Math.max(0,Number(row.lifetime_xp)||0),coins_spent:Math.max(0,Number(row.coins_spent)||0),owner:owners.has(row.username)}))});
+ const competitive=rows.filter(row=>!owners.has(row.username));
+ const ownerRows=rows.filter(row=>owners.has(row.username));
+ // Owner profile remains visible for transparency, but never occupies a numbered rank.
+ return json(res,200,{rows:[...competitive,...ownerRows].map(row=>({username:String(row.username||'DRIVER').slice(0,24),lifetime_xp:Math.max(0,Number(row.lifetime_xp)||0),coins_spent:Math.max(0,Number(row.coins_spent)||0),owner:owners.has(row.username)}))});
 }
 
 async function publicAnnouncements(res){

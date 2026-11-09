@@ -593,3 +593,55 @@ body.stripe-checkout-open{overflow:hidden}
 .drift-pass-wallet{color:#d2e6ee;font-size:11px;letter-spacing:.045em}.drift-pass-wallet strong{color:var(--mint);font-size:13px}
 .drift-pass-shortfall{color:#ffca86;font-size:11px;font-weight:800}
 @media(max-width:720px){.pass-banner-actions{width:100%;align-items:stretch!important}.drift-pass-buy-btn{width:100%;min-width:0}}
+
+/* V26: device selection, phone/tablet ergonomics, and owner leaderboard. */
+.brand .beta-label{display:inline-block;vertical-align:middle;margin:0 0 0 9px;padding:5px 8px;border:1px solid #ff5e66;background:#ed2636;color:#fff;border-radius:4px;font:900 9px/1 system-ui,sans-serif;letter-spacing:.12em;box-shadow:0 0 15px #ff38494a}
+.device-chooser{position:fixed;inset:0;z-index:90;background:rgba(2,8,14,.95);display:grid;place-items:center;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(18px + env(safe-area-inset-bottom,0px));overflow:auto;overscroll-behavior:contain;pointer-events:auto}
+.device-chooser-card{width:min(610px,100%);padding:clamp(18px,4vw,35px);border-radius:22px;border:1px solid #5dffc75f;background:linear-gradient(145deg,#142735,#071320);box-shadow:0 30px 80px #000c}
+.device-chooser-card h2{font-size:clamp(32px,7vw,54px);margin:16px 0}
+.device-chooser-card p{font-size:13px;line-height:1.6;color:#b6ced8;margin-bottom:24px}
+.device-choice-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.device-choice-options button{min-height:138px;padding:20px 14px;border:1px solid #88d0c37b;border-radius:15px;background:#142a37;color:white;text-align:left;cursor:pointer;touch-action:manipulation}
+.device-choice-options button strong,.device-choice-options button small{display:block}.device-choice-options button strong{font-size:15px;margin-bottom:13px}.device-choice-options button small{font-size:11px;color:#a9cfce;line-height:1.5}
+.device-choice-options button:hover,.device-choice-options button:focus-visible{border-color:var(--mint);background:#22433d}
+.owner-showcase{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;padding:12px;background:#132434;border:1px solid #d1a35d61;border-radius:11px;margin:9px 0}
+.owner-showcase strong{font-size:18px}.owner-showcase small{font-size:12px;color:#bcd1d7}.unranked-owner{margin-bottom:16px}.unranked-owner .notice{font-size:11px}
+.rim-color-custom{padding:16px;background:#122839;border:1px solid #59ddca71;border-radius:13px;display:flex;align-items:center;flex-wrap:wrap;gap:13px;margin:9px 0 20px}
+.rim-color-custom label{font-weight:900;font-size:12px;letter-spacing:.09em}.rim-color-custom input[type=color]{width:65px;height:45px;border:1px solid #fff6;background:#071521;border-radius:8px;padding:3px;cursor:pointer}.rim-color-custom span{color:#a9cbd0;font-size:11px}
+html[data-device="desktop"] .touch-controls{display:none!important}
+html[data-device="phone"] .touch-controls,html[data-device="tablet"] .touch-controls{display:block!important;position:fixed;inset:0;z-index:26;pointer-events:none;touch-action:none}
+html[data-device="phone"] #view,html[data-device="tablet"] #view{touch-action:none}
+html[data-device="phone"] .touch-controls button,html[data-device="tablet"] .touch-controls button{pointer-events:auto;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;min-height:56px;min-width:56px;border:2px solid #71f8d690;border-radius:17px;color:#fff;background:#0b2837ef;font-weight:900;box-shadow:0 7px 25px #0009;overscroll-behavior:none}
+html[data-device="phone"] .touch-controls button[data-held],html[data-device="tablet"] .touch-controls button[data-held]{background:#2f7866;border-color:#baffec;transform:scale(.96)}
+html[data-device="phone"] .touch-group,html[data-device="tablet"] .touch-group{position:absolute;display:flex;gap:9px;bottom:max(10px,env(safe-area-inset-bottom,0px));pointer-events:none}
+html[data-device="phone"] .touch-steer,html[data-device="tablet"] .touch-steer{left:max(8px,env(safe-area-inset-left,0px))}
+html[data-device="phone"] .touch-pedals,html[data-device="tablet"] .touch-pedals{right:max(8px,env(safe-area-inset-right,0px))}
+html[data-device="phone"] .touch-group button,html[data-device="tablet"] .touch-group button{min-width:clamp(56px,11vw,92px);min-height:clamp(64px,13vw,100px);font-size:19px}
+html[data-device="phone"] .touch-pedals .touch-handbrake,html[data-device="tablet"] .touch-pedals .touch-handbrake{border-color:#ffb371;letter-spacing:.03em;font-size:11px}
+html[data-device="phone"] .touch-pedals .touch-gas,html[data-device="tablet"] .touch-pedals .touch-gas{background:#18543ff2;border-color:#7ce8b9}
+html[data-device="phone"] .touch-tools,html[data-device="tablet"] .touch-tools{display:flex;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(115px + env(safe-area-inset-bottom,0px));gap:6px;pointer-events:none;max-width:calc(100vw - 18px)}
+html[data-device="phone"] .touch-tools button,html[data-device="tablet"] .touch-tools button{min-height:40px;min-width:0;padding:8px 10px;font-size:10px;white-space:nowrap}
+html[data-device="phone"] .hud-bottom-left,html[data-device="tablet"] .hud-bottom-left,html[data-device="phone"] .controls-hint,html[data-device="tablet"] .controls-hint{display:none!important}
+html[data-device="phone"] .hud-top-right #customFromHud,html[data-device="tablet"] .hud-top-right #customFromHud{display:none}
+html[data-device="phone"] .speed,html[data-device="tablet"] .speed{right:max(8px,env(safe-area-inset-right,0px));bottom:calc(210px + env(safe-area-inset-bottom,0px));transform:scale(.68);transform-origin:bottom right}
+html[data-device="phone"] .toplinks,html[data-device="tablet"] .toplinks{-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+@media(max-width:700px){
+ .device-choice-options{grid-template-columns:1fr;gap:9px}
+ .device-choice-options button{min-height:72px;padding:13px 15px}
+ .device-choice-options button strong{font-size:13px;margin-bottom:5px}
+ .device-chooser-card{max-height:94dvh;overflow:auto}
+ .brand .beta-label{font-size:8px;padding:4px 5px;margin-left:5px}
+ html[data-device="phone"] .touch-group{gap:7px}
+ html[data-device="phone"] .touch-group button{min-width:clamp(47px,13vw,70px);min-height:clamp(59px,17vw,83px);padding:6px}
+ html[data-device="phone"] .touch-tools{bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+ html[data-device="phone"] .touch-tools button{min-height:37px;padding:6px 8px;font-size:9px}
+ html[data-device="phone"] .speed{bottom:calc(178px + env(safe-area-inset-bottom,0px));transform:scale(.55)}
+ html[data-device="phone"] .hud-top .tag:nth-child(3),html[data-device="phone"] .car-tag{display:none}
+}
+@media(max-height:470px) and (orientation:landscape){
+ html[data-device="phone"] .touch-tools{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+ html[data-device="phone"] .touch-group button{min-height:51px}
+ html[data-device="phone"] .speed{bottom:calc(110px + env(safe-area-inset-bottom,0px));transform:scale(.52)}
+ html[data-device="phone"] .hud-top,html[data-device="tablet"] .hud-top{top:75px}
+ html[data-device="phone"] .topbar,html[data-device="tablet"] .topbar{min-height:62px}
+}

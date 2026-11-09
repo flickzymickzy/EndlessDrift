@@ -26,9 +26,9 @@ assert.match(server,/\/rest\/v1\/rpc\/ed_spend_paid_coins/);
 assert.match(html,/<title>Just Drift Endlessly<\/title>/);
 assert.match(html,/drift-endlessly-logo\.png/);
 assert.match(manifest,/Drift Endlessly/);
-assert.doesNotMatch(main,/class="beta-label">BETA/);
-assert.doesNotMatch(html,/>BETA</);
-assert.match(html,/src="\.\/src\/main\.js\?v=25"/);
+assert.match(main,/class="beta-label">BETA/);
+assert.match(html,/>BETA</);
+assert.match(html,/src="\.\/src\/main\.js\?v=26"/);
 console.log('Release checks passed: earned-DC pass, no checkout, new brand, legacy saves.');
 
 // The separate coin-buying page is removed, while earned Drift Coins and Drift Pass remain.
@@ -37,10 +37,10 @@ assert.match(main,/data-buy-drift-pass/);
 assert.match(main,/data-confirm-drift-pass/);
 
 const xpAdminSql=readFileSync('./backend/admin-xp-limit-v23.sql','utf8');
-// Only admin-issued grants can reach 50,000. Normal run banking is still capped at 5,000.
-assert.match(main, /<option value="xp">\/xp \(1–50,000\)<\/option>/);
-assert.match(server, /amount<1\|\|amount>50000/);
-assert.match(server, /error:'Grant 1–50,000 XP per action'/);
+// Admin grants are unranked; real run banking is still capped at 5,000 XP.
+assert.match(main, /<option value="xp">\/xp \(custom, unranked\)<\/option>/);
+assert.match(server, /MAX_ADMIN_GRANT=Number\.MAX_SAFE_INTEGER/);
+assert.doesNotMatch(server.split("case 'xp':{")[1].split("case 'coins':{")[0],/ed_record_ranked_xp/);
 assert.match(server, /xp>5000/);
 assert.match(xpAdminSql, /p_xp > 50000/);
 assert.match(xpAdminSql, /revoke all on function public\.ed_record_ranked_xp/i);

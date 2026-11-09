@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {MAX_VEHICLE_SPEED_MPH} from './src/performance.js';
+const main=readFileSync('./src/main.js','utf8'),server=readFileSync('./server.js','utf8'),
+ css=readFileSync('./src/style.css','utf8'),html=readFileSync('./index.html','utf8');
+assert.equal(MAX_VEHICLE_SPEED_MPH,300);
+for(const key of ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'])assert.match(main,new RegExp(key));
+for(const name of ['phone','tablet','desktop'])assert.match(main,new RegExp('data-choose-device="'+name+'"'));
+assert.match(main,/data-device-change/);
+assert.match(main,/data-rim-color/);
+assert.match(main,/customRimColor/);
+assert.match(css,/\.rim-color-custom/);
+assert.match(css,/\.device-chooser/);
+assert.match(main,/if\(handbrake\)\{const force=/);
+for(const name of ['repair','respawn','clearwanted'])assert.match(server,new RegExp("case '"+name+"'"));
+assert.match(main,/id="adminXpForm"/);
+assert.match(main,/data-admin-visibility/);
+assert.match(main,/\.filter\(r=>!r\.owner\)/);
+assert.match(server,/const competitive=rows\.filter\(row=>!owners\.has\(row\.username\)\)/);
+const xpCase=server.split("case 'xp':{")[1].split("case 'coins':{")[0];
+assert.doesNotMatch(xpCase,/ed_record_ranked_xp/);
+assert.match(server,/MAX_ADMIN_GRANT=Number\.MAX_SAFE_INTEGER/);
+assert.match(html,/src="\.\/src\/main\.js\?v=26"/);
+assert.match(main,/class="beta-label">BETA/);
+assert.match(html,/>BETA</);
+console.log('V26 checks passed: controls, custom rims, beta label, mobile mode, safe admin gifts, and fair rankings.');
