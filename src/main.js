@@ -285,7 +285,7 @@ async function renderAdmin(){
    <form id="adminXpForm" class="admin-control-form"><input name="username" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Player username" required/>
    <input name="amount" type="number" min="1" step="1" placeholder="Custom amount of XP" required/>
    <button class="btn primary" type="submit">GIVE XP</button></form><p id="adminXpResult" class="notice" role="status"></p></div>
-   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
+   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="boost">/boost (1.75× speed)</option><option value="slow">/slow (0.5× speed)</option><option value="resetpowers">/resetpowers (restore defaults)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
    <div class="panel panel-pad"><div class="kicker">HISTORICAL CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
@@ -355,7 +355,7 @@ function pauseGame(reason='manual'){
  if(mode!=='game'||!game?.playing||game.crashState||pauseActive)return;
  pauseActive=true;
  Object.keys(keys).forEach(key=>keys[key]=false);
- $('pauseCar').textContent=getSelected().name.toUpperCase();
+ clearTouchDriving();$('pauseCar').textContent=getSelected().name.toUpperCase();
  $('pauseXP').textContent=fmt(game.run.score)+' RUN XP';$('pauseCoins').textContent='+'+fmt(Math.floor(game.run.score/5))+' DC';
  $('pauseReason').textContent=reason==='focus'?'Window focus lost. Your run was paused automatically.':'Your run is frozen. Resume whenever you are ready.';
  $('pauseScreen').classList.remove('hidden');
@@ -367,7 +367,7 @@ function resumeGame(){
  Object.keys(keys).forEach(key=>keys[key]=false);
  game?.resetTiming();game?.audio?.unlock();
 }
-function clearPause(){pauseActive=false;$('pauseScreen').classList.add('hidden');Object.keys(keys).forEach(key=>keys[key]=false);}
+function clearPause(){pauseActive=false;$('pauseScreen').classList.add('hidden');Object.keys(keys).forEach(key=>keys[key]=false);clearTouchDriving();}
 function errorScreen(err){console.error('Drift Endlessly error:',err);const msg=String(err?.stack||err?.message||err);
  let old=document.getElementById('fatal-error');if(old)return;
  const el=document.createElement('div');el.className='error';el.id='fatal-error';el.innerHTML=`<div class="error-panel"><div class="kicker">GAME STARTUP ERROR</div><h2>Something went wrong</h2><p style="margin:17px 0;line-height:1.8">The game couldn't load. Refresh your website or check the deployment logs in Render. If this continues, copy the error below into ChatGPT.</p><pre></pre><button class="btn primary" onclick="location.reload()">RELOAD GAME</button></div>`;
@@ -382,7 +382,7 @@ function chooseDevice(device){
  try{localStorage.setItem('ed-device-mode',safe);sessionStorage.setItem('ed-device-chosen','1');}catch{}
  deviceChoiceOpen=false;$('deviceChooser').classList.add('hidden');
  clearTouchDriving();
- if(safe==='phone')Object.assign(state.settings,{quality:'low',fps:'60',renderScale:75,shadows:false,particles:'low',drawDistance:'short',trafficDensity:'low',cameraShake:20});
+ if(safe==='phone')Object.assign(state.settings,{quality:'low',fps:'60',renderScale:70,shadows:false,particles:'low',drawDistance:'short',trafficDensity:'low',cameraShake:20});
  else if(safe==='tablet')Object.assign(state.settings,{quality:'medium',fps:'60',renderScale:90,shadows:false,particles:'medium',trafficDensity:'normal',cameraShake:35});
  save();applyUI();game?.applyQuality();game?.resize();
  if(mode==='settings')renderSettings();
@@ -402,6 +402,7 @@ function applyUI(){
  const s=state.settings,theme={mint:'#5cf2c9',orange:'#ff9165',blue:'#6dbdff',purple:'#b598ff',red:'#ff6c7d'};
  document.documentElement.style.setProperty('--mint',theme[s.uiTheme]||theme.mint);document.documentElement.style.setProperty('--accent-glow',theme[s.uiTheme]||theme.mint);if(showroom?.accentRing)showroom.accentRing.material.color.set(theme[s.uiTheme]||theme.mint);
  document.documentElement.style.setProperty('--hud-opacity',String((Number(s.hudOpacity)||92)/100));
+ document.documentElement.style.setProperty('--touch-scale',String(Math.max(.8,Math.min(1.25,(Number(s.touchSize)||100)/100))));
  document.body.dataset.hudLayout=s.hudLayout||'classic';
  document.body.dataset.speedStyle=s.speedStyle||'digital';
  applyScale();
@@ -621,7 +622,7 @@ async function renderAccount(){
  if(mode!=='account')return;
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
- ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Online score submissions are disabled until server anti-cheat is implemented.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">Rename anytime. Usernames must remain unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
+ ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Only XP earned from gameplay counts toward competitive ranks.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">Rename anytime. Usernames must remain unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
  ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Earned Drift Coins, Drift Pass ownership, XP, cars, and tuning are saved with your signed-in garage. Legacy paid balances are retained where applicable. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
 }
 function renderSettings(){const s=state.settings;
@@ -649,6 +650,7 @@ function renderSettings(){const s=state.settings;
  ${select('smoke','DRIFT SMOKE',[['true','On'],['false','Off']])}
  ${slider('steering','STEERING SENSITIVITY',.5,1.8,.1)}
  ${slider('cameraShake','CAMERA SHAKE STRENGTH',0,100,5,'%')}
+  ${slider('touchSize','TOUCH CONTROL SIZE',80,125,5,'%')}
  </div><div class="divider"></div><div class="kicker">CUSTOM KEYBOARD CONTROLS</div>
  <p class="notice">Click a binding, then press your new key. Escape cancels. The changes save automatically.</p>
  <div class="controls-grid">${Object.entries({accelerate:'Accelerate',brake:'Brake / reverse',left:'Steer left',right:'Steer right',handbrake:'Handbrake / drift',camera:'Change camera',recover:'Respawn / recover',pause:'Pause / menu'}).map(([key,label])=>`<button class="control-bind" data-bind="${key}"><span>${label}</span><kbd>${(s.controls?.[key]||'UNBOUND').replace('Key','').replace('Arrow','').replace('Digit','')}</kbd></button>`).join('')}</div><button class="btn ghost small" data-reset-keys>RESET CONTROLS</button>
@@ -886,7 +888,7 @@ document.addEventListener('input',e=>{
  if(e.target.dataset.tune){const key=e.target.dataset.tune,val=Number(e.target.value);carSave(tuningCar).tune[key]=val;const v=$('val-'+key);if(v)v.textContent=`${val}%`;save();return;}
  if(e.target.dataset.setting){let val=e.target.value;const key=e.target.dataset.setting;
    if(['driftAssist','smoke','shadows','music','policeRadio'].includes(key))val=val==='true';
-   if(['steering','uiScale','hudOpacity','renderScale','cameraShake','musicVolume','effectsVolume'].includes(key))val=Number(val);
+   if(['steering','uiScale','hudOpacity','renderScale','cameraShake','musicVolume','effectsVolume','touchSize'].includes(key))val=Number(val);
    state.settings[key]=val;const v=$('setting-value-'+key);if(v)v.textContent=val+(['hudOpacity','uiScale','renderScale','cameraShake'].includes(key)?'%':'');
    updateSettings();
  }
@@ -949,7 +951,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)clearTouchD
 class DriftGame{
  constructor(){
   this.scene=new THREE.Scene();
-  this.renderer=new THREE.WebGLRenderer({canvas:dom.view,antialias:true,alpha:false,powerPreference:'high-performance'});
+  this.renderer=new THREE.WebGLRenderer({canvas:dom.view,antialias:document.documentElement.dataset.device==='desktop',alpha:false,powerPreference:'high-performance'});
   this.renderer.outputColorSpace=THREE.SRGBColorSpace;
   this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.22;
   this.camera=new THREE.PerspectiveCamera(65,1,.1,1000);
@@ -1000,7 +1002,7 @@ class DriftGame{
   const s=state.settings,quality=s.quality||'medium';
   const preset={low:.72,medium:1,high:1.25,ultra:1.6}[quality]||1;
   const resolution=Math.max(.6,Math.min(1.25,Number(s.renderScale||100)/100));
-  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1.5,preset*resolution,window.matchMedia?.('(pointer:coarse)').matches?1.5:2.5));
+  this.renderer.setPixelRatio(Math.min(window.devicePixelRatio||1.5,preset*resolution,document.documentElement.dataset.device==='phone'?1:document.documentElement.dataset.device==='tablet'?1.35:2.5));
   this.renderer.shadowMap.enabled=Boolean(s.shadows)&&(quality==='high'||quality==='ultra');
   this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.sun.castShadow=this.renderer.shadowMap.enabled;
   this.sun.shadow.mapSize.set(quality==='ultra'?2048:1024,quality==='ultra'?2048:1024);
@@ -1053,13 +1055,13 @@ class DriftGame{
  }
  setupCrashEffects(){
   const geometry=new THREE.BoxGeometry(.055,.055,.25);
-  for(let i=0;i<35;i++){
+  for(let i=0,n=document.documentElement.dataset.device==='phone'?14:35;i<n;i++){
     const material=new THREE.MeshBasicMaterial({color:i%3===0?0xffed8c:i%2===0?0xff713f:0xffffff,transparent:true,opacity:0,depthWrite:false});
     const mesh=new THREE.Mesh(geometry,material);mesh.visible=false;this.scene.add(mesh);
     this.crashSparks.push({mesh,vel:new THREE.Vector3(),life:0});
   }
   const scraps=[0x111b25,0x6d8ea0,0xff9a62,0x222e3c];
-  for(let i=0;i<14;i++){
+  for(let i=0,n=document.documentElement.dataset.device==='phone'?7:14;i<n;i++){
     const material=new THREE.MeshStandardMaterial({color:scraps[i%scraps.length],metalness:.65,roughness:.3,side:THREE.DoubleSide});
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(.18+Math.random()*.38,.02+Math.random()*.07,.15+Math.random()*.29),material);
     mesh.visible=false;this.scene.add(mesh);this.crashDebris.push({mesh,vel:new THREE.Vector3(),life:0,spin:new THREE.Vector3()});
@@ -1210,10 +1212,10 @@ class DriftGame{
  }
  setupSmoke(){const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;const ctx=canvas.getContext('2d');const gradient=ctx.createRadialGradient(32,32,4,32,32,31);gradient.addColorStop(0,'rgba(255,255,255,.86)');gradient.addColorStop(.42,'rgba(255,255,255,.42)');gradient.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);
   const texture=new THREE.CanvasTexture(canvas);
-  for(let i=0;i<115;i++){const m=new THREE.SpriteMaterial({map:texture,transparent:true,opacity:0,depthWrite:false});const s=new THREE.Sprite(m);s.visible=false;s.scale.set(1,1,1);this.scene.add(s);this.smokePool.push({s,life:0,max:1});}
+  for(let i=0,n=document.documentElement.dataset.device==='phone'?44:document.documentElement.dataset.device==='tablet'?76:115;i<n;i++){const m=new THREE.SpriteMaterial({map:texture,transparent:true,opacity:0,depthWrite:false});const s=new THREE.Sprite(m);s.visible=false;s.scale.set(1,1,1);this.scene.add(s);this.smokePool.push({s,life:0,max:1});}
  }
  setupSkids(){const material=new THREE.MeshBasicMaterial({color:0x101b20,transparent:true,opacity:.27,depthWrite:false});const geo=new THREE.PlaneGeometry(.23,1.4);
-  for(let i=0;i<190;i++){const m=new THREE.Mesh(geo,material);m.rotation.x=-Math.PI/2;m.visible=false;this.scene.add(m);this.skids.push(m);}
+  for(let i=0,n=document.documentElement.dataset.device==='phone'?85:document.documentElement.dataset.device==='tablet'?130:190;i<n;i++){const m=new THREE.Mesh(geo,material);m.rotation.x=-Math.PI/2;m.visible=false;this.scene.add(m);this.skids.push(m);}
  }
  spawnSmoke(dt){this.smokeTimer-=dt;if(this.smokeTimer>0||state.settings.smoke===false)return;this.smokeTimer=({low:.09,medium:.055,high:.03}[state.settings.particles]||.055);const {x,z,heading}=this.player;
   for(const sx of [-1,1]){const s=this.smokePool[this.smokeHead++%this.smokePool.length];const side=sx*.74,back=-1.38;

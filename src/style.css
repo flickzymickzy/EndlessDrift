@@ -645,3 +645,10 @@ html[data-device="phone"] .toplinks,html[data-device="tablet"] .toplinks{-webkit
  html[data-device="phone"] .hud-top,html[data-device="tablet"] .hud-top{top:75px}
  html[data-device="phone"] .topbar,html[data-device="tablet"] .topbar{min-height:62px}
 }
+
+/* V27 mobile control sizing and ranks visibility */
+html[data-device="phone"] .toplinks button[data-page="leaderboard"],html[data-device="tablet"] .toplinks button[data-page="leaderboard"]{display:inline-flex!important}
+html[data-device="phone"] .touch-group button{min-width:clamp(48px,calc(13vw * var(--touch-scale,1)),90px);min-height:clamp(58px,calc(17vw * var(--touch-scale,1)),104px)}
+html[data-device="tablet"] .touch-group button{min-width:clamp(62px,calc(11vw * var(--touch-scale,1)),108px);min-height:clamp(72px,calc(13vw * var(--touch-scale,1)),120px)}
+html[data-device="phone"] .touch-controls button,html[data-device="tablet"] .touch-controls button{-webkit-tap-highlight-color:transparent;touch-action:none}
+@media(max-width:420px){html[data-device="phone"] .touch-tools{gap:4px}html[data-device="phone"] .touch-tools button{padding:6px 7px}}

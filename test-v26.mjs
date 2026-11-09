@@ -20,7 +20,7 @@ assert.match(server,/const competitive=rows\.filter\(row=>!owners\.has\(row\.use
 const xpCase=server.split("case 'xp':{")[1].split("case 'coins':{")[0];
 assert.doesNotMatch(xpCase,/ed_record_ranked_xp/);
 assert.match(server,/MAX_ADMIN_GRANT=Number\.MAX_SAFE_INTEGER/);
-assert.match(html,/src="\.\/src\/main\.js\?v=26"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=27"/);
 assert.match(main,/class="beta-label">BETA/);
 assert.match(html,/>BETA</);
 console.log('V26 checks passed: controls, custom rims, beta label, mobile mode, safe admin gifts, and fair rankings.');

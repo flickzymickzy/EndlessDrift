@@ -227,6 +227,13 @@ async function adminModerationApi(req,res,route,user){
   case 'repair':patch.repair_version=Number(before.repair_version||0)+1;break;
   case 'respawn':patch.respawn_version=Number(before.respawn_version||0)+1;break;
   case 'clearwanted':patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
+  case 'boost':patch.speed_multiplier=1.75;break;
+  case 'slow':patch.speed_multiplier=.5;break;
+  case 'resetpowers':{
+   patch.frozen=false;patch.god_mode=false;patch.speed_multiplier=1;
+   patch.jump_multiplier=1;patch.shape='car';patch.morph_expires_at=null;
+   break;
+  }
   case 'xp':{
    const amount=Number(data.value),existing=Number(before.xp_grant_total||0);
    if(!Number.isSafeInteger(amount)||amount<1||amount>MAX_ADMIN_GRANT)return json(res,400,{error:'Use a positive whole XP amount'});
@@ -242,7 +249,7 @@ async function adminModerationApi(req,res,route,user){
    patch.coins_grant_total=existing+amount;
    break;
   }
-  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted xp coins'});
+  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted boost slow resetpowers xp coins'});
  }
  await supabase('/rest/v1/ed_player_controls?on_conflict=user_id',{method:'POST',payload:{user_id:target.id,...patch}});
  if(command==='coins'){
@@ -255,18 +262,25 @@ async function leaderboardApi(res,sort='lifetime_xp'){
  if(!sb||!secretKey)return json(res,503,{error:'Leaderboard is not configured'});
  const order=sort==='coins_spent'?'coins_spent':'lifetime_xp';
  const [rows,admins]=await Promise.all([
-  supabase('/rest/v1/leaderboard_public?select=username,lifetime_xp,coins_spent&order='+order+'.desc&limit=100'),
+  supabase('/rest/v1/leaderboard_public?select=username,lifetime_xp,coins_spent&order='+order+'.desc&limit=150'),
   supabase('/rest/v1/ed_admin_roles?source=eq.owner&select=user_id&limit=100')
  ]);
- let owners=new Set();
+ let owners=new Set(),ownerRows=[];
  if(admins.length){
   const profiles=await supabase('/rest/v1/driver_profiles?select=id,username&id=in.('+admins.map(a=>a.user_id).join(',')+')');
   owners=new Set(profiles.map(p=>p.username));
+  // Load owners outside the ranked top 150 too.
+  const featured=await Promise.all(profiles.map(p=>supabase('/rest/v1/leaderboard_public?select=username,lifetime_xp,coins_spent&username=eq.'+encodeURIComponent(p.username)+'&limit=1')));
+  ownerRows=featured.flat().filter(Boolean);
  }
- const competitive=rows.filter(row=>!owners.has(row.username));
- const ownerRows=rows.filter(row=>owners.has(row.username));
- // Owner profile remains visible for transparency, but never occupies a numbered rank.
- return json(res,200,{rows:[...competitive,...ownerRows].map(row=>({username:String(row.username||'DRIVER').slice(0,24),lifetime_xp:Math.max(0,Number(row.lifetime_xp)||0),coins_spent:Math.max(0,Number(row.coins_spent)||0),owner:owners.has(row.username)}))});
+ const competitive=rows.filter(row=>!owners.has(row.username)).slice(0,100);
+ if(!ownerRows.length)ownerRows=rows.filter(row=>owners.has(row.username));
+ return json(res,200,{rows:[...competitive,...ownerRows].map(row=>({
+  username:String(row.username||'DRIVER').slice(0,24),
+  lifetime_xp:Math.max(0,Number(row.lifetime_xp)||0),
+  coins_spent:Math.max(0,Number(row.coins_spent)||0),
+  owner:owners.has(row.username)
+ }))});
 }
 
 async function publicAnnouncements(res){
