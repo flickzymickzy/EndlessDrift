@@ -135,6 +135,10 @@ async function adminApi(req,res,route){
   await supabase('/rest/v1/ed_announcements',{method:'POST',payload:{message,created_by:user.id}});
   return json(res,200,{sent:true});
  }
+ if(route==='/api/admin/announcement/clear'&&req.method==='POST'){
+  await supabase('/rest/v1/ed_announcements?is_active=eq.true',{method:'PATCH',payload:{is_active:false}});
+  return json(res,200,{cleared:true});
+ }
  if(route==='/api/admin/announcement/hide'&&req.method==='POST'){
   const data=JSON.parse((await body(req,3000)).toString()||'{}');
   if(!Number.isSafeInteger(data.id)||data.id<1)return json(res,400,{error:'Invalid announcement'});
@@ -211,7 +215,7 @@ async function adminModerationApi(req,res,route,user){
  const profiles=await supabase('/rest/v1/driver_profiles?username=ilike.'+encodeURIComponent(name)+'&select=id,username&limit=1');
  const target=profiles?.[0];if(!target)return json(res,404,{error:'Target player not found'});
  const ownerRole=await adminRole(target.id);
- const destructive=['kick','ban','freeze','unfreeze'];
+ const destructive=['kick','ban','freeze','unfreeze','stop'];
  if(destructive.includes(command)&&(target.id===user.id||ownerRole?.source==='owner'))return json(res,403,{error:'Cannot moderate yourself or the owner'});
  const before=await playerControls(target.id);const patch={updated_at:new Date().toISOString()};
  switch(command){
@@ -243,6 +247,22 @@ async function adminModerationApi(req,res,route,user){
    patch.repair_version=Number(before.repair_version||0)+1;
    patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
   }
+  case 'rescue':{
+   patch.frozen=false;patch.respawn_version=Number(before.respawn_version||0)+1;
+   patch.repair_version=Number(before.repair_version||0)+1;
+   patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
+  }
+  case 'resetcar':{
+   patch.respawn_version=Number(before.respawn_version||0)+1;
+   patch.repair_version=Number(before.repair_version||0)+1;
+   patch.shape='car';patch.morph_expires_at=null;break;
+  }
+  case 'pardon':patch.banned=false;patch.frozen=false;patch.clear_wanted_version=Number(before.clear_wanted_version||0)+1;break;
+  case 'shield':patch.god_mode=true;patch.repair_version=Number(before.repair_version||0)+1;break;
+  case 'stunt':patch.speed_multiplier=1.5;patch.jump_multiplier=3;patch.god_mode=true;break;
+  case 'unstunt':patch.speed_multiplier=1;patch.jump_multiplier=1;patch.god_mode=false;break;
+  case 'stop':patch.frozen=true;break;
+  case 'go':patch.frozen=false;patch.speed_multiplier=1;break;
   case 'resetpowers':{
    patch.frozen=false;patch.god_mode=false;patch.speed_multiplier=1;
    patch.jump_multiplier=1;patch.shape='car';patch.morph_expires_at=null;
@@ -263,7 +283,7 @@ async function adminModerationApi(req,res,route,user){
    patch.coins_grant_total=existing+amount;
    break;
   }
-  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted boost slow resetpowers unboost superboost superjump unjump unstuck godon godoff unmorph restore xp coins'});
+  default:return json(res,400,{error:'Unknown command. Use kick ban unban freeze unfreeze god speed jump morph repair respawn clearwanted boost slow resetpowers unboost superboost superjump unjump unstuck godon godoff unmorph restore rescue resetcar pardon shield stunt unstunt stop go xp coins'});
  }
  await supabase('/rest/v1/ed_player_controls?on_conflict=user_id',{method:'POST',payload:{user_id:target.id,...patch}});
  if(command==='coins'){

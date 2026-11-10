@@ -11,7 +11,7 @@ assert.match(main,/data-rim-color/);
 assert.match(main,/customRimColor/);
 assert.match(css,/\.rim-color-custom/);
 assert.match(css,/\.device-chooser/);
-assert.match(main,/if\(handbrake\)\{const force=/);
+assert.match(main,/if\(handbrake\)\{[\s\S]*?const force=/);
 for(const name of ['repair','respawn','clearwanted'])assert.match(server,new RegExp("case '"+name+"'"));
 assert.match(main,/id="adminXpForm"/);
 assert.match(main,/data-admin-visibility/);
@@ -20,7 +20,7 @@ assert.match(server,/const competitive=rows\.filter\(row=>!owners\.has\(row\.use
 const xpCase=server.split("case 'xp':{")[1].split("case 'coins':{")[0];
 assert.doesNotMatch(xpCase,/ed_record_ranked_xp/);
 assert.match(server,/MAX_ADMIN_GRANT=Number\.MAX_SAFE_INTEGER/);
-assert.match(html,/src="\.\/src\/main\.js\?v=28"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=29"/);
 assert.match(main,/class="beta-label">BETA/);
 assert.match(html,/>BETA</);
 console.log('V26 checks passed: controls, custom rims, beta label, mobile mode, safe admin gifts, and fair rankings.');

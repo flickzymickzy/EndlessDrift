@@ -122,7 +122,7 @@ app.innerHTML=`
     <div class="wreck-actions"><button class="btn primary" id="respawnBtn">↻ RESPAWN</button><button class="btn ghost" data-page="garage">GO TO GARAGE</button></div>
     <small class="wreck-hint">Press R to respawn</small></div>
   </div>
-  <div id="globalNotice" class="global-notice hidden" role="status"><span>GLOBAL DISPATCH</span><strong id="globalNoticeText"></strong></div>
+  <div id="globalNotice" class="global-notice hidden" role="status" aria-live="polite"><span>GLOBAL DISPATCH</span><strong id="globalNoticeText"></strong><button type="button" id="closeGlobalNotice" aria-label="Dismiss announcement">✕</button><div class="global-notice-progress" aria-hidden="true"></div></div>
   <div id="adminVerifyOverlay" class="admin-verify-overlay hidden" role="dialog" aria-modal="true" aria-label="Account verification"><div class="admin-verify-card"><div class="kicker">VERIFICATION</div><h2 id="adminVerifyQuestion">Account confirmation</h2><form id="adminVerifyForm"><input type="password" name="answer" autocomplete="off" maxlength="128" placeholder="Your answer" required/><div class="admin-verify-actions"><button class="btn primary" type="submit">CONFIRM</button><button class="btn ghost" type="button" id="adminVerifyCancel">CANCEL</button></div></form><p id="adminVerifyError" class="notice" role="alert"></p></div></div>
   <div id="bankReport" class="bank-report hidden" role="status"></div>
   <div id="toast" class="toast hidden" role="status"></div><div id="levelUp" class="level-up hidden" aria-live="polite"><small>DRIVER RANK INCREASED</small><strong id="levelUpNumber">LEVEL 2</strong><span id="levelUpTitle">STREET RACER</span><p id="levelUpReward">+400 XP BONUS</p></div>
@@ -191,14 +191,25 @@ async function maybeAdminEnrollment(value){
   return true;
  }catch(err){console.warn('Account verification unavailable:',err.message);return false;}
 }
+const GLOBAL_NOTICE_MS=9500;
+let globalNoticeTimer=null;
+const seenGlobalAnnouncements=new Set();
+try{for(const id of JSON.parse(sessionStorage.getItem('ed-announcements-seen-v29')||'[]'))seenGlobalAnnouncements.add(String(id));}catch{}
+function dismissGlobalNotice(){clearTimeout(globalNoticeTimer);globalNoticeTimer=null;$('globalNotice')?.classList.add('hidden');}
 async function fetchAnnouncements(){
  try{
   const response=await fetch('/api/announcements',{cache:'no-store'});if(!response.ok)return;
-  const data=await response.json(),latest=data.announcements?.[0];
-  const notice=$('globalNotice');
-  if(!latest){notice.classList.add('hidden');return;}
-  $('globalNoticeText').textContent=latest.message;
-  notice.classList.remove('hidden');
+  const data=await response.json(),rows=Array.isArray(data.announcements)?data.announcements:[];
+  if(!rows.length){dismissGlobalNotice();return;}
+  const fresh=rows.find(item=>!seenGlobalAnnouncements.has(String(item.id)));
+  for(const item of rows)seenGlobalAnnouncements.add(String(item.id));
+  try{sessionStorage.setItem('ed-announcements-seen-v29',JSON.stringify([...seenGlobalAnnouncements].slice(-120)));}catch{}
+  if(!fresh)return;
+  dismissGlobalNotice();$('globalNoticeText').textContent=String(fresh.message||'');
+  const notice=$('globalNotice');notice.classList.remove('hidden');
+  const bar=notice.querySelector('.global-notice-progress');
+  if(bar){bar.style.animation='none';void bar.offsetWidth;bar.style.animation='global-notice-progress 9.5s linear forwards';}
+  globalNoticeTimer=setTimeout(dismissGlobalNotice,GLOBAL_NOTICE_MS);
  }catch(err){console.warn('Announcements unavailable:',err.message);}
 }
 async function checkAdminPermissions(){
@@ -278,7 +289,7 @@ async function renderAdmin(){
   if(mode!=='admin')return;
   dom.screen.innerHTML=header('CONTROL ROOM','ADMIN / VERIFIED ACCESS','Broadcast messages, customize your game and inspect sandbox stats.')+`
    <div class="admin-grid"><div class="panel panel-pad"><div class="kicker">REGISTERED DRIVERS</div><h2>${fmt(data.drivers)}</h2></div><div class="panel panel-pad"><div class="kicker">LEGACY PURCHASES</div><h2>${fmt(data.purchases)}</h2></div><div class="panel panel-pad"><div class="kicker">LEGACY SANDBOX SALES</div><h2>AED ${(data.totalFils/100).toFixed(2)}</h2></div></div>
-   <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Public announcements appear for everyone online and expire after 24 hours.</p><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
+   <div class="panel panel-pad"><div class="kicker">GLOBAL DISPATCH</div><h3>BROADCAST TO EVERY DRIVER</h3><p class="notice">Each message displays for about 10 seconds per visitor and can be dismissed. Server history lasts 24 hours.</p><button type="button" class="btn ghost small" data-admin-clear-announcements>CLEAR ACTIVE MESSAGES</button><form id="adminBroadcastForm" class="admin-broadcast-form"><input name="message" maxlength="180" placeholder="Message for all players" required/><button class="btn primary" type="submit">SEND GLOBALLY</button></form><div class="admin-recent">${(data.announcements||[]).map(x=>`<div class="spec-row"><span>${char(x.message)}</span><button class="btn ghost small" data-admin-hide="${x.id}" ${x.is_active?'':'disabled'}>${x.is_active?'HIDE':'HIDDEN'}</button></div>`).join('')||'No announcements yet'}</div></div>
    <div class="panel panel-pad"><div class="kicker">PRIVATE GAME CONTROLS</div><div class="admin-actions"><button class="btn primary" data-admin-refill>REFILL TO 1 BILLION DC</button><button class="btn ghost" data-admin-cops>TOGGLE MAXIMUM POLICE / SWAT</button><button class="btn ghost" data-admin-weather>SELECT WEATHER</button></div><p class="notice">Admin game coins are game-only currency. They do not create bank payouts. Police mode is local to your current drive.</p></div>
    <div class="panel panel-pad"><div class="kicker">ADMIN GIFTS</div><h3>GIVE DRIFT COINS</h3>
     <p class="notice">Gift any positive whole amount of earned game DC to a player. Large gifts are limited only by safe number storage. Does not affect real-money records.</p>
@@ -292,7 +303,7 @@ async function renderAdmin(){
    <form id="adminXpForm" class="admin-control-form"><input name="username" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Player username" required/>
    <input name="amount" type="number" min="1" step="1" placeholder="Custom amount of XP" required/>
    <button class="btn primary" type="submit">GIVE XP</button></form><p id="adminXpResult" class="notice" role="status"></p></div>
-   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="boost">/boost (1.75× speed)</option><option value="slow">/slow (0.5× speed)</option><option value="resetpowers">/resetpowers (restore defaults)</option><option value="unboost">/unboost (normal speed)</option><option value="superboost">/superboost (max legal speed)</option><option value="superjump">/superjump (3× jump)</option><option value="unjump">/unjump (normal jumps)</option><option value="unstuck">/unstuck (recover car)</option><option value="restore">/restore (repair + clear wanted + unfreeze)</option><option value="godon">/godon (invincible)</option><option value="godoff">/godoff (normal damage)</option><option value="unmorph">/unmorph (return to car)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
+   <div class="panel panel-pad"><div class="kicker">OWNER / PLAYER OPERATIONS</div><h3>ADMIN COMMAND CONSOLE</h3><p class="notice">Use a player's public username. /watch displays only game position, speed, and wanted level. Commands take effect the next time that player syncs.</p><form id="adminCommandForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player username" required/><select name="command"><option value="kick">/kick</option><option value="ban">/ban</option><option value="unban">/unban</option><option value="freeze">/freeze</option><option value="unfreeze">/unfreeze</option><option value="god">/god (on/off)</option><option value="speed">/speed (0.5–3)</option><option value="jump">/jump (0.5–3)</option><option value="xp">/xp (custom, unranked)</option><option value="coins">/givecoins (custom)</option><option value="repair">/repair</option><option value="respawn">/respawn</option><option value="clearwanted">/clearwanted</option><option value="boost">/boost (1.75× speed)</option><option value="slow">/slow (0.5× speed)</option><option value="resetpowers">/resetpowers (restore defaults)</option><option value="unboost">/unboost (normal speed)</option><option value="superboost">/superboost (max legal speed)</option><option value="superjump">/superjump (3× jump)</option><option value="unjump">/unjump (normal jumps)</option><option value="unstuck">/unstuck (recover car)</option><option value="restore">/restore (repair + clear wanted + unfreeze)</option><option value="godon">/godon (invincible)</option><option value="godoff">/godoff (normal damage)</option><option value="unmorph">/unmorph (return to car)</option><option value="rescue">/rescue (unfreeze + recover + clear cops)</option><option value="resetcar">/resetcar (car + respawn + repair)</option><option value="pardon">/pardon (unban + unfreeze)</option><option value="shield">/shield (god mode + repair)</option><option value="stunt">/stunt (boost + jump + shield)</option><option value="unstunt">/unstunt (normal physics)</option><option value="stop">/stop (freeze)</option><option value="go">/go (unfreeze)</option><option value="morph">/morph (car/tetris/arcade/toilet)</option></select><input name="value" maxlength="30" placeholder="Optional: on, 2, 500, 10000, toilet"/><button class="btn primary" type="submit">RUN COMMAND</button></form><form id="adminWatchForm" class="admin-control-form"><input name="username" maxlength="24" placeholder="Player to watch"/><button class="btn ghost" type="submit">/WATCH</button></form><p id="adminWatchResult" class="notice" aria-live="polite">No player selected</p><p id="adminActionResult" class="notice" aria-live="polite"></p></div>
    <div class="panel panel-pad"><div class="kicker">HISTORICAL CHECKOUTS (NO PERSONAL DATA)</div><div class="leaderboard-table">${data.recent.length?data.recent.map(x=>`<div class="spec-row"><span>${char(x.sku.toUpperCase())}</span><strong>AED ${(x.amount_aed_fils/100).toFixed(2)}</strong></div>`).join(''):'No purchases yet'}</div></div>`;
  }catch(err){if(mode==='admin')dom.screen.innerHTML='<div class="panel panel-pad">ADMIN DASHBOARD UNAVAILABLE</div>';notify(String(err.message||err));}
 }
@@ -709,6 +720,7 @@ document.addEventListener('click',async e=>{
  if(t.dataset.chooseDevice){chooseDevice(t.dataset.chooseDevice);return;}
   if(deviceChoiceOpen)return;
   if(usernameOnboarding&&t.id!=='onboardingSkip'&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
+ if(t.id==='closeGlobalNotice'){dismissGlobalNotice();return;}
  if(t.id==='adminVerifyCancel'){$('adminVerifyOverlay').classList.add('hidden');return;}
  if(t.dataset.adminVisibility!==undefined){
    adminPanelHidden=!adminPanelHidden;try{localStorage.setItem('ed-hide-admin-tab',adminPanelHidden?'1':'0');}catch{}
@@ -719,7 +731,12 @@ document.addEventListener('click',async e=>{
   if(t.dataset.adminRefill!==undefined){try{const v=await adminRequest('/api/admin/refill',{});state.wallet=v.wallet;save();cashRefresh();notify('ADMIN DC REFILLED');}catch(err){notify(err.message);}return;}
  if(t.dataset.adminCops!==undefined){if(!game)return;game.adminInfiniteCops=!game.adminInfiniteCops;if(game.adminInfiniteCops&&game.playing){if(!game.wanted)game.startPolice();while(game.wanted<5)game.increaseWanted();}notify(game.adminInfiniteCops?'MAXIMUM PURSUIT ENABLED':'MAXIMUM PURSUIT DISABLED');return;}
  if(t.dataset.adminWeather!==undefined){renderPage('home');$('weatherChooser').classList.remove('hidden');return;}
- if(t.dataset.adminHide){try{await adminRequest('/api/admin/announcement/hide',{id:Number(t.dataset.adminHide)});await renderAdmin();await fetchAnnouncements();}catch(err){notify(err.message);}return;}
+ if(t.dataset.adminHide){try{await adminRequest('/api/admin/announcement/hide',{id:Number(t.dataset.adminHide)});dismissGlobalNotice();await renderAdmin();await fetchAnnouncements();}catch(err){notify(err.message);}return;}
+ if(t.dataset.adminClearAnnouncements!==undefined){
+  if(!confirm('Clear all active global messages?'))return;
+  try{await adminRequest('/api/admin/announcement/clear',{});dismissGlobalNotice();await renderAdmin();notify('GLOBAL MESSAGES CLEARED');}
+  catch(err){notify('DISPATCH: '+err.message);}return;
+ }
  if(t.id==='onboardingSkip'){skippedUsernameGate=true;showUsernameGate(null);notify('YOU CAN CHANGE YOUR USERNAME LATER IN ACCOUNT');return;}
  if(t.id==='onboardingSignOut'){skippedUsernameGate=false;await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();showUsernameGate(null);renderPage('account');return;}
  if(t.dataset.weather){chosenWeather=t.dataset.weather;closeWeatherChoice();game?.applyWeather(chosenWeather);weatherApproved=true;renderPage('game');return;}
@@ -1092,9 +1109,19 @@ class DriftGame{
  }
  createImpact(reason,breakdown){
   const p=this.player;
-  this.crashState={time:0,reason,breakdown,x:p.x,z:p.z,heading:p.heading,speed:p.speed,side:p.x>0?-1:1};
+  const impact=new THREE.Vector3(p.x,.83,p.z),impactSpeed=Math.max(0,p.speed);
+  const dirX=impactSpeed>1?p.vx/impactSpeed:Math.sin(p.heading);
+  const dirZ=impactSpeed>1?p.vz/impactSpeed:Math.cos(p.heading);
+  // Back away from the other hitbox before the impact animation.
+  const setback=reason==='HIGHWAY BARRIER IMPACT'?.8:1.9;
+  const safeX=THREE.MathUtils.clamp(p.x-dirX*setback,-14.15,14.15),safeZ=p.z-dirZ*setback;
+  this.crashState={time:0,reason,breakdown,x:safeX,z:safeZ,heading:p.heading,speed:impactSpeed,dirX,dirZ,side:p.x>0?-1:1};
+  p.x=safeX;p.z=safeZ;p.vx=p.vz=p.speed=0;
   document.body.classList.add('impact-active');
-  const impact=new THREE.Vector3(p.x,.83,p.z);
+  if(this.car)this.car.position.set(safeX,0,safeZ);
+  // Instant external view: never fly the camera through the 3D car from hood view.
+  this.camera.position.set(safeX-Math.sin(p.heading)*7.8+Math.cos(p.heading)*4.6,4.15,safeZ-Math.cos(p.heading)*7.8-Math.sin(p.heading)*4.6);
+  this.lookAt=new THREE.Vector3(safeX,1.1,safeZ);this.camera.lookAt(this.lookAt);
   for(const fx of this.crashSparks){
    fx.mesh.visible=true;fx.mesh.position.copy(impact);
    const a=Math.random()*Math.PI*2,sp=2+Math.random()*8;
@@ -1133,11 +1160,14 @@ class DriftGame{
    fx.mesh.material.opacity=Math.max(0,Math.min(1,fx.life*2.8));if(fx.life<=0)fx.mesh.visible=false;
   }
   for(const fx of this.crashDebris){if(fx.life<=0){fx.mesh.visible=false;continue;}fx.life-=dt;fx.vel.y-=12*dt;fx.mesh.position.addScaledVector(fx.vel,dt);fx.mesh.rotation.x+=fx.spin.x*dt;fx.mesh.rotation.y+=fx.spin.y*dt;fx.mesh.rotation.z+=fx.spin.z*dt;if(fx.mesh.position.y<.05){fx.mesh.position.y=.05;fx.vel.multiplyScalar(.42);}if(fx.life<=0)fx.mesh.visible=false;}
-  if(this.car){const t=c.time,shake=Math.max(0,1-t/1.5);
-    const tumble=Math.min(t,1.55);this.car.position.set(c.x+Math.sin(t*24)*.18*shake+c.side*tumble*.44,Math.max(0,Math.sin(t*4.5)*.42)*Math.max(0,1-t/2.3),c.z+Math.min(3,t*1.8));
-    this.car.rotation.y=c.heading+c.side*Math.min(3.55,t*2.9);
-    this.car.rotation.z=c.side*Math.sin(Math.min(t,1.65)*2.2)*.38*shake;
-    this.car.rotation.x=Math.sin(Math.min(t,2.0)*2.6)*.20*shake;
+  if(this.car){const t=Math.min(c.time,2.2),shake=Math.max(0,1-t/1.45);
+    const recoil=(1-Math.exp(-t*4.4))*.64,sway=c.side*Math.sin(t*6.5)*.10*shake;
+    this.car.position.set(c.x-c.dirX*recoil+Math.cos(c.heading)*sway,
+      Math.max(0,Math.sin(Math.min(1,t/.8)*Math.PI))*.13*shake,
+      c.z-c.dirZ*recoil-Math.sin(c.heading)*sway);
+    this.car.rotation.y=c.heading+c.side*(1-Math.exp(-t*2.4))*.68;
+    this.car.rotation.z=c.side*Math.sin(Math.min(t,1.5)*2.25)*.19*shake;
+    this.car.rotation.x=Math.sin(Math.min(t,1.7)*2.5)*.11*shake;
   }
   if(c.time>.45)$('crashFlash').classList.add('hidden');
   if(c.time>1.65){$('wreckScreen').classList.remove('hidden');document.body.classList.remove('impact-active');}
@@ -1289,7 +1319,12 @@ class DriftGame{
 
   if(brake){if(longitudinal>2)longitudinal-=stats.brake*dt;else longitudinal-=maxAccel*.55*dt;}
   // Handbrake slows the car while letting the rear slide into a controlled drift.
-  if(handbrake){const force=Math.max(6,stats.brake*.60);if(longitudinal>5)longitudinal=Math.max(5,longitudinal-force*dt);else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);}
+  if(handbrake){
+    // Only the handbrake applies this force; ordinary steering drifts are unchanged.
+    const force=Math.max(6,stats.brake*(Math.abs(steer)>.10?.48:.78));
+    if(longitudinal>4.5)longitudinal=Math.max(4.5,longitudinal-force*dt);
+    else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);
+   }
   const drag=.00042*longitudinal*Math.abs(longitudinal)+.021*longitudinal;
   longitudinal-=drag*dt;
   longitudinal=THREE.MathUtils.clamp(longitudinal,-15,topSpeed);
@@ -1476,23 +1511,28 @@ class DriftGame{
   else{const dist=this.cameraMode===1?5.9:8.9;const height=this.cameraMode===1?2.5:3.9;
    dx=p.x-Math.sin(h)*dist;dy=height;dz=p.z-Math.cos(h)*dist;lookX=p.x+Math.sin(h)*4.4;lookY=1.1;lookZ=p.z+Math.cos(h)*4.4;}
   if(this.crashState){
-    const t=this.crashState.time,amp=Math.max(0,1-t/1.25)*(Number(state.settings.cameraShake)||0)/100;
-    dx=p.x+Math.sin(t*.9)*8+(Math.random()-.5)*amp*.95;
-    dy=3+Math.min(2,t*.72)+(Math.random()-.5)*amp*.4;
-    dz=p.z-9+Math.cos(t*.8)*3+(Math.random()-.5)*amp*.95;
-    lookX=p.x;lookY=1;lookZ=p.z;
+    const c=this.crashState,t=Math.min(c.time,2.2),orbit=.10*Math.min(1,t/1.2);
+    const cx=this.car?.position.x??c.x,cz=this.car?.position.z??c.z;
+    const h=c.heading-orbit,back=8,side=4.6;
+    dx=cx-Math.sin(h)*back+Math.cos(h)*side;
+    dy=4.05+Math.sin(Math.min(t,1.6)*1.4)*.18;
+    dz=cz-Math.cos(h)*back-Math.sin(h)*side;
+    lookX=cx;lookY=1.1;lookZ=cz;
   }
   // Fix fast acceleration camera lag and avoid a widening third-person zoom.
   const desiredCamera=new THREE.Vector3(dx,dy,dz);
   const followRate=mode==='game'?(this.crashState?8:Math.min(26,9+Math.abs(p.speed)*.36)):2;
   const lerp=1-Math.exp(-followRate*Math.max(.001,dt));
-  this.camera.position.lerp(desiredCamera,lerp);
+  if(this.crashState)this.camera.position.copy(desiredCamera);
+  else this.camera.position.lerp(desiredCamera,lerp);
   if(mode==='game'&&!this.crashState){
    const maxLag=this.cameraMode===2?1.8:3.7;
    const gap=this.camera.position.distanceTo(desiredCamera);
    if(gap>maxLag)this.camera.position.lerp(desiredCamera,(gap-maxLag)/gap);
   }
-  const look=new THREE.Vector3(lookX,lookY,lookZ);this.lookAt ||= look.clone();this.lookAt.lerp(look,Math.min(1,lerp*1.5));this.camera.lookAt(this.lookAt);
+  const look=new THREE.Vector3(lookX,lookY,lookZ);this.lookAt ||= look.clone();
+  if(this.crashState)this.lookAt.copy(look);else this.lookAt.lerp(look,Math.min(1,lerp*1.5));
+  this.camera.lookAt(this.lookAt);
   this.camera.fov=THREE.MathUtils.damp(this.camera.fov,this.crashState?55:mode==='game'?64+Math.min(2,Math.max(0,mph(p.speed))/140):62,3,dt);this.camera.updateProjectionMatrix();
  }
  updateHUD(){if(mode!=='game')return;

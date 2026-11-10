@@ -682,3 +682,15 @@ html[data-device="phone"][data-touch-layout="pedals"] body.game-active .touch-to
  html[data-device="phone"][data-touch-layout="arrows"] body.game-active .speed{bottom:calc(138px + env(safe-area-inset-bottom,0px))}
  html[data-device="phone"] .touch-dpad button{font-size:20px}
 }
+
+/* V29: timed and dismissible global messages */
+.global-notice{padding:12px 52px 15px 19px;text-align:left;pointer-events:auto;overflow:hidden;animation:global-notice-enter .24s ease-out both}
+.global-notice span{letter-spacing:.15em}
+.global-notice strong{line-height:1.4;max-height:5.6em;overflow:auto}
+.global-notice #closeGlobalNotice{position:absolute;right:9px;top:8px;min-width:36px;min-height:36px;border-radius:9px;border:1px solid #a4e8db5e;background:#0b2936;color:white;font-size:16px;cursor:pointer}
+.global-notice #closeGlobalNotice:focus-visible{outline:2px solid var(--mint)}
+.global-notice-progress{position:absolute;bottom:0;left:0;height:3px;background:var(--mint);width:100%;transform-origin:left}
+@keyframes global-notice-progress{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+@keyframes global-notice-enter{from{opacity:0;transform:translate(-50%,-14px)}to{opacity:1;transform:translate(-50%,0)}}
+body.impact-active #view{animation:impact-jolt .15s 2 ease-in-out}
+@media(max-width:650px){.global-notice{top:64px;padding:12px 51px 13px 13px;max-height:35vh;overflow:auto}.global-notice strong{font-size:12px}}
