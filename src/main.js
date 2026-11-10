@@ -133,6 +133,7 @@ const dom={view:$('view'),hero:$('hero'),screen:$('screen'),hud:$('hud'),overlay
 let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;
 let adminPanelHidden=false;try{adminPanelHidden=localStorage.getItem('ed-hide-admin-tab')==='1';}catch{}
 let deviceChoiceOpen=false;let skippedUsernameGate=false;
+let publicProfileUsername='',publicProfileData=null,publicProfileCar='';
 let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};const touchHeld=Object.create(null),touchPointers=new Map();let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -423,6 +424,10 @@ function applyUI(){
  document.documentElement.style.setProperty('--touch-scale',String(Math.max(.8,Math.min(1.25,(Number(s.touchSize)||100)/100))));
  document.body.dataset.hudLayout=s.hudLayout||'classic';
  document.body.dataset.speedStyle=s.speedStyle||'digital';
+ document.body.dataset.showSpeedometer=s.showSpeedometer===false?'false':'true';
+ document.body.dataset.showDriftNotice=s.showDriftNotice===false?'false':'true';
+ document.body.dataset.showControlsHint=s.showControlsHint===false?'false':'true';
+ document.body.dataset.showNearMissPopups=s.showNearMissPopups===false?'false':'true';
  document.documentElement.dataset.touchLayout=s.touchLayout==='pedals'?'pedals':'arrows';
  applyScale();
 }
@@ -454,6 +459,7 @@ function renderPage(page){
   if(page==='garage')renderGarage();
   if(page==='tune')renderTune();
   if(page==='leaderboard')renderLeaderboard();
+  if(page==='profile')renderDriverProfile();
   if(page==='settings')renderSettings();
   if(page==='battlepass')renderBattlePass();
   if(page==='shop')renderShop();
@@ -461,7 +467,7 @@ function renderPage(page){
   if(page==='admin')renderAdmin();
 }
 function header(title,kicker,desc){return `<div class="screen-head"><div><div class="kicker">${kicker}</div><h2>${title}</h2><p>${desc}</p></div><button class="btn ghost" data-page="game">▶ DRIVE</button></div>`;}
-function carThumbnail(spec,paint){
+function carThumbnail(spec,paint,rimOverride='#dce8ef'){
  const family=spec.kind,seed=spec.hp%13;
  const low=family==='hyper'||family==='super';
  const roofY=low?15:family==='sedan'?12:family==='wagon'?11:family==='muscle'?16:14;
@@ -475,7 +481,7 @@ function carThumbnail(spec,paint){
    ?`M 10 47 L 18 37 Q 34 30 60 31 L 84 31 Q 94 ${roofY} 117 ${roofY} L 146 ${roofY+3} Q 171 ${roofY+5} ${hoodNose} 33 L 190 36 Q 194 39 194 47 L 185 54 L 18 54 Z`
    :`M 10 47 Q 12 38 28 35 L 58 34 Q 78 ${roofY} 108 ${roofY} L 142 ${roofY+3} Q 170 ${roofY+4} ${hoodNose} 34 L 191 37 Q 194 39 194 48 L 185 54 L 16 54 Z`;
  const stripe=spec.hp>500?`<path d="M 28 38 L 171 38" stroke="#ffffff40" stroke-width="2"/>`:'';
- const rimColor='#dce8ef';
+ const rimColor=/^#[0-9a-f]{6}$/i.test(rimOverride)?rimOverride:'#dce8ef';
  const lampDetails=`<ellipse cx="185" cy="43" rx="8" ry="4" fill="#c7f6ff" opacity=".78"/><ellipse cx="20" cy="44" rx="6" ry="3" fill="#ff4f6c" opacity=".85"/>`;
  const classBadge=`<text x="100" y="70" font-size="7" letter-spacing="1.5" font-family="sans-serif" fill="#c4e7ed" text-anchor="middle">${char(family.toUpperCase())}</text>`;
  return `<svg class="car-thumb" viewBox="0 0 200 74" role="img" aria-label="${char(spec.name)} thumbnail"><defs><linearGradient id="body-${spec.id}" x1="0" x2="1"><stop offset="0%" stop-color="${char(paint)}"/><stop offset="100%" stop-color="${char(accent)}"/></linearGradient></defs><ellipse cx="101" cy="60" rx="90" ry="8" fill="${shadow}"/><path d="${body}" fill="url(#body-${spec.id})" stroke="#ffffff60" stroke-width="1.2"/><path d="M 56 31 Q 77 ${roofY+4} 108 ${roofY+4} L 147 ${roofY+7} L 169 33 Z" fill="${glass}" stroke="#aceaff88" stroke-width="1"/>${spoiler}${stripe}${lampDetails}${classBadge}<path d="M 20 44 L 29 43" stroke="#ff6679" stroke-width="3"/><path d="M 175 43 L 187 46" stroke="#ecf4fa" stroke-width="4"/><circle cx="${wheelRear}" cy="53" r="15.4" fill="#090e15"/><circle cx="${wheelFront}" cy="53" r="15.4" fill="#090e15"/><circle cx="${wheelRear}" cy="53" r="10.3" fill="#293746"/><circle cx="${wheelFront}" cy="53" r="10.3" fill="#293746"/><circle cx="${wheelRear}" cy="53" r="8.1" fill="${rimColor}"/><circle cx="${wheelFront}" cy="53" r="8.1" fill="${rimColor}"/><path d="M ${wheelRear-7} 53 H ${wheelRear+7} M ${wheelRear} 46 V 60 M ${wheelFront-7} 53 H ${wheelFront+7} M ${wheelFront} 46 V 60" stroke="#213241" stroke-width="1.6"/></svg>`;
@@ -570,14 +576,92 @@ function renderTune(){
 async function renderLeaderboard(){
  dom.screen.innerHTML=header('GLOBAL RANKS','GAMEPLAY XP / COINS SPENT','Only gameplay XP counts toward competitive rankings. Owner accounts have a separate unranked display.')+`
  <div class="panel panel-pad unranked-owner"><div class="kicker">OWNER PROFILE • UNRANKED</div><div id="ownerLeaderboardProfile">LOADING…</div><p class="notice">Owner scores and admin-gifted XP never affect the numbered leaderboard.</p></div>
- <div class="ranks-grid"><section class="panel panel-pad"><div class="kicker">GLOBAL LEADERBOARD</div><h3>TOP XP EARNED</h3><div id="xpLeaderboard" class="leaderboard-table">LOADING...</div></section><section class="panel panel-pad"><div class="kicker">GLOBAL LEADERBOARD</div><h3>MOST COINS SPENT</h3><div id="spentLeaderboard" class="leaderboard-table">LOADING...</div></section></div>
+ <form id="profileLookupForm" class="profile-lookup" aria-label="Find driver profile"><label for="profileLookup">FIND DRIVER PROFILE</label><input id="profileLookup" name="username" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Username" required/><button type="submit" class="btn primary">VIEW PROFILE</button></form>
+  <div class="ranks-grid"><section class="panel panel-pad"><div class="kicker">GLOBAL LEADERBOARD</div><h3>TOP XP EARNED</h3><div id="xpLeaderboard" class="leaderboard-table">LOADING...</div></section><section class="panel panel-pad"><div class="kicker">GLOBAL LEADERBOARD</div><h3>MOST COINS SPENT</h3><div id="spentLeaderboard" class="leaderboard-table">LOADING...</div></section></div>
  <div class="panel panel-pad" style="margin-top:16px"><h3>YOUR LOCAL STATS</h3><div class="spec-row"><span>XP EARNED</span><strong>${fmt(state.lifetimeXP)} XP</strong></div><div class="spec-row"><span>DRIFT COINS SPENT</span><strong>${fmt(state.spent)} DC</strong></div><p class="notice">The Most Coins Spent board reads saved spending synced from each driver account. These are game-only statistics and have not been anti-cheat verified.</p></div>`;
  if(!cloudConfigured()){document.getElementById('xpLeaderboard').textContent='CONNECT SUPABASE TO LOAD GLOBAL RANKS';document.getElementById('spentLeaderboard').textContent='NOT CONFIGURED';document.getElementById('ownerLeaderboardProfile').textContent='OFFLINE';return;}
- try{const [xp,spent]=await Promise.all([cloudBoard('lifetime_xp'),cloudBoard('coins_spent')]);if(mode!=='leaderboard')return;const table=(rows,key,unit)=>rows.length?rows.map((r,i)=>`<div class="rank-row"><span>#${i+1}</span><strong>${char(r.username||'DRIVER')}${r.owner?'<span class="owner-tag">OWNER</span>':''}</strong><b>${fmt(Math.max(0,Number(r[key])||0))} ${unit}</b></div>`).join(''):'NO SCORES YET';const owner=xp.find(r=>r.owner)||spent.find(r=>r.owner);
-  document.getElementById('ownerLeaderboardProfile').innerHTML=owner?`<div class="owner-showcase"><strong>${char(owner.username||'OWNER')} <span class="owner-tag">OWNER • UNRANKED</span></strong><small>Gameplay XP: ${fmt(owner.lifetime_xp)} • DC spent: ${fmt(owner.coins_spent)}</small></div>`:'OWNER PROFILE NOT AVAILABLE';
+ try{const [xp,spent]=await Promise.all([cloudBoard('lifetime_xp'),cloudBoard('coins_spent')]);if(mode!=='leaderboard')return;const table=(rows,key,unit)=>rows.length?rows.map((r,i)=>`<div class="rank-row"><span>#${i+1}</span><button type="button" class="profile-rank-link" data-driver-profile="${char(r.username)}" title="View ${char(r.username)}'s garage">${char(r.username||'DRIVER')}${r.owner?'<span class="owner-tag">OWNER</span>':''}<small>VIEW GARAGE</small></button><b>${fmt(Math.max(0,Number(r[key])||0))} ${unit}</b></div>`).join(''):'NO SCORES YET';const owner=xp.find(r=>r.owner)||spent.find(r=>r.owner);
+  document.getElementById('ownerLeaderboardProfile').innerHTML=owner?`<div class="owner-showcase"><button type="button" class="profile-rank-link" data-driver-profile="${char(owner.username)}">${char(owner.username||'OWNER')} <span class="owner-tag">OWNER • UNRANKED</span><small>VIEW OWNER GARAGE</small></button><small>Gameplay XP: ${fmt(owner.lifetime_xp)} • DC spent: ${fmt(owner.coins_spent)}</small></div>`:'OWNER PROFILE NOT AVAILABLE';
   document.getElementById('xpLeaderboard').innerHTML=table(xp.filter(r=>!r.owner),'lifetime_xp','XP');
   document.getElementById('spentLeaderboard').innerHTML=table(spent.filter(r=>!r.owner),'coins_spent','DC');}catch(e){if(mode==='leaderboard'){document.getElementById('xpLeaderboard').textContent='Could not load ranks: '+e.message;document.getElementById('spentLeaderboard').textContent='CHECK DATABASE SETUP';}}
 }
+
+async function openDriverProfile(username){
+ if(!/^[A-Za-z0-9_]{3,24}$/.test(username)){notify('ENTER A VALID DRIVER USERNAME');return;}
+ publicProfileUsername=username;publicProfileData=null;publicProfileCar='';
+ renderPage('profile');
+}
+async function renderDriverProfile(){
+ const username=publicProfileUsername;
+ dom.screen.innerHTML=header('DRIVER PROFILE','PUBLIC GARAGE / DRIVER STATS','Browse a driver’s saved cars and earned stats.')+
+  `<div class="panel panel-pad">LOADING @${char(username)}…</div>`;
+ if(!username)return;
+ try{
+  const res=await fetch('/api/profile?username='+encodeURIComponent(username),{cache:'no-store'});
+  const data=await res.json().catch(()=>({}));
+  if(mode!=='profile'||publicProfileUsername!==username)return;
+  if(!res.ok)throw Error(data.error||'Profile unavailable');
+  publicProfileData=data.profile;publicProfileCar=data.profile?.selected||data.profile?.garage?.[0]?.id||'';
+  renderDriverProfileDetails();
+ }catch(err){
+  if(mode==='profile'&&publicProfileUsername===username)dom.screen.innerHTML=
+   header('DRIVER PROFILE','DRIVER NOT FOUND','Find a different driver in the leaderboard.')+
+   `<div class="panel panel-pad"><p class="notice">${char(err.message||'Could not load the profile')}</p><button type="button" data-page="leaderboard" class="btn ghost">BACK TO RANKS</button></div>`;
+ }
+}
+function renderDriverProfileDetails(){
+ const p=publicProfileData;if(!p||mode!=='profile')return;
+ const garage=Array.isArray(p.garage)?p.garage:[];
+ const selected=garage.find(c=>c.id===publicProfileCar)||garage[0];
+ if(selected)publicProfileCar=selected.id;
+ const spec=selected?CARS.find(c=>c.id===selected.id):null;
+ const privateGarage=p.privateGarage===true,stats=p.stats||{};
+ const stat=(label,value)=>`<div class="driver-stat"><small>${char(label)}</small><strong>${char(value)}</strong></div>`;
+ const parts=selected?BODY_PARTS.filter(part=>selected.appearance?.[part.id]&&selected.appearance[part.id]!=='stock'):[];
+ const upgrades=selected?Object.entries(selected.upgrades||{}).filter(([,level])=>level>0):[];
+ const showCar=selected&&spec?`
+   <div class="profile-car-details">
+    <div id="profileCarMount" class="profile-car-mount" aria-label="3D preview of ${char(spec.name)}"><div class="profile-car-fallback">${carThumbnail(spec,selected.color,selected.rims)}</div></div>
+    <div class="profile-car-info">
+     <div class="kicker">READ-ONLY SHOWROOM</div><h3>${char(spec.name)}</h3><p class="muted">${char(spec.type)} • ${selected.selected?'CURRENTLY EQUIPPED':'OWNED VEHICLE'}</p>
+     <div class="profile-finishes">
+      <span>PAINT <i style="background:${char(selected.color)}"></i> ${char(selected.color)}</span>
+      <span>RIMS <i style="background:${char(selected.rims)}"></i> ${char(selected.rims)}</span>
+      <span>NEON ${selected.neon==='off'?'OFF':`<i style="background:${char(selected.neon)}"></i> ${char(selected.neon)}`}</span>
+      <span>SMOKE <i style="background:${char(selected.smoke)}"></i> ${char(selected.smoke)}</span>
+     </div>
+     <div class="kicker">PERFORMANCE UPGRADES</div>
+     <div class="profile-chips">${upgrades.map(([id,level])=>`<span>${char(UPGRADES.find(u=>u.id===id)?.label||id)} LV ${fmt(level)}</span>`).join('')||'<span>STOCK PERFORMANCE</span>'}</div>
+     <div class="kicker">FITTED BODY PARTS</div>
+     <div class="profile-chips">${parts.map(part=>`<span>${char(part.label)}: ${char(part.options.find(opt=>opt[0]===selected.appearance[part.id])?.[1]||'CUSTOM')}</span>`).join('')||'<span>STOCK BODY KIT</span>'}</div>
+    </div>
+   </div>`:'<p class="notice">No saved cars available yet.</p>';
+ dom.screen.innerHTML=header(char(p.username),'DRIVER PROFILE • PUBLIC SHOWROOM','Inspect public gameplay stats and view saved car builds. Profiles are read-only.')+
+  `<div class="driver-profile-actions"><button type="button" class="btn ghost" data-page="leaderboard">← BACK TO RANKS</button>${p.owner?'<span class="owner-tag">OWNER • UNRANKED</span>':''}<span class="profile-joined">JOINED ${char(p.joined||'UNKNOWN')}</span></div>
+  <div class="profile-stat-grid">
+    ${stat('GAMEPLAY XP',fmt(p.rankedXP)+' XP')}
+    ${stat('COINS SPENT',fmt(p.coinsSpent)+' DC')}
+    ${privateGarage?'':stat('GARAGE LEVEL',fmt(stats.garageLevel))}
+    ${privateGarage?'':stat('CARS OWNED',fmt(garage.length))}
+    ${privateGarage?'':stat('TOTAL DRIFTS',fmt(stats.drifts))}
+    ${privateGarage?'':stat('BEST DRIFT',fmt(stats.bestDrift))}
+    ${privateGarage?'':stat('NEAR MISSES',fmt(stats.nearMisses))}
+    ${privateGarage?'':stat('POLICE ESCAPES',fmt(stats.escapes))}
+    ${privateGarage?'':stat('CRASHES',fmt(stats.crashes))}
+   </div>
+   <section class="panel panel-pad driver-garage">
+    <div class="kicker">PUBLIC GARAGE</div><h3>${privateGarage?'PRIVATE GARAGE':char(p.username)+'\'S CAR COLLECTION'}</h3>
+    ${privateGarage?'<p class="notice">This player has chosen to hide their saved garage and personal stats.</p>':
+     `<p class="muted">Select a car to view its 3D build, paint, rims, neon and fitted parts.</p>
+      ${showCar}
+      <div class="profile-car-grid">${garage.map(car=>{const base=CARS.find(c=>c.id===car.id);return base?`<button type="button" class="profile-car-choice ${car.id===publicProfileCar?'active':''}" data-profile-car="${char(car.id)}" aria-pressed="${car.id===publicProfileCar}">${carThumbnail(base,car.color,car.rims)}<strong>${char(base.name)}</strong><small>${car.selected?'EQUIPPED':'OWNED'}</small></button>`:'';}).join('')}</div>`}
+   </section>`;
+ if(spec&&showroom&&!privateGarage){
+  try{showroom.mount('profileCarMount');showroom.setCar(spec,{...selected,showSmoke:false});showroom.render(0.016);}
+  catch(e){console.warn('Driver profile 3D preview unavailable:',e.message);}
+ }
+}
+
 function openDriftPassPurchase(){
  if(hasDriftPass()){notify('DRIFT PASS ALREADY OWNED');return;}
  const balance=Math.max(0,state.wallet+purchased.coins);
@@ -642,7 +726,7 @@ async function renderAccount(){
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
  ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Only XP earned from gameplay counts toward competitive ranks.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">Rename anytime. Usernames must remain unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
- ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Earned Drift Coins, Drift Pass ownership, XP, cars, and tuning are saved with your signed-in garage. Legacy paid balances are retained where applicable. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button></aside></div>`;
+ ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Earned Drift Coins, Drift Pass ownership, XP, cars, and tuning are saved with your signed-in garage. Legacy paid balances are retained where applicable. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button>${user&&activeUsername?`<button type="button" class="btn primary" data-driver-profile="${char(activeUsername)}">VIEW MY PUBLIC PROFILE</button>`:''}</aside></div>`;
 }
 function renderSettings(){const s=state.settings;
  const select=(name,label,items)=>`<div class="setting"><label for="setting-${name}">${label}</label><select id="setting-${name}" data-setting="${name}">${items.map(([v,t])=>`<option value="${v}" ${String(s[name])===String(v)?'selected':''}>${t}</option>`).join('')}</select></div>`;
@@ -661,6 +745,10 @@ function renderSettings(){const s=state.settings;
  ${select('speedStyle','SPEEDOMETER DESIGN',[['digital','Digital'],['glass','Glass'],['compact','Compact']])}
  ${slider('hudOpacity','HUD OPACITY',45,100,5,'%')}
  ${slider('uiScale','INTERFACE SIZE',75,125,5,'%')}
+ ${select('showSpeedometer','SPEEDOMETER VISIBLE',[['true','On'],['false','Off']])}
+ ${select('showDriftNotice','DRIFT / ANGLE HUD',[['true','On'],['false','Off']])}
+ ${select('showControlsHint','CONTROLS HELP',[['true','On'],['false','Off']])}
+ ${select('showNearMissPopups','NEAR MISS POPUPS',[['true','On'],['false','Off']])}
  </div><div class="divider"></div><div class="kicker">DRIVING / CONTROL</div><div class="settings-grid">
  <div class="setting"><label for="device-mode-setting">DEVICE / CONTROLS</label><select id="device-mode-setting" data-device-change><option value="desktop" ${document.documentElement.dataset.device==='desktop'?'selected':''}>DESKTOP / LAPTOP</option><option value="phone" ${document.documentElement.dataset.device==='phone'?'selected':''}>PHONE TOUCH</option><option value="tablet" ${document.documentElement.dataset.device==='tablet'?'selected':''}>TABLET TOUCH</option></select></div>
  ${select('units','SPEED UNIT',[['mph','MPH'],['kph','KM/H']])}
@@ -669,8 +757,13 @@ function renderSettings(){const s=state.settings;
  ${select('smoke','DRIFT SMOKE',[['true','On'],['false','Off']])}
  ${slider('steering','STEERING SENSITIVITY',.5,1.8,.1)}
  ${slider('cameraShake','CAMERA SHAKE STRENGTH',0,100,5,'%')}
+ ${slider('cameraDistance','CHASE CAMERA DISTANCE',75,145,5,'%')}
+ ${slider('cameraFov','CAMERA FIELD OF VIEW',55,88,1,'°')}
+ ${slider('cameraSmoothing','CAMERA FOLLOW RESPONSE',25,125,5,'%')}
   ${slider('touchSize','TOUCH CONTROL SIZE',80,125,5,'%')}
   ${select('touchLayout','PHONE / TABLET BUTTONS',[['arrows','FOUR ARROWS + DRIFT'],['pedals','GAS / BRAKE + STEERING']])}
+ </div><div class="divider"></div><div class="kicker">PUBLIC PROFILE PRIVACY</div><div class="settings-grid">
+ ${select('profileVisibility','WHO CAN SEE YOUR GARAGE',[['public','Everyone — public showcase'],['private','Private — hide cars and detailed stats']])}
  </div><div class="divider"></div><div class="kicker">CUSTOM KEYBOARD CONTROLS</div>
  <p class="notice">Click a binding, then press your new key. Escape cancels. The changes save automatically.</p>
  <div class="controls-grid">${Object.entries({accelerate:'Accelerate',brake:'Brake / reverse',left:'Steer left',right:'Steer right',handbrake:'Handbrake / drift',camera:'Change camera',recover:'Respawn / recover',pause:'Pause / menu'}).map(([key,label])=>`<button class="control-bind" data-bind="${key}"><span>${label}</span><kbd>${(s.controls?.[key]||'UNBOUND').replace('Key','').replace('Arrow','').replace('Digit','')}</kbd></button>`).join('')}</div><button class="btn ghost small" data-reset-keys>RESET CONTROLS</button>
@@ -718,6 +811,11 @@ function updateSettings(){save();applyUI();game?.applyQuality();game?.resetTimin
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button');if(!t)return;
  if(t.dataset.chooseDevice){chooseDevice(t.dataset.chooseDevice);return;}
+ if(t.dataset.driverProfile!==undefined){await openDriverProfile(String(t.dataset.driverProfile));return;}
+ if(t.dataset.profileCar!==undefined&&mode==='profile'&&publicProfileData){
+  if(publicProfileData.garage?.some(c=>c.id===t.dataset.profileCar)){publicProfileCar=t.dataset.profileCar;renderDriverProfileDetails();}
+  return;
+ }
   if(deviceChoiceOpen)return;
   if(usernameOnboarding&&t.id!=='onboardingSkip'&&t.id!=='onboardingSignOut'&&t.id!=='adminVerifyCancel')return;
  if(t.id==='closeGlobalNotice'){dismissGlobalNotice();return;}
@@ -837,6 +935,9 @@ document.addEventListener('submit',async e=>{
   catch(err){$('adminVerifyError').textContent=String(err.message||err);}finally{button.disabled=false;}
   return;
  }
+ if(e.target.id==='profileLookupForm'){
+  e.preventDefault();await openDriverProfile(String(new FormData(e.target).get('username')||'').trim());return;
+ }
  if(e.target.id==='adminBroadcastForm'){
   e.preventDefault();const form=e.target,button=form.querySelector('button');button.disabled=true;
   try{await adminRequest('/api/admin/announce',{message:new FormData(form).get('message')});form.reset();notify('GLOBAL DISPATCH SENT');await fetchAnnouncements();await renderAdmin();}
@@ -914,9 +1015,9 @@ document.addEventListener('input',e=>{
  }
  if(e.target.dataset.tune){const key=e.target.dataset.tune,val=Number(e.target.value);carSave(tuningCar).tune[key]=val;const v=$('val-'+key);if(v)v.textContent=`${val}%`;save();return;}
  if(e.target.dataset.setting){let val=e.target.value;const key=e.target.dataset.setting;
-   if(['driftAssist','smoke','shadows','music','policeRadio'].includes(key))val=val==='true';
-   if(['steering','uiScale','hudOpacity','renderScale','cameraShake','musicVolume','effectsVolume','touchSize'].includes(key))val=Number(val);
-   state.settings[key]=val;const v=$('setting-value-'+key);if(v)v.textContent=val+(['hudOpacity','uiScale','renderScale','cameraShake'].includes(key)?'%':'');
+   if(['driftAssist','smoke','shadows','music','policeRadio','showSpeedometer','showDriftNotice','showControlsHint','showNearMissPopups'].includes(key))val=val==='true';
+   if(['steering','uiScale','hudOpacity','renderScale','cameraShake','cameraDistance','cameraFov','cameraSmoothing','musicVolume','effectsVolume','touchSize'].includes(key))val=Number(val);
+   state.settings[key]=val;const v=$('setting-value-'+key);if(v)v.textContent=val+(['hudOpacity','uiScale','renderScale','cameraShake','cameraDistance','cameraSmoothing'].includes(key)?'%':key==='cameraFov'?'°':'');
    updateSettings();
  }
 });
@@ -1503,7 +1604,7 @@ class DriftGame{
     const ang=.18+Math.sin(this.elapsed*.55)*.25;
     dx=p.x+Math.sin(h+ang)*7;dy=3.3;dz=p.z-Math.cos(h+ang)*10;lookX=p.x;lookY=1;lookZ=p.z+1.2;
   }else if(this.cameraMode===2){dx=p.x+Math.sin(h)*.23;dy=1.63+(this.airTimer>0?.25:0);dz=p.z+Math.cos(h)*.90;lookX=p.x+Math.sin(h)*32;lookY=1.15;lookZ=p.z+Math.cos(h)*32;}
-  else{const dist=this.cameraMode===1?5.9:8.9;const height=this.cameraMode===1?2.5:3.9;
+  else{const dist=(this.cameraMode===1?5.9:8.9)*Math.max(.75,Math.min(1.45,(Number(state.settings.cameraDistance)||100)/100));const height=this.cameraMode===1?2.5:3.9;
    dx=p.x-Math.sin(h)*dist;dy=height;dz=p.z-Math.cos(h)*dist;lookX=p.x+Math.sin(h)*4.4;lookY=1.1;lookZ=p.z+Math.cos(h)*4.4;}
   if(this.crashState){
     const c=this.crashState,t=Math.min(c.time,2.2),orbit=.10*Math.min(1,t/1.2);
@@ -1516,7 +1617,7 @@ class DriftGame{
   }
   // Fix fast acceleration camera lag and avoid a widening third-person zoom.
   const desiredCamera=new THREE.Vector3(dx,dy,dz);
-  const followRate=mode==='game'?(this.crashState?8:Math.min(26,9+Math.abs(p.speed)*.36)):2;
+  const followRate=mode==='game'?(this.crashState?8:Math.min(26,9+Math.abs(p.speed)*.36)*Math.max(.25,Math.min(1.25,(Number(state.settings.cameraSmoothing)||100)/100))):2;
   const lerp=1-Math.exp(-followRate*Math.max(.001,dt));
   if(this.crashState)this.camera.position.copy(desiredCamera);
   else this.camera.position.lerp(desiredCamera,lerp);
@@ -1528,7 +1629,7 @@ class DriftGame{
   const look=new THREE.Vector3(lookX,lookY,lookZ);this.lookAt ||= look.clone();
   if(this.crashState)this.lookAt.copy(look);else this.lookAt.lerp(look,Math.min(1,lerp*1.5));
   this.camera.lookAt(this.lookAt);
-  this.camera.fov=THREE.MathUtils.damp(this.camera.fov,this.crashState?55:mode==='game'?64+Math.min(2,Math.max(0,mph(p.speed))/140):62,3,dt);this.camera.updateProjectionMatrix();
+  this.camera.fov=THREE.MathUtils.damp(this.camera.fov,this.crashState?55:mode==='game'?Math.max(55,Math.min(88,Number(state.settings.cameraFov)||64))+Math.min(2,Math.max(0,mph(p.speed))/140):62,3,dt);this.camera.updateProjectionMatrix();
  }
  updateHUD(){if(mode!=='game')return;
   const p=this.player;

@@ -4,6 +4,7 @@ import {readFile, stat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import Stripe from 'stripe';
+import {publicDriverProfile} from './src/publicProfile.js';
 import {randomUUID,createHash,timingSafeEqual} from 'node:crypto';
 const root=path.dirname(fileURLToPath(import.meta.url));
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.txt':'text/plain; charset=utf-8'};
@@ -317,6 +318,21 @@ async function leaderboardApi(res,sort='lifetime_xp'){
  }))});
 }
 
+async function publicDriverProfileApi(res,name){
+ if(!sb||!secretKey)return json(res,503,{error:'Public profiles unavailable'});
+ if(!/^[A-Za-z0-9_]{3,24}$/.test(name))return json(res,400,{error:'Invalid username'});
+ const profiles=await supabase('/rest/v1/driver_profiles?username=eq.'+encodeURIComponent(name)+'&select=id,username,created_at&limit=1');
+ const driver=profiles[0];if(!driver)return json(res,404,{error:'Driver not found'});
+ const [saves,ranked,roles]=await Promise.all([
+  supabase('/rest/v1/ed_game_saves?user_id=eq.'+encodeURIComponent(driver.id)+'&select=save&limit=1'),
+  supabase('/rest/v1/leaderboard_public?username=eq.'+encodeURIComponent(driver.username)+'&select=lifetime_xp,coins_spent&limit=1'),
+  supabase('/rest/v1/ed_admin_roles?user_id=eq.'+encodeURIComponent(driver.id)+'&source=eq.owner&select=source&limit=1')
+ ]);
+ // Return ONLY safe, approved public fields, never the cloud save or user ID.
+ return json(res,200,{profile:publicDriverProfile({username:driver.username,
+  createdAt:driver.created_at,owner:roles.length>0,ranked:ranked[0]||{},save:saves[0]?.save||{}
+ })});
+}
 async function publicAnnouncements(res){
  if(!sb||!secretKey)return json(res,503,{error:'Announcements unavailable'});
  const cutoff=new Date(Date.now()-86400000).toISOString();
@@ -332,6 +348,7 @@ async function api(req,res,route){
    if(route==='/api/payment-status'&&req.method==='GET')return json(res,200,{paymentServer:'disabled',mode:'game-only',status:'checkout_disabled'});
   if(route.startsWith('/api/player/')||route.startsWith('/api/runs/'))return await playerStatusApi(req,res,route);
   if(route==='/api/leaderboard'&&req.method==='GET')return await leaderboardApi(res,new URL(req.url,'http://localhost').searchParams.get('sort'));
+  if(route==='/api/profile'&&req.method==='GET')return await publicDriverProfileApi(res,new URL(req.url,'http://localhost').searchParams.get('username')||'');
   if(route==='/api/announcements'&&req.method==='GET')return await publicAnnouncements(res);
   if(route.startsWith('/api/admin/'))return await adminApi(req,res,route);
   requireConfig();

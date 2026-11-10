@@ -21,7 +21,7 @@ assert.match(main,/\/resetpowers \(restore defaults\)/);
 assert.match(server,/ownerRows=featured\.flat\(\)\.filter\(Boolean\)/);
 assert.match(server,/const competitive=rows\.filter\(row=>!owners\.has\(row\.username\)\)\.slice\(0,100\)/);
 assert.doesNotMatch(server.split("case 'xp':{")[1].split("case 'coins':{")[0],/ed_record_ranked_xp/);
-assert.match(html,/src="\.\/src\/main\.js\?v=30"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=31"/);
 const neutral=driftStep({mph:45,longitudinal:20,lateral:0,steer:0,handbrake:true,dt:1/90});
 assert.equal(neutral.lateral,0);
 const turn=driftStep({mph:45,longitudinal:20,lateral:0,steer:1,handbrake:true,dt:1/90});
