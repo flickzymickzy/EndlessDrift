@@ -8,27 +8,15 @@ const server=readFileSync('./server.js','utf8');
 const css=readFileSync('./src/style.css','utf8');
 const html=readFileSync('./index.html','utf8');
 
-// Recreate the previous handbrake coefficients: NONE of these changes should
-// affect normal steering/drift when the handbrake is not held.
-const old=original
- .replace('(handbrake?1.62:1)','(handbrake?1.86:1)')
- .replace('active?(reversing?1.8:handbrake?4.05:3.25)','active?(reversing?1.8:3.25)')
- .replace('(handbrake&&a>.06?1.23:1)','(handbrake&&a>.06?1.4:1)');
-assert.notEqual(old,original);
-const {driftStep:baseline}=await import('data:text/javascript,'+encodeURIComponent(old));
-for(const speed of [0,12,25,65,130,200]){
- for(const steer of [-1,-.5,0,.5,1]){
-  for(const lateral of [-14,-2,0,3,15]){
-   const input={mph:speed,longitudinal:speed/2.23694,lateral,steer,
-      handbrake:false,dt:1/90,blend:.44,steeringInput:.27,yaw:.08,
-      assist:true,gripTune:58,stabilityTune:50,steeringTune:65,suspension:2,differential:3};
-   assert.deepEqual(driftStep(input),baseline(input),
-     'Normal drifting changed with handbrake released');
-  }
- }
-}
-const hbInput={mph:62,longitudinal:25,lateral:2,steer:1,handbrake:true,dt:1/90,blend:.75,steeringInput:.32,yaw:.08};
-assert.notDeepEqual(driftStep(hbInput),baseline(hbInput),'Handbrake should respond differently');
+// V27 original drift physics, both with and without the handbrake, are restored.
+assert.match(original,/\(handbrake\?1\.65:1\)/);
+assert.match(original,/active\?\(reversing\?1\.8:3\.25\)/);
+assert.match(original,/\(handbrake&&a>\.06\?1\.28:1\)/);
+assert.match(main,/if\(handbrake\)\{const force=Math\.max\(5,stats\.brake\*\.42\)/);
+const neutral=driftStep({mph:45,longitudinal:22,lateral:0,steer:0,handbrake:false,dt:1/90});
+const handbrake=driftStep({mph:45,longitudinal:22,lateral:0,steer:1,handbrake:true,dt:1/90});
+assert.equal(neutral.lateral,0);
+assert.ok(Math.abs(handbrake.lateral)>0);
 
 // Camera must be placed directly outside the vehicle, never moved through its body.
 assert.match(main,/const safeX=THREE\.MathUtils\.clamp\(p\.x-dirX\*setback/);
@@ -59,5 +47,5 @@ assert.match(server,/const destructive=\['kick','ban','freeze','unfreeze','stop'
 assert.match(server,/never to competitive ranked scores/);
 assert.match(main,/OWNER PROFILE • UNRANKED/);
 assert.match(main,/class="beta-label">BETA/);
-assert.match(html,/src="\.\/src\/main\.js\?v=29"/);
-console.log('V29 passed: unchanged normal drifts, dedicated handbrake tuning, no crash-camera clipping, 9.5s messages, and verified admin commands.');
+assert.match(html,/src="\.\/src\/main\.js\?v=30"/);
+console.log('V29 crash, announcements and admin regressions passed with restored V27 drifting.');

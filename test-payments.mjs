@@ -28,7 +28,7 @@ assert.match(html,/drift-endlessly-logo\.png/);
 assert.match(manifest,/Drift Endlessly/);
 assert.match(main,/class="beta-label">BETA/);
 assert.match(html,/>BETA</);
-assert.match(html,/src="\.\/src\/main\.js\?v=29"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=30"/);
 console.log('Release checks passed: earned-DC pass, no checkout, new brand, legacy saves.');
 
 // The separate coin-buying page is removed, while earned Drift Coins and Drift Pass remain.

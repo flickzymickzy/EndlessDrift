@@ -1319,12 +1319,7 @@ class DriftGame{
 
   if(brake){if(longitudinal>2)longitudinal-=stats.brake*dt;else longitudinal-=maxAccel*.55*dt;}
   // Handbrake slows the car while letting the rear slide into a controlled drift.
-  if(handbrake){
-    // Only the handbrake applies this force; ordinary steering drifts are unchanged.
-    const force=Math.max(6,stats.brake*(Math.abs(steer)>.10?.48:.78));
-    if(longitudinal>4.5)longitudinal=Math.max(4.5,longitudinal-force*dt);
-    else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);
-   }
+  if(handbrake){const force=Math.max(5,stats.brake*.42);if(longitudinal>4)longitudinal=Math.max(4,longitudinal-force*dt);else if(longitudinal< -2)longitudinal=Math.min(-2,longitudinal+force*dt);}
   const drag=.00042*longitudinal*Math.abs(longitudinal)+.021*longitudinal;
   longitudinal-=drag*dt;
   longitudinal=THREE.MathUtils.clamp(longitudinal,-15,topSpeed);
