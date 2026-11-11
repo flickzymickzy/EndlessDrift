@@ -658,7 +658,7 @@ function renderDriverProfileDetails(){
  const upgrades=selected?Object.entries(selected.upgrades||{}).filter(([,level])=>level>0):[];
  const showCar=selected&&spec?`
    <div class="profile-car-details">
-    <div id="profileCarMount" class="profile-car-mount" aria-label="3D preview of ${char(spec.name)}"><div class="profile-car-fallback">${carThumbnail(spec,selected.color,selected.rims)}</div></div>
+    <div id="profileCarMount" class="profile-car-mount" aria-label="3D preview of ${char(spec.name)}"><div class="profile-car-fallback"><span>LOADING 3D CAR PREVIEW</span></div></div>
     <div class="profile-car-info">
      <div class="kicker">READ-ONLY SHOWROOM</div><h3>${char(spec.name)}</h3><p class="muted">${char(spec.type)} • ${selected.selected?'CURRENTLY EQUIPPED':'OWNED VEHICLE'}</p>
      <div class="profile-finishes">
@@ -700,7 +700,7 @@ function renderDriverProfileDetails(){
     ${privateGarage?'<p class="notice">This player has chosen to hide their saved garage and personal stats.</p>':
      `<p class="muted">Select a car to inspect its actual 3D body kits, wheel fitment, paint finish, lights and saved modifications.</p>
       ${showCar}
-      <div class="profile-car-grid">${garage.map(car=>{const base=CARS.find(c=>c.id===car.id);return base?`<button type="button" class="profile-car-choice ${car.id===publicProfileCar?'active':''}" data-profile-car="${char(car.id)}" aria-pressed="${car.id===publicProfileCar}">${carThumbnail(base,car.color,car.rims)}<strong>${char(base.name)}</strong><small>${car.selected?'EQUIPPED':'OWNED'}</small></button>`:'';}).join('')}</div>`}
+      <div class="profile-car-grid">${garage.map(car=>{const base=CARS.find(c=>c.id===car.id);return base?`<button type="button" class="profile-car-choice ${car.id===publicProfileCar?'active':''}" data-profile-car="${char(car.id)}" aria-pressed="${car.id===publicProfileCar}"><span class="profile-car-choice-type">${char(base.type||base.kind||'CAR')}</span><strong>${char(base.name)}</strong><small>${car.selected?'EQUIPPED':'OWNED'} • VIEW 3D</small></button>`:'';}).join('')}</div>`}
    </section>`;
  if(spec&&showroom&&!privateGarage){
   try{showroom.mount('profileCarMount');showroom.setCar(spec,{...selected,showSmoke:false});showroom.render(0.016);}

@@ -52,7 +52,7 @@ assert.ok(car.includes('const taillightMat=shared.red.clone'));
 assert.ok(car.includes('const roofMat=new THREE.MeshPhysicalMaterial'));
 assert.ok(showroom.includes('this.car=createCar(spec,custom.color,custom)'));
 assert.ok(style.includes('full-screen 3D showroom'));
-assert.ok(html.includes('style.css?v=33')&&html.includes('main.js?v=33'));
+assert.ok(html.includes('style.css?v=34')&&html.includes('main.js?v=34'));
 const physics=readFileSync('src/driftPhysics.js','utf8');
 const gitSha=createHash('sha1').update('blob '+Buffer.byteLength(physics)+'\0'+physics).digest('hex');
 assert.equal(gitSha,'b2b71a679666a374e57ea3702a02e0395a4ef3e2','V27 drift physics must stay unchanged');

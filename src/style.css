@@ -717,7 +717,7 @@ body.impact-active #view{animation:impact-jolt .15s 2 ease-in-out}
 .profile-car-mount{position:relative;min-width:0;height:300px;overflow:hidden;border-radius:12px;background:radial-gradient(ellipse at 50% 65%,#20545a6b,#061621 68%)}
 .profile-car-mount canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:pan-y}
 .profile-car-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10px}
-.profile-car-fallback .car-thumb{max-width:100%;width:350px;height:auto}
+.profile-car-fallback{color:#88c2c8;font-size:12px;letter-spacing:.14em;font-weight:800}.profile-car-fallback .car-thumb{display:none!important}
 .profile-car-mount:has(canvas) .profile-car-fallback{display:none}
 .profile-car-info{padding:12px 5px}
 .profile-car-info h3{font-size:34px;line-height:1;margin:9px 0}
@@ -730,7 +730,7 @@ body.impact-active #view{animation:impact-jolt .15s 2 ease-in-out}
 .profile-car-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:10px;margin-top:17px}
 .profile-car-choice{background:#0d202d;color:#f0fcff;padding:11px;min-width:0;border:1px solid #688b9966;border-radius:12px;text-align:left;display:flex;flex-direction:column;gap:4px}
 .profile-car-choice:hover,.profile-car-choice.active{border-color:var(--mint);background:#173a40}
-.profile-car-choice .car-thumb{width:100%;height:auto}
+.profile-car-choice .car-thumb{display:none!important}.profile-car-choice-type{display:block;color:#88c3c5;font-size:10px;letter-spacing:.10em;line-height:1.4}
 .profile-car-choice strong{font-size:14px;letter-spacing:.02em}
 .profile-car-choice small{font-size:10px;color:var(--mint)}
 body[data-show-speedometer="false"] .hud .speed{display:none!important}

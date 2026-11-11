@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const main=readFileSync('./src/main.js','utf8');
+const css=readFileSync('./src/style.css','utf8');
+const html=readFileSync('./index.html','utf8');
+const profileSection=main.slice(main.indexOf('function renderDriverProfileDetails()'),main.indexOf('function openDriftPassPurchase()'));
+assert.ok(profileSection.length>1000,'Profile details must exist');
+assert.doesNotMatch(profileSection,/carThumbnail\(/,'2D car SVG must not appear in public profiles');
+assert.match(profileSection,/LOADING 3D CAR PREVIEW/);
+assert.match(profileSection,/profile-car-choice-type/);
+assert.match(profileSection,/showroom\.mount\('profileCarMount'\)/,'Keep 3D showroom');
+assert.match(profileSection,/data-profile-car/,'Keep selection of owned cars');
+assert.match(css,/\.profile-car-choice \.car-thumb\{display:none!important\}/,'Fallback CSS must hide old SVGs');
+assert.match(html,/main\.js\?v=34/);
+assert.match(html,/style\.css\?v=34/);
+assert.match(main,/const force=Math\.max\(5,stats\.brake\*\.42\)/,'Preserve V27 handbrake');
+console.log('V34: removed oversized 2D car art in player profiles while retaining interactive 3D showroom, cars, and V27 physics.');
