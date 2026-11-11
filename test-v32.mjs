@@ -33,13 +33,13 @@ const privateProfile=publicDriverProfile({username:'Driver1',save:{...fakeSave,s
 assert.equal(privateProfile.garage.length,0);
 assert.equal(privateProfile.stats,null);
 for(const key of ['color','rims','caliperColor','headlightColor','smoke'])assert.match(main,new RegExp("'"+key+"'"));
-assert.match(main,/extraCarColorInputs\(saveCar\)/);
+assert.match(main,/extraCarColorInputs\(saveCar,'tune'/);
 assert.match(main,/extraCarColorInputs\(cs,'modal'\)/);
 assert.match(main,/data-car-paint-finish/);
 assert.match(main,/data-driver-profile/);
 assert.match(main,/VIEW MY PUBLIC PROFILE \+ GARAGE/);
-assert.match(main,/createCar\(c,carSave\(\)\.color,\{rims:/);
-assert.match(main,/caliperColor:carSave\(\)\.caliperColor/);
+assert.match(main,/createCar\(c,carSave\(\)\.color,\{\.\.\.carSave\(\)\}\)/);
+assert.match(main,/caliperColor/);
 assert.match(main,/HEADLIGHTS <i/);
 assert.match(store,/Object\.assign\(c,sanitizeCarExtras\(c\)\)/);
 assert.match(car,/caliperMat=shared\.caliper\.clone/);
