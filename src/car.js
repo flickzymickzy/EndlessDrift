@@ -61,7 +61,8 @@ function plateMaterial(name){const cv=document.createElement('canvas');cv.width=
 export function createCar(spec,color,options={}){
  const kind=PROFILE[spec.id]||'classic';const seed=[...spec.id].reduce((n,c)=>n+c.charCodeAt(0),0);const base=SHAPE[kind];
  const q={...base,roof:base.roof+((seed%7)-3)*.012,nose:base.nose+((seed%5)-2)*.011,rearHeight:base.rearHeight+((seed%9)-4)*.009,topWidth:base.topWidth+((seed%3)-1)*.008};const traffic=!!options.traffic,appearance=options.appearance||{};
- const {caliperColor,headlightColor,paintFinish}=sanitizeCarExtras(options);
+ const extras=sanitizeCarExtras(options);
+ const {caliperColor,headlightColor,paintFinish,secondaryColor,roofColor,taillightColor,exhaustFlameColor}=extras;
  const w=spec.width||1.82,l=spec.length||4.45,half=l/2;
  const root=new THREE.Group();const parts=new THREE.Group();root.add(parts);
  const finish=PAINT_FINISHES[paintFinish];
@@ -69,8 +70,9 @@ export function createCar(spec,color,options={}){
  const rimMat=new THREE.MeshStandardMaterial({color:options.rims||'#d0d9e2',metalness:.92,roughness:.19});
  const caliperMat=shared.caliper.clone();caliperMat.color.set(caliperColor);
  const headlampMat=shared.white.clone();headlampMat.color.set(headlightColor);headlampMat.emissive.set(headlightColor);
+ const taillightMat=shared.red.clone();taillightMat.color.set(taillightColor);taillightMat.emissive.set(taillightColor);
  const headlightPools=[];
- const underMat=new THREE.MeshBasicMaterial({color:options.neon&&options.neon!=='off'?options.neon:'#58ffd3',transparent:true,opacity:options.neon&&options.neon!=='off'?.27:0,depthWrite:false,side:THREE.DoubleSide});
+ const underMat=new THREE.MeshBasicMaterial({color:options.neon&&options.neon!=='off'?options.neon:'#58ffd3',transparent:true,opacity:options.neon&&options.neon!=='off'?.27*extras.neonIntensity/100:0,depthWrite:false,side:THREE.DoubleSide});
  const glassMat=shared.glass.clone();glassMat.color.set(appearance.tint==='dark'?'#07111a':appearance.tint==='smoke'?'#101e32':'#193747');glassMat.opacity=appearance.tint==='dark'?.98:.9;
  const bodyY=.64,hoodY=q.nose,trunkY=q.rearHeight;
  box(parts,w,q.body,l,paintMat,0,bodyY,0,.13);
@@ -78,7 +80,8 @@ export function createCar(spec,color,options={}){
  box(parts,w*.95,.09,l*.24,paintMat,0,hoodY,half-l*.135,.045);
  box(parts,w*.94,.09,l*.17,paintMat,0,trunkY,-half+l*.095,.04);
  // Curved fender shoulders and hood creases make each car's profile less boxy.
- const sculpt=new THREE.MeshPhysicalMaterial({color:color||spec.color,...finish,reflectivity:1});
+ const sculpt=new THREE.MeshPhysicalMaterial({color:secondaryColor==='match'?(color||spec.color):secondaryColor,...finish,reflectivity:1});
+ const roofMat=new THREE.MeshPhysicalMaterial({color:roofColor==='match'?(color||spec.color):roofColor,...finish,reflectivity:1});
  const slices=[-half+.20,-half*.70,-half*.29,half*.17,half*.55,half-.17];
  const heightAt=z=>z>half*.26?hoodY+.025:z< -half*.26?trunkY+.015:shellTop+.025;
  for(let k=0;k<slices.length-1;k++){
@@ -114,7 +117,7 @@ export function createCar(spec,color,options={}){
  quad(parts,[pBR,pBL,tBL,tBR],glassMat);
  quad(parts,[pBL,pFL,tFL,tBL],glassMat);
  quad(parts,[pFR,pBR,tBR,tFR],glassMat);
- quad(parts,[tBL,tFL,tFR,tBR],paintMat);
+ quad(parts,[tBL,tFL,tFR,tBR],roofMat);
  if(!traffic){
   // Interior: seats, centre tunnel, gauge cluster and screen are visible through the glazing.
   const upholstery=new THREE.MeshStandardMaterial({color:0x121a21,metalness:.16,roughness:.88});
@@ -164,13 +167,13 @@ export function createCar(spec,color,options={}){
      box(parts,w*.19,.026,.05,shared.smoked,side*w*.32,.758,half+.108,.006);
    }
    if(['boxy','sedan','wagon'].includes(kind)){
-     box(parts,w*.24,.085,.052,shared.red,side*w*.30,.79,-half-.105,.014);
+     box(parts,w*.24,.085,.052,taillightMat,side*w*.30,.79,-half-.105,.014);
      box(parts,w*.07,.055,.06,shared.amber,side*w*.46,.73,half+.085,.009);
    }else if(kind==='hyper'||kind==='super'){
-     box(parts,w*.31,.038,.05,shared.red,side*w*.29,.78,-half-.107,.006);
+     box(parts,w*.31,.038,.05,taillightMat,side*w*.29,.78,-half-.107,.006);
      box(parts,w*.11,.058,.08,shared.grille,side*w*.40,.49,half+.095,.01);
    }else{
-     box(parts,w*.23,.12,.045,shared.red,side*w*.31,.76,-half-.105,.016);
+     box(parts,w*.23,.12,.045,taillightMat,side*w*.31,.76,-half-.105,.016);
    }
    if(!traffic){
      // Model-specific LED running-light signatures and individual rear light elements.
@@ -178,7 +181,7 @@ export function createCar(spec,color,options={}){
      for(let led=0;led<ledCount;led++){
        const lx=side*(w*.23+led*w*.032),z=half+.149;
        box(parts,w*.024,.015,.019,headlampMat,lx,.745+((seed+led)%2)*.025,z,.003);
-       box(parts,w*.025,.025,.02,shared.red,lx,.756,-half-.135,.004);
+       box(parts,w*.025,.025,.02,taillightMat,lx,.756,-half-.135,.004);
      }
      // Door panel contour and flush handle.
      box(parts,.014,.020,l*.20,shared.chrome,side*w*.503,.80,-.05,.004);
@@ -229,7 +232,7 @@ export function createCar(spec,color,options={}){
    for(const side of [-1,1]){
      box(parts,.016,.018,l*.30,shared.smoked,side*w*.43,hoodY+.08,half-l*.23,.004);
      box(parts,.025,.028,l*.48,shared.smoked,side*w*.49,.34,-l*.035,.006);
-     box(parts,w*.035,.014,.17,shared.red,side*w*.32,.70,-half-.13,.004);
+     box(parts,w*.035,.014,.17,taillightMat,side*w*.32,.70,-half-.13,.004);
    }
    box(parts,.025,.17,.025,shared.smoked,0,topY+.12,rearHigh-.23,.009);
    box(parts,w*.47,.022,.025,shared.chrome,0,trunkY+.09,-half+.07,.006);
@@ -239,6 +242,53 @@ export function createCar(spec,color,options={}){
  const titanium=new THREE.MeshStandardMaterial({color:0x647da0,metalness:.88,roughness:.22});
  const exhaustFlames=[];
  if(!traffic){
+  // V33 body kits: each option has distinct real geometry in the 3D showroom.
+  if(appearance.frontBumper&&appearance.frontBumper!=='stock'){
+   const extreme=appearance.frontBumper==='aggressive',race=extreme||appearance.frontBumper==='track';
+   box(parts,w*(extreme?1.1:1.01),.17,extreme?.26:.19,race?aeroMat:paintMat,0,bumperY-.10,half+.24,.035);
+   for(const side of [-1,1]){
+    box(parts,w*.20,race?.12:.07,.03,shared.grille,side*w*.32,bumperY-.10,half+.38,.01);
+    if(race)box(parts,w*.15,.032,.22,aeroMat,side*w*.42,bumperY-.22,half+.29,.008);
+   }
+  }
+  if(appearance.rearBumper&&appearance.rearBumper!=='stock'){
+   const race=appearance.rearBumper==='track'||appearance.rearBumper==='diffused';
+   box(parts,w*(appearance.rearBumper==='diffused'?1.12:.98),.17,race?.24:.18,race?aeroMat:paintMat,0,bumperY-.09,-half-.22,.03);
+   for(const side of [-1,1])box(parts,w*.18,.07,.03,shared.grille,side*w*.30,bumperY-.13,-half-.35,.012);
+   if(appearance.rearBumper==='diffused')for(const x of [-.48,0,.48])box(parts,.025,.18,.33,aeroMat,x,.34,-half-.29,.007);
+  }
+  if(appearance.fenders&&appearance.fenders!=='stock'){
+   const f=appearance.fenders,wide=f==='wide'||f==='extreme',size=f==='extreme'?.23:wide?.16:.08;
+   for(const side of [-1,1]){
+    for(const z of [half-l*.29,-half+l*.26]){
+     box(parts,size,.095,l*.22,wide?paintMat:aeroMat,side*(w*.50+size*.22),.82,z,.035);
+     if(f==='vented'||f==='extreme')box(parts,.018,.11,.18,shared.grille,side*(w*.50+size*.45),.77,z+.14,.006);
+    }
+   }
+  }
+  if(appearance.mirrors&&appearance.mirrors!=='stock'){
+   const sport=appearance.mirrors==='sport';
+   for(const side of [-1,1]){
+    const shell=box(parts,sport?.20:.16,.065,.24,sport?paintMat:aeroMat,side*w*.56,roofBase+.15,frontLow-.10,.025);shell.rotation.y=side*.3;
+    box(parts,.025,.045,.17,shared.chrome,side*w*.59,roofBase+.15,frontLow-.08,.012);
+   }
+  }
+  if(appearance.roof==='scoop'){
+   box(parts,w*.28,.12,.35,aeroMat,0,topY+.10,(frontHigh+rearHigh)/2+.15,.04);
+   box(parts,w*.23,.075,.03,shared.grille,0,topY+.12,(frontHigh+rearHigh)/2+.35,.007);
+  }else if(appearance.roof==='fins')for(const side of [-1,0,1])
+    box(parts,.035,.13,.48,aeroMat,side*roofW*.69,topY+.085,(frontHigh+rearHigh)/2,.01);
+  if(appearance.lights==='smoked'||appearance.lights==='led'){
+   for(const side of [-1,1]){
+    if(appearance.lights==='smoked'){
+     box(parts,w*.24,.06,.04,shared.smoked,side*w*.32,.81,half+.18,.012);
+     box(parts,w*.19,.06,.028,shared.smoked,side*w*.30,.78,-half-.19,.012);
+    }else{
+     box(parts,w*.30,.028,.04,headlampMat,side*w*.28,.84,half+.18,.007);
+     box(parts,w*.23,.025,.035,taillightMat,side*w*.29,.84,-half-.17,.007);
+    }
+   }
+  }
   // Distinctive front treatments, hood lines and sculpted fender accents for each model.
   const signature=(spec.id.split('').reduce((n,c)=>n+c.charCodeAt(0),0)%4);
   if(signature===0){for(const side of [-1,1])box(parts,w*.11,.015,l*.26,shared.smoked,side*w*.30,hoodY+.064,half-l*.22,.008);}
@@ -246,30 +296,30 @@ export function createCar(spec,color,options={}){
   if(signature===2){for(const side of [-1,1])box(parts,w*.22,.018,.06,shared.chrome,side*w*.27,hoodY+.060,half-l*.12,.006);}
   if(signature===3){for(const side of [-1,1])box(parts,.035,.018,l*.30,shared.smoked,side*w*.40,hoodY+.065,half-l*.26,.007);}
   // Adjustable painted rockers and side-skirts.
-  if(appearance.skirts==='street'||appearance.skirts==='aero')for(const side of [-1,1]){
-    const ext=appearance.skirts==='aero'?.22:.14;
+  if(['street','aero','race'].includes(appearance.skirts))for(const side of [-1,1]){
+    const ext=appearance.skirts==='race'?.29:appearance.skirts==='aero'?.22:.14;
     box(parts,ext,.095,l*.70,aeroMat,side*(w*.49+ext*.25),.29,-.03,.02);
-    if(appearance.skirts==='aero')box(parts,.065,.08,l*.58,shared.chrome,side*(w*.53+ext*.14),.30,-.08,.01);
+    if(appearance.skirts!=='street')box(parts,.065,.08,l*.58,shared.chrome,side*(w*.53+ext*.14),.30,-.08,.01);
   }
   if(appearance.splitter!=='stock'){
-    const width=appearance.splitter==='race'?w*1.19:w*1.03;
+    const width=appearance.splitter==='race'?w*1.19:appearance.splitter==='track'?w*1.10:w*1.03;
     box(parts,width,.045,.44,aeroMat,0,.36,half+.13,.02);
     if(appearance.splitter==='race')for(const side of [-1,1])box(parts,.034,.10,.27,aeroMat,side*width*.47,.42,half+.18,.01);
   }
   if(appearance.diffuser!=='stock'){
-    box(parts,w*.90,.06,.42,aeroMat,0,.34,-half-.17,.02);
+    box(parts,w*(appearance.diffuser==='race'?.99:.90),.06,appearance.diffuser==='track'?.50:.42,aeroMat,0,.34,-half-.17,.02);
     for(const x of [-.48,-.18,.18,.48])box(parts,.035,.19,.32,aeroMat,x,.36,-half-.18,.012);
   }
   // Rear aero options. All optional spoilers are visibly different.
   if(appearance.spoiler==='lip')box(parts,w*.74,.085,.24,paintMat,0,Math.max(trunkY+.16,1.03),-half+.20,.035);
-  if(['gt','race'].includes(appearance.spoiler)){
-    const y=appearance.spoiler==='race'?1.60:1.38;
+  if(['gt','race','drag'].includes(appearance.spoiler)){
+    const y=appearance.spoiler==='drag'?1.74:appearance.spoiler==='race'?1.60:1.38;
     for(const side of [-1,1])box(parts,.055,y-1.02,.11,aeroMat,side*w*.29,(y+1.02)/2,-half+.22,.012);
-    box(parts,w*(appearance.spoiler==='race'?1.06:.88),.07,appearance.spoiler==='race'?.39:.27,aeroMat,0,y,-half+.22,.023);
+    box(parts,w*(appearance.spoiler==='drag'?1.18:appearance.spoiler==='race'?1.06:.88),.07,appearance.spoiler==='drag'?.48:appearance.spoiler==='race'?.39:.27,aeroMat,0,y,-half+.22,.023);
     for(const side of [-1,1])box(parts,.035,.18,.32,aeroMat,side*w*.49,y,-half+.22,.013);
   }
-  if(appearance.hood==='vents')for(const side of [-1,1]){
-    box(parts,w*.16,.01,.30,shared.grille,side*w*.23,hoodY+.072,half-l*.27,.007);
+  if(['vents','carbon'].includes(appearance.hood))for(const side of [-1,1]){
+    box(parts,w*(appearance.hood==='carbon'?.24:.16),.01,appearance.hood==='carbon'?.50:.30,appearance.hood==='carbon'?aeroMat:shared.grille,side*w*.23,hoodY+.072,half-l*.27,.007);
     for(let t=0;t<3;t++)box(parts,w*.15,.015,.015,shared.chrome,side*w*.23,hoodY+.082,half-l*.27+(t-1)*.085,.003);
   }
   if(appearance.hood==='scoop'){
@@ -278,7 +328,7 @@ export function createCar(spec,color,options={}){
   }
   // Actual exhaust tips extend from the rear bumper; selected part changes arrangement.
   const exhaustStyle=appearance.exhaust||'stock';
-  const exXs=exhaustStyle==='quad'?[-w*.35,-w*.23,w*.23,w*.35]:exhaustStyle==='dual'?[-w*.32,w*.32]:exhaustStyle==='burnt'?[w*.33]:[-w*.31];
+  const exXs=exhaustStyle==='quad'?[-w*.35,-w*.23,w*.35,w*.23]:exhaustStyle==='center'?[0]:exhaustStyle==='dual'?[-w*.32,w*.32]:exhaustStyle==='burnt'?[w*.33]:[-w*.31];
   for(const x of exXs){
     const colorMat=exhaustStyle==='burnt'?titanium:shared.chrome;
     const tip=new THREE.Mesh(new THREE.CylinderGeometry(exhaustStyle==='quad'?.09:.105,exhaustStyle==='quad'?.09:.105,.34,14,1,true),colorMat);
@@ -286,9 +336,9 @@ export function createCar(spec,color,options={}){
     const center=new THREE.Mesh(new THREE.CircleGeometry(exhaustStyle==='quad'?.075:.09,14),shared.grille);center.position.set(x,.47,-half-.405);center.rotation.y=Math.PI;parts.add(center);
     // Two-layer procedural exhaust pop, scaled and animated during acceleration.
     for(const layer of [0,1]){
-      const flame=new THREE.Mesh(new THREE.ConeGeometry(layer===0?.115:.068,layer===0?.48:.31,9),new THREE.MeshBasicMaterial({color:layer===0?0xff691f:0x82dafa,transparent:true,opacity:.78,depthWrite:false,blending:THREE.AdditiveBlending}));
+      const flame=new THREE.Mesh(new THREE.ConeGeometry(layer===0?.115:.068,layer===0?.48:.31,9),new THREE.MeshBasicMaterial({color:layer===0?exhaustFlameColor:0x82dafa,transparent:true,opacity:.78,depthWrite:false,blending:THREE.AdditiveBlending}));
       flame.rotation.x=-Math.PI/2;flame.position.set(x,.47,-half-(layer===0?.70:.63));flame.visible=false;
-      flame.userData.flameOffset=x*21+layer*1.7;parts.add(flame);exhaustFlames.push(flame);
+      flame.userData.flameOffset=x*21+layer*1.7;flame.userData.flameLayer=layer;parts.add(flame);exhaustFlames.push(flame);
     }
   }
   // Front LED signatures and lower grille geometry.
@@ -304,7 +354,7 @@ export function createCar(spec,color,options={}){
    const rim=new THREE.Mesh(rimGeometry,rimMat);rim.rotation.z=Math.PI/2;rim.position.x=side*.132;rim.castShadow=true;spin.add(rim);
    const hub=new THREE.Mesh(new THREE.CylinderGeometry(.072,.072,.1,18),shared.chrome);hub.rotation.z=Math.PI/2;hub.position.x=side*.180;spin.add(hub);
    if(!traffic){
-     const spokeCount=appearance.wheels==='mesh'?12:appearance.wheels==='five'?5:appearance.wheels==='turbine'?9:(spec.hp%3===0)?8:spec.kind==='super'?10:6;
+     const spokeCount=appearance.wheels==='mesh'?12:appearance.wheels==='five'?5:appearance.wheels==='turbine'?9:appearance.wheels==='multi'?16:appearance.wheels==='dish'?3:(spec.hp%3===0)?8:spec.kind==='super'?10:6;
      for(let spoke=0;spoke<spokeCount;spoke++){
        const a=2*Math.PI*spoke/spokeCount;
        const b=box(spin,.038,.044,.265,rimMat,side*.168,Math.sin(a)*.182,Math.cos(a)*.182,.008);
@@ -316,21 +366,43 @@ export function createCar(spec,color,options={}){
      for(let bolt=0;bolt<5;bolt++){const a=Math.PI*2*bolt/5;const m=new THREE.Mesh(new THREE.SphereGeometry(.016,8,6),shared.chrome);m.position.set(side*.183,Math.sin(a)*.095,Math.cos(a)*.095);spin.add(m);}
      box(pivot,.06,.12,.09,caliperMat,side*.14,.22,0,.018);
    }
-   pivot.add(spin);root.add(pivot);wheels.push({wheelPivot:pivot,spin,front:axle===1});
+   pivot.add(spin);root.add(pivot);wheels.push({wheelPivot:pivot,spin,front:axle===1,side,baseX:side*w*.485,baseY:.405});
    if(!traffic){const arch=new THREE.Mesh(new THREE.TorusGeometry(.443,.018,6,20,Math.PI*1.04),shared.under);
      arch.rotation.y=Math.PI/2;arch.rotation.z=-Math.PI*.02;arch.position.set(side*w*.51,.403,zp);parts.add(arch);
    }
  }
  // Underbody light is an optional battle-pass cosmetic, off by default.
  const neon=new THREE.Mesh(new THREE.PlaneGeometry(w*1.48,l*.7),underMat);neon.rotation.x=-Math.PI/2;neon.position.set(0,.028,0);root.add(neon);
- root.userData={wheels,bodyMat:paintMat,sculptMat:sculpt,rimMat,caliperMat,headlampMat,headlightPools,headlights,paintFinish,neonMat:underMat,neon,spec,parts,kind,wing,appearance,exhaustFlames:traffic?[]:exhaustFlames};
+ root.userData={wheels,bodyMat:paintMat,sculptMat:sculpt,roofMat,rimMat,caliperMat,taillightMat,headlampMat,headlightPools,headlights,paintFinish,secondaryColor,roofColor,neonMat:underMat,neon,neonEnabled:Boolean(options.neon&&options.neon!=='off'),spec,parts,kind,wing,appearance,exhaustFlames:traffic?[]:exhaustFlames,...extras};
+ setCarStance(root,extras);
  if(traffic)root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
  return root;
 }
-export function setCarPaint(car,color){car?.userData?.bodyMat?.color.set(color);car?.userData?.sculptMat?.color.set(color);}
+export function setCarPaint(car,color){
+ const d=car?.userData;if(!d)return;
+ d.bodyMat?.color.set(color);
+ if(d.secondaryColor==='match')d.sculptMat?.color.set(color);
+ if(d.roofColor==='match')d.roofMat?.color.set(color);
+}
+export function setCarStance(car,settings={}){
+ const d=car?.userData;if(!d)return;
+ const ex=sanitizeCarExtras({...d,...settings});
+ const normalized=key=>(ex[key]-50)/50;
+ const scale=1+normalized('wheelSize')*.16;
+ if(d.parts)d.parts.position.y=normalized('rideHeight')*.16;
+ for(const entry of d.wheels||[]){
+   const track=entry.front?'frontTrackWidth':'rearTrackWidth';
+   entry.wheelPivot.position.x=entry.baseX+entry.side*normalized(track)*.15;
+   entry.wheelPivot.position.y=entry.baseY+(scale-1)*.415;
+   entry.wheelPivot.rotation.z=-entry.side*normalized('wheelCamber')*.14;
+   entry.spin.scale.setScalar(scale);
+ }
+ if(d.neonMat)d.neonMat.opacity=d.neonEnabled ? .30*ex.neonIntensity/100 : 0;
+ Object.assign(d,ex);
+}
 export function setCarFinish(car,finishName){
  const finish=PAINT_FINISHES[finishName]||PAINT_FINISHES.gloss;
- for(const material of [car?.userData?.bodyMat,car?.userData?.sculptMat]){
+ for(const material of [car?.userData?.bodyMat,car?.userData?.sculptMat,car?.userData?.roofMat]){
   if(!material)continue;
   material.metalness=finish.metalness;material.roughness=finish.roughness;
   material.clearcoat=finish.clearcoat;material.clearcoatRoughness=finish.clearcoatRoughness;
@@ -338,10 +410,25 @@ export function setCarFinish(car,finishName){
  }
  if(car?.userData)car.userData.paintFinish=finishName;
 }
-export function setCarCosmetics(car,{color,rims,neon,caliperColor,headlightColor,paintFinish}={}){
+export function setCarCosmetics(car,{color,rims,neon,caliperColor,headlightColor,paintFinish,secondaryColor,roofColor,taillightColor,exhaustFlameColor,rideHeight,wheelCamber,wheelSize,frontTrackWidth,rearTrackWidth,neonIntensity}={}){
  if(color)setCarPaint(car,color);
  if(rims)car?.userData?.rimMat?.color.set(rims);
  if(paintFinish)setCarFinish(car,paintFinish);
+ if(secondaryColor){
+  if(car?.userData)car.userData.secondaryColor=secondaryColor;
+  car?.userData?.sculptMat?.color.set(secondaryColor==='match'?(color||car?.userData?.bodyMat?.color):secondaryColor);
+ }
+ if(roofColor){
+  if(car?.userData)car.userData.roofColor=roofColor;
+  car?.userData?.roofMat?.color.set(roofColor==='match'?(color||car?.userData?.bodyMat?.color):roofColor);
+ }
+ if(taillightColor){
+  car?.userData?.taillightMat?.color.set(taillightColor);
+  car?.userData?.taillightMat?.emissive.set(taillightColor);
+ }
+ if(exhaustFlameColor)for(const flame of car?.userData?.exhaustFlames||[]){
+  if(flame.userData.flameLayer===0)flame.material.color.set(exhaustFlameColor);
+ }
  if(caliperColor)car?.userData?.caliperMat?.color.set(caliperColor);
  if(headlightColor){
   car?.userData?.headlampMat?.color.set(headlightColor);
@@ -349,6 +436,14 @@ export function setCarCosmetics(car,{color,rims,neon,caliperColor,headlightColor
   for(const light of car?.userData?.headlights||[])light.color.set(headlightColor);
   for(const pool of car?.userData?.headlightPools||[])pool.material.color.set(headlightColor);
  }
- if(neon&&car?.userData?.neonMat){car.userData.neonMat.color.set(neon==='off'?'#58ffd3':neon);car.userData.neonMat.opacity=neon==='off'?0:.3;}
+ if(neon&&car?.userData?.neonMat){
+  car.userData.neonMat.color.set(neon==='off'?'#58ffd3':neon);
+  car.userData.neonEnabled=neon!=='off';
+ }
+ if(car?.userData){
+  const input={rideHeight,wheelCamber,wheelSize,frontTrackWidth,rearTrackWidth,neonIntensity};
+  const changes=Object.fromEntries(Object.entries(input).filter(([,v])=>v!==undefined));
+  setCarStance(car,changes);
+ }
 }
 export function animateWheels(car,delta,distance,steer=0){for(const {spin,wheelPivot,front} of car?.userData?.wheels||[]){spin.rotation.x+=distance/.415;wheelPivot.rotation.y=front?steer*.42:0;}}

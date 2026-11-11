@@ -755,3 +755,60 @@ body[data-show-near-miss-popups="false"] .hud .near-miss-flash{display:none!impo
 .car-modal-extras .muted{font-size:12px;margin:7px 0 12px;line-height:1.5}
 .profile-finishes strong{font-size:12px;color:#e4fff7}
 @media(max-width:570px){.car-color-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.car-color-field{padding:9px}.car-color-field>span{font-size:10px}.car-color-field>div{gap:6px;flex-wrap:wrap}.car-color-field input[type="color"]{width:52px;height:43px;min-width:52px}.car-finish-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.car-finish-choice{font-size:10px;padding:9px 6px}}
+
+/* V33: full-screen 3D showroom and comprehensive vehicle tuning. */
+.garage-showcase-grid{grid-template-columns:minmax(0,1fr)!important;gap:15px}
+.garage-showcase-grid .showcase-card{min-height:720px;background:radial-gradient(ellipse at 50% 55%,#33465783,#0b1726 70%,#08111e)}
+.garage-car-mount{height:clamp(420px,48vw,690px)!important;width:100%}
+.showcase-head h2{font-size:clamp(50px,6.8vw,105px);letter-spacing:.02em}
+.showroom-detail{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:20px}
+.showroom-detail .kicker,.showroom-detail h3,.showroom-detail>.muted,.showroom-detail>.divider,.showroom-detail .notice{grid-column:1/-1}
+.showroom-detail .spec-row{display:flex!important;width:100%!important;margin:0!important}
+.showroom-detail .btn{min-height:44px}
+.tune-layout{grid-template-columns:minmax(0,1fr)!important;align-items:stretch;gap:18px}
+.tune-studio{position:relative!important;top:auto!important;padding:24px;background:radial-gradient(ellipse at 50% 52%,#304c5b9a,#0a1523 73%);min-height:640px}
+.tune-studio-head{display:flex;align-items:start;justify-content:space-between;gap:15px}
+.tune-studio-head h2{font-size:clamp(48px,6.5vw,90px);line-height:.94;margin:12px 0}
+.tune-studio-head p{font-size:12px;letter-spacing:.12em;font-weight:800;color:#bcd5dd}
+.tune-car-mount{height:clamp(390px,42vw,660px)!important;width:100%}
+.tune-studio-actions{max-width:1060px;margin-left:auto;margin-right:auto}
+.tune-studio-actions .btn{flex:1 1 175px;min-height:46px}
+.tune-wallet{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px}
+.showroom-canvas{touch-action:none;cursor:grab}
+.showroom-canvas:active{cursor:grabbing}
+.tune-controls{min-width:0;overflow:visible!important}
+.tune-tabs{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));position:sticky;top:0;z-index:7;gap:7px;padding:8px}
+.tune-tabs button{min-height:49px;white-space:normal;font-size:11px;letter-spacing:.05em}
+.tune-controls .tune-tab-pane{max-height:none!important;overflow:visible!important;padding:20px}
+.tune-section-head{margin-bottom:15px}
+.tune-section-head h3{font-size:27px;margin:0 0 7px}
+.tune-section-head p{color:#a8c3ce;line-height:1.5}
+.car-stance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;margin:13px 0 22px}
+.car-stance-slider{background:#0e2330;border:1px solid #6cbdad58;border-radius:12px;padding:14px}
+.car-stance-slider label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;letter-spacing:.045em;font-weight:900}
+.car-stance-slider label strong{color:var(--mint);font-size:13px}
+.car-stance-slider input{display:block;width:100%;margin:16px 0 8px;accent-color:var(--mint)}
+.car-stance-slider small{display:block;color:#91adb9;font-size:10px}
+.car-match-color{font-size:10px!important;padding:7px!important;min-height:32px}
+.tune-tab-pane .panel.panel-pad{border:0;background:none;box-shadow:none;padding:5px}
+@media(max-width:860px){
+ .garage-showcase-grid .showcase-card{min-height:0}
+ .garage-car-mount{height:clamp(280px,57vw,490px)!important}
+ .showcase-head h2{font-size:clamp(40px,7vw,70px)}
+ .tune-studio{padding:14px;min-height:0}
+ .tune-car-mount{height:clamp(275px,54vw,430px)!important}
+ .tune-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tune-controls .tune-tab-pane{padding:12px}
+ .showroom-detail{grid-template-columns:1fr}
+}
+@media(max-width:550px){
+ .showcase-head h2{font-size:38px}
+ .garage-car-mount{height:300px!important}
+ .tune-studio-head{flex-wrap:wrap}
+ .tune-studio-head h2{font-size:39px}
+ .tune-car-mount{height:300px!important}
+ .car-stance-grid{grid-template-columns:1fr}
+ .tune-tabs button{min-height:42px;font-size:9px;padding:8px 4px}
+ .car-color-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tune-studio-actions .btn{flex-basis:46%}
+}

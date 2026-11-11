@@ -10,7 +10,7 @@ import {driftStep} from './driftPhysics.js';
 import {crashMultiplier} from './penalties.js';
 import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
 import {performanceStats,upgradePreview,PERFORMANCE_FIELDS,capVehicleVelocity,vehicleSpeedLimitMps} from './performance.js';
-import {PAINT_FINISHES,CAR_EXTRAS_DEFAULTS,safeCarHex} from './carCustomization.js';
+import {PAINT_FINISHES,CAR_EXTRAS_DEFAULTS,CAR_STANCE_FIELDS,safeCarHex} from './carCustomization.js';
 import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned,cloudLoadGameSave,cloudSaveGameSave,cloudAccessToken} from './cloud.js';
 import {purchased,clearPurchased,refreshPurchased,spendPurchased} from './payments.js';
 
@@ -135,7 +135,7 @@ let adminEnabled=false;let ownerEnabled=false;let verifiedAdminFromCode=false;
 let adminPanelHidden=false;try{adminPanelHidden=localStorage.getItem('ed-hide-admin-tab')==='1';}catch{}
 let deviceChoiceOpen=false;let skippedUsernameGate=false;
 let publicProfileUsername='',publicProfileData=null,publicProfileCar='';
-let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='performance';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
+let playerControlState={banned:false,frozen:false,kick_version:0,god_mode:false,speed_multiplier:1,jump_multiplier:1,shape:'car',xp_grant_total:0,coins_grant_total:0,respawn_version:0,repair_version:0,clear_wanted_version:0},kickVersionSeen=null,rankedPending=0,rankedFlushBusy=false,rankedFlushTimer=null,rankedLastReport=Date.now();let lastBanked=null;let saveSyncTimer=null;let saveSyncPending=null;let accountSwitching=false;let chosenWeather='clear',weatherApproved=false;let pauseActive=false;let usernameOnboarding=false;let activeUsername='';let selectedPreview=state.selected;let customizedCar=state.selected;let tuningCar=state.selected;let tuneTab='body';let pendingUpgrade=null;let pendingVisual=null;let remapping=null;let showroom=null;let passPreviewId=BATTLE_PASS[0].id;let shopPreviewId=(COSMETIC_SHOP[0]||{}).id;let cosmeticPreview=null;let mode='home',modalKind=null,toastTimer=null;
 const keys={};const touchHeld=Object.create(null),touchPointers=new Map();let game;
 const char=(name)=>String(name||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 setSaveHook((owner,snapshot)=>{
@@ -544,12 +544,23 @@ function renderShop(){
  if(showroom&&item){previewCosmetic(car.id,{type:item.type,color:item.color,name:item.name},'shopCarMount');}
 }
 
-function extraCarColorInputs(car,context='tune'){
- const items=[['color','Custom body paint',car.color||'#e4475c'],['rims','Custom rim color',car.rims||'#d0d9e2'],
-  ['caliperColor','Brake caliper color',car.caliperColor||CAR_EXTRAS_DEFAULTS.caliperColor],
-  ['headlightColor','Headlight LED color',car.headlightColor||CAR_EXTRAS_DEFAULTS.headlightColor],
-  ['smoke','Custom drift smoke',car.smoke||'#eeeeff']];
- return `<div class="car-color-grid">${items.map(([key,label,color])=>`<label class="car-color-field"><span>${char(label)}</span><div><input type="color" data-car-extra-color="${key}" data-car-extra-context="${context}" value="${safeCarHex(color,'#eeeeff')}" aria-label="${char(label)}"/><small class="car-color-hex">${char(safeCarHex(color,'#ffffff'))}</small></div></label>`).join('')}</div>`;
+function extraCarColorInputs(car,context='tune',keys=null){
+ const all=[
+ ['color','BODY PAINT',car.color||'#e4475c'],
+ ['secondaryColor','SECONDARY PANELS',car.secondaryColor==='match'?car.color:car.secondaryColor],
+ ['roofColor','ROOF COLOR',car.roofColor==='match'?car.color:car.roofColor],
+ ['rims','RIM COLOR',car.rims||'#d0d9e2'],
+ ['caliperColor','BRAKE CALIPERS',car.caliperColor||CAR_EXTRAS_DEFAULTS.caliperColor],
+ ['headlightColor','HEADLIGHT LEDS',car.headlightColor||CAR_EXTRAS_DEFAULTS.headlightColor],
+ ['taillightColor','TAILLIGHTS',car.taillightColor||CAR_EXTRAS_DEFAULTS.taillightColor],
+ ['smoke','DRIFT SMOKE',car.smoke||'#eeeeff'],
+ ['exhaustFlameColor','EXHAUST FLAMES',car.exhaustFlameColor||CAR_EXTRAS_DEFAULTS.exhaustFlameColor]
+ ];
+ const items=keys?all.filter(([key])=>keys.includes(key)):all;
+ return `<div class="car-color-grid">${items.map(([key,label,color])=>`<label class="car-color-field"><span>${char(label)}</span><div><input type="color" data-car-extra-color="${key}" data-car-extra-context="${context}" value="${safeCarHex(color,car.color||'#eeeeff')}" aria-label="${char(label)}"/><small class="car-color-hex">${char(safeCarHex(color,car.color||'#ffffff'))}</small></div>${['secondaryColor','roofColor'].includes(key)?`<button type="button" class="btn ghost small car-match-color" data-car-match-color="${key}" data-car-extra-context="${context}">${car[key]==='match'?'✓ MATCHES BODY':'MATCH BODY PAINT'}</button>`:''}</label>`).join('')}</div>`;
+}
+function carStanceSliders(car,keys=CAR_STANCE_FIELDS.map(([k])=>k)){
+ return `<div class="car-stance-grid">${CAR_STANCE_FIELDS.filter(([key])=>keys.includes(key)).map(([key,label])=>`<div class="car-stance-slider"><label for="stance-${key}">${label}<strong id="stance-value-${key}">${car[key]??50}%</strong></label><input type="range" id="stance-${key}" data-car-extra-range="${key}" min="0" max="100" step="1" value="${car[key]??50}" aria-label="${label}"/><small>${key==='rideHeight'?'LOW ← → HIGH':key==='wheelCamber'?'NEGATIVE ← → POSITIVE':'MIN ← → MAX'}</small></div>`).join('')}</div>`;
 }
 function paintFinishChoices(car,context='tune'){
  return `<div class="car-finish-grid">${Object.entries(PAINT_FINISHES).map(([id,finish])=>`<button type="button" class="btn ghost car-finish-choice ${car.paintFinish===id?'active':''}" data-car-paint-finish="${id}" data-car-extra-context="${context}" aria-pressed="${car.paintFinish===id}">${char(finish.label)}</button>`).join('')}</div>`;
@@ -566,22 +577,37 @@ function renderTune(){
    const improved=(higherBetter?d>0:d<0),changed=Math.abs(d)>0.00001;
    return `<div class="tune-stat"><span>${title}</span><strong>${Number(before).toFixed(precision)} <i>→</i> ${Number(after).toFixed(precision)}${unit}</strong><small class="${improved?'stat-good':changed?'stat-bad':'stat-neutral'}">${!changed?'UNCHANGED':(d>0?'+':'')+d.toFixed(precision)+unit+(improved?' • IMPROVED':'')}</small></div>`;}).join('')}</div><p class="stat-note">Values are calculated from the same upgrade configuration used by the car's driving simulation.</p></div>`:'';
  const upgradeCheckout=upgradeChoice?`<div class="purchase-panel"><div><div class="kicker">REVIEW PERFORMANCE UPGRADE</div><h3>${upgradeChoice.label}</h3><p>${upgradeChoice.description}. ${upgradeChoice.effect}.</p><small>Current level ${upgradedLevel} / ${upgradeChoice.max} • Compare before buying</small>${upgradeStats}</div><button class="btn primary" data-commit-upgrade="${upgradeChoice.id}" ${upgradedLevel>=upgradeChoice.max?'disabled':''}>${upgradedLevel>=upgradeChoice.max?'MAXED OUT':'BUY • '+fmt(upgradeCost(upgradeChoice,upgradedLevel))+' DC'}</button></div>`:'<div class="purchase-panel info-panel">Select a performance upgrade above to view it. Your Drift Coins are safe until you click BUY.</div>';
- const appearance=BODY_PARTS.map(part=>`<div class="body-part"><div class="body-part-head"><h3>${part.label}</h3><p>${part.description}</p></div><div class="body-options">${part.options.map(([id,label,cost])=>{const installed=saveCar.appearance[part.id]===id,bought=cost===0||saveCar.ownedParts.includes(part.id+':'+id),preview=pendingVisual===part.id+'|'+id;return `<button data-preview-visual="${part.id}|${id}" class="body-option ${installed?'active':''} ${preview?'preview-selected':''}"><span>${char(label)}</span><small>${installed?'✓ INSTALLED':bought?'OWNED • VIEW':'PREVIEW • '+fmt(cost)+' DC'}</small></button>`;}).join('')}</div></div>`).join('');
+ const bodyPartCard=part=>`<div class="body-part"><div class="body-part-head"><h3>${part.label}</h3><p>${part.description}</p></div><div class="body-options">${part.options.map(([id,label,cost])=>{const installed=saveCar.appearance[part.id]===id,bought=cost===0||saveCar.ownedParts.includes(part.id+':'+id),preview=pendingVisual===part.id+'|'+id;return `<button data-preview-visual="${part.id}|${id}" class="body-option ${installed?'active':''} ${preview?'preview-selected':''}"><span>${char(label)}</span><small>${installed?'✓ INSTALLED':bought?'OWNED • VIEW':'PREVIEW • '+fmt(cost)+' DC'}</small></button>`;}).join('')}</div></div>`;
+ const groupOptions=keys=>BODY_PARTS.filter(part=>keys.includes(part.id)).map(bodyPartCard).join('');
+ const appearance=BODY_PARTS.filter(part=>!['wheels','lights','exhaust'].includes(part.id)).map(bodyPartCard).join('');
+ const wheelKits=groupOptions(['wheels']),lightKits=groupOptions(['lights']),exhaustKits=groupOptions(['exhaust']);
  const [partId,optionId]=(pendingVisual||'|').split('|');const activePart=BODY_PARTS.find(x=>x.id===partId),activeOpt=activePart?.options.find(x=>x[0]===optionId),alreadyOwned=activeOpt&&(activeOpt[2]===0||saveCar.ownedParts.includes(partId+':'+optionId));
  const bodyCheckout=activeOpt?`<div class="purchase-panel"><div><div class="kicker">LIVE VEHICLE PREVIEW</div><h3>${activeOpt[1]}</h3><p>${activePart.description}</p><small>Preview it on the car before spending Drift Coins</small></div><button class="btn primary" data-commit-visual="${pendingVisual}">${saveCar.appearance[partId]===optionId?'✓ INSTALLED':alreadyOwned?'EQUIP OWNED PART':'BUY • '+fmt(activeOpt[2])+' DC'}</button></div>`:'<div class="purchase-panel info-panel">Click a body part to preview it on your vehicle. Confirm with BUY to spend Drift Coins.</div>';
  const colorRow=(colors,key)=>colors.map(c=>`<button class="swatch ${saveCar[key]===c?'active':''}" data-tune-${key}="${c}" title="${key} ${c}" aria-label="${key} ${c}" style="background:${c}"></button>`).join('');
+ const tuningTabs=[['body','BODY KITS'],['paint','PAINT'],['wheels','WHEELS'],['lighting','LIGHTING'],['stance','STANCE'],['exhaust','EXHAUST'],['performance','PERFORMANCE'],['setup','SETUP']];
+ const tabPane=(id,body)=>`<div class="tune-tab-pane ${tuneTab===id?'':'hidden'}">${body}</div>`;
+ const setup=[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('');
+ const sounds=`<div class="engine-sound-options">${[['factory','Factory'],['deep','Deep rumble'],['race','Track exhaust']].map(([id,label])=>`<button class="btn small ghost ${saveCar.engineNote===id?'sound-active':''}" data-tune-sound="${id}">${label}</button>`).join('')}</div>`;
  dom.screen.innerHTML=header('TUNING LAB','BUILD YOUR DREAM CAR',`Live previews and permanent upgrades for ${spec.name}. Purchased parts deduct Drift Coins.`)+`
-  <div class="tune-layout">
-   <div class="tune-studio"><div class="kicker">LIVE BUILD STUDIO</div><h2>${char(spec.name)}</h2><div id="tuneCarMount" class="tune-car-mount"><div class="showroom-fallback">PREPARING 3D PREVIEW</div></div>
-    <div class="tune-wallet">DRIFT COINS <strong>${fmt(state.wallet+purchased.coins)} DC</strong><span>PARTS SAVE TO THIS CAR</span></div>
-    <div class="tune-studio-actions"><button class="btn primary" data-rev-car="${spec.id}">▶ REV ENGINE</button><button class="btn ghost" data-page="garage">← GARAGE</button><button class="btn primary" data-modal="car">DRIFT PASS COSMETICS</button><button class="btn ghost" data-page="shop">STYLE SHOP</button></div>
-    <div class="tune-help">DRAG THE CAR TO TURN IT • CHANGES SHOW LIVE</div></div>
-   <div class="tune-controls"><div class="tune-tabs"><button data-tune-tab="body" class="${tuneTab==='body'?'active':''}">BODY KITS</button><button data-tune-tab="performance" class="${tuneTab==='performance'?'active':''}">PERFORMANCE</button><button data-tune-tab="paint" class="${tuneTab==='paint'?'active':''}">COLORS + SETUP</button></div>
-    <div class="tune-tab-pane ${tuneTab==='body'?'':'hidden'}">${appearance}${bodyCheckout}</div>
-    <button class="btn ghost" data-modal="car">CUSTOMIZE RIM COLORS + PAINT</button><div class="tune-tab-pane ${tuneTab==='performance'?'':'hidden'}"><div class="upgrade-grid">${upgrades}</div>${upgradeCheckout}</div>
-    <div class="tune-tab-pane ${tuneTab==='paint'?'':'hidden'}"><div class="panel panel-pad"><h3>BODY COLOR</h3><div class="swatch-row">${colorRow(COLORS,'color')}</div><h3>DRIFT SMOKE</h3><div class="swatch-row">${colorRow(SMOKES,'smoke')}</div><h3>ALLOY FINISH</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div><h3>CUSTOM COLORS</h3><p class="muted">Custom colors are free, preview live and save per car.</p>${extraCarColorInputs(saveCar)}<h3>PAINT FINISH</h3>${paintFinishChoices(saveCar)}<h3>ENGINE SOUND</h3><div class="engine-sound-options">${[['factory','Factory'],['deep','Deep rumble'],['race','Track exhaust']].map(([id,label])=>`<button class="btn small ghost ${saveCar.engineNote===id?'sound-active':''}" data-tune-sound="${id}">${label}</button>`).join('')}</div><h3>DRIVING SETUP</h3>${[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('')}</div></div>
-   </div>
-  </div>`;
+ <div class="tune-layout">
+  <section class="tune-studio">
+   <div class="tune-studio-head"><div><div class="kicker">SELECTED MACHINE / FULL 3D CUSTOMIZATION</div><h2>${char(spec.name)}</h2><p>${char(spec.type)} • ${char(spec.kind.toUpperCase())}</p></div><span class="showcase-status">LIVE PREVIEW</span></div>
+   <div id="tuneCarMount" class="tune-car-mount"><div class="showroom-fallback">LOADING INTERACTIVE 3D CAR</div></div>
+   <div class="tune-wallet">YOUR DRIFT COINS <strong>${fmt(state.wallet+purchased.coins)} DC</strong><span>DRAG / SWIPE TO ROTATE • ALL VISUAL CHANGES PREVIEW LIVE</span></div>
+   <div class="tune-studio-actions"><button class="btn primary" data-rev-car="${spec.id}">▶ REV ENGINE</button><button class="btn ghost" data-page="garage">← GARAGE</button><button class="btn ghost" data-modal="car">DRIFT PASS COSMETICS</button><button class="btn ghost" data-page="shop">STYLE SHOP</button></div>
+  </section>
+  <section class="tune-controls">
+   <div class="tune-tabs">${tuningTabs.map(([id,label])=>`<button type="button" data-tune-tab="${id}" class="${tuneTab===id?'active':''}" aria-pressed="${tuneTab===id}">${label}</button>`).join('')}</div>
+   ${tabPane('body',`<div class="tune-section-head"><h3>BODY KIT BUILDER</h3><p>Every front, rear, fender, wing, hood, roof and mirror option changes the actual 3D car.</p></div>${appearance}${activePart&&!['wheels','lights','exhaust'].includes(activePart.id)?bodyCheckout:''}`)}
+   ${tabPane('paint',`<div class="panel panel-pad"><h3>BODY PAINT + FINISHES</h3><p class="muted">Choose any color for the body, secondary panels and roof.</p><div class="swatch-row">${colorRow(COLORS,'color')}</div>${extraCarColorInputs(saveCar,'tune',['color','secondaryColor','roofColor'])}<h3>PAINT FINISH</h3>${paintFinishChoices(saveCar)}</div>`)}
+   ${tabPane('wheels',`<div class="panel panel-pad"><h3>WHEELS / BRAKES</h3><p class="muted">Preview real 3D wheel designs before buying.</p>${wheelKits}${activePart?.id==='wheels'?bodyCheckout:''}<h3>RIMS + BRAKE CALIPERS</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div>${extraCarColorInputs(saveCar,'tune',['rims','caliperColor'])}</div>`)}
+   ${tabPane('lighting',`<div class="panel panel-pad"><h3>LIGHTING</h3>${lightKits}${activePart?.id==='lights'?bodyCheckout:''}${extraCarColorInputs(saveCar,'tune',['headlightColor','taillightColor'])}<h3>UNDERGLOW NEON</h3><div class="swatch-row">${BASE_NEONS.map(c=>`<button type="button" class="swatch ${saveCar.neon===c?'active':''}" data-car-extra-neon="${c}" style="background:${c==='off'?'linear-gradient(135deg,#18232a 45%,#ff5265 46%,#ff5265 54%,#18232a 55%)':c}" title="${c==='off'?'Off':c}" aria-label="Neon ${c}"></button>`).join('')}</div>${carStanceSliders(saveCar,['neonIntensity'])}</div>`)}
+   ${tabPane('stance',`<div class="panel panel-pad"><h3>STANCE / FITMENT</h3><p class="muted">Visual height, wheel size, camber and track width. V27 drifting stays unchanged.</p>${carStanceSliders(saveCar,['rideHeight','wheelCamber','wheelSize','frontTrackWidth','rearTrackWidth'])}</div>`)}
+   ${tabPane('exhaust',`<div class="panel panel-pad"><h3>EXHAUST / SOUND</h3>${exhaustKits}${activePart?.id==='exhaust'?bodyCheckout:''}${extraCarColorInputs(saveCar,'tune',['exhaustFlameColor','smoke'])}<h3>ENGINE SOUND</h3>${sounds}</div>`)}
+   ${tabPane('performance',`<div class="upgrade-grid">${upgrades}</div>${upgradeCheckout}`)}
+   ${tabPane('setup',`<div class="panel panel-pad"><h3>DRIVING SETUP</h3><p class="muted">Adjust existing grip, steering and stability settings.</p>${setup}</div>`)}
+  </section>
+ </div>`;
  mountShowroom('tuneCarMount',spec);if(pendingVisual&&showroom){const [id,variant]=pendingVisual.split('|');showroom.setCar(spec,{...saveCar,appearance:{...saveCar.appearance,[id]:variant}});showroom.render(0.016);}
 }
 async function renderLeaderboard(){
@@ -643,10 +669,16 @@ function renderDriverProfileDetails(){
        <span>CALIPERS <i style="background:${char(selected.caliperColor)}"></i> ${char(selected.caliperColor)}</span>
        <span>HEADLIGHTS <i style="background:${char(selected.headlightColor)}"></i> ${char(selected.headlightColor)}</span>
        <span>PAINT FINISH <strong>${char(PAINT_FINISHES[selected.paintFinish]?.label||'Glossy clearcoat')}</strong></span>
+       <span>SECONDARY <i style="background:${selected.secondaryColor==='match'?char(selected.color):char(selected.secondaryColor)}"></i> ${char(selected.secondaryColor==='match'?'MATCH BODY':selected.secondaryColor)}</span>
+       <span>ROOF <i style="background:${selected.roofColor==='match'?char(selected.color):char(selected.roofColor)}"></i> ${char(selected.roofColor==='match'?'MATCH BODY':selected.roofColor)}</span>
+       <span>REAR LIGHTS <i style="background:${char(selected.taillightColor)}"></i> ${char(selected.taillightColor)}</span>
+       <span>EXHAUST FLAMES <i style="background:${char(selected.exhaustFlameColor)}"></i> ${char(selected.exhaustFlameColor)}</span>
      </div>
      <div class="kicker">PERFORMANCE UPGRADES</div>
      <div class="profile-chips">${upgrades.map(([id,level])=>`<span>${char(UPGRADES.find(u=>u.id===id)?.label||id)} LV ${fmt(level)}</span>`).join('')||'<span>STOCK PERFORMANCE</span>'}</div>
-     <div class="kicker">FITTED BODY PARTS</div>
+     <div class="kicker">VISUAL STANCE / FITMENT</div>
+      <div class="profile-chips">${CAR_STANCE_FIELDS.map(([key,label])=>`<span>${char(label)} ${Number(selected[key]??50)}%</span>`).join('')}</div>
+      <div class="kicker">FITTED BODY PARTS</div>
      <div class="profile-chips">${parts.map(part=>`<span>${char(part.label)}: ${char(part.options.find(opt=>opt[0]===selected.appearance[part.id])?.[1]||'CUSTOM')}</span>`).join('')||'<span>STOCK BODY KIT</span>'}</div>
     </div>
    </div>`:'<p class="notice">No saved cars available yet.</p>';
@@ -666,7 +698,7 @@ function renderDriverProfileDetails(){
    <section class="panel panel-pad driver-garage">
     <div class="kicker">PUBLIC GARAGE</div><h3>${privateGarage?'PRIVATE GARAGE':char(p.username)+'\'S CAR COLLECTION'}</h3>
     ${privateGarage?'<p class="notice">This player has chosen to hide their saved garage and personal stats.</p>':
-     `<p class="muted">Select a car to view its 3D build, paint, rims, neon and fitted parts.</p>
+     `<p class="muted">Select a car to inspect its actual 3D body kits, wheel fitment, paint finish, lights and saved modifications.</p>
       ${showCar}
       <div class="profile-car-grid">${garage.map(car=>{const base=CARS.find(c=>c.id===car.id);return base?`<button type="button" class="profile-car-choice ${car.id===publicProfileCar?'active':''}" data-profile-car="${char(car.id)}" aria-pressed="${car.id===publicProfileCar}">${carThumbnail(base,car.color,car.rims)}<strong>${char(base.name)}</strong><small>${car.selected?'EQUIPPED':'OWNED'}</small></button>`:'';}).join('')}</div>`}
    </section>`;
@@ -860,7 +892,7 @@ document.addEventListener('click',async e=>{
  if(t.id==='restartGame'){resumeGame();game?.recover();return;}
  if(t.dataset.pausePage){clearPause();renderPage(t.dataset.pausePage);return;}
  if(t.dataset.close!==undefined){closeModal();return;}
- if(t.dataset.page){closeModal();if(t.dataset.page==='tune'){tuningCar=state.selected;tuneTab='performance';}renderPage(t.dataset.page);return;}
+ if(t.dataset.page){closeModal();if(t.dataset.page==='tune'){tuningCar=state.selected;tuneTab='body';}renderPage(t.dataset.page);return;}
  if(t.dataset.saveExport!==undefined){const blob=new Blob([exportSave()],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='EndlessDrift-save.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('SAVE BACKUP DOWNLOADED');return;}
  if(t.dataset.saveImport!==undefined){document.getElementById('saveFileInput')?.click();return;}
  if(t.id==='garageDesign'){showModal('garage');return;}
@@ -868,6 +900,20 @@ document.addEventListener('click',async e=>{
  /* Real-money coin purchases remain disabled after release. */
  if(t.dataset.cloudSignout!==undefined){try{await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();notify('LOGGED OUT');renderAccount();}catch(e){notify(e.message);}return;}
  if(t.dataset.revCar){game?.revPreview(t.dataset.revCar);return;}
+ if(t.dataset.carMatchColor!==undefined){
+  const key=t.dataset.carMatchColor,modal=t.dataset.carExtraContext==='modal',id=modal?customizedCar:tuningCar;
+  if(!['secondaryColor','roofColor'].includes(key)||!state.owned.includes(id))return;
+  carSave(id)[key]='match';save();game?.setCarPreviewCosmetics(id);
+  if(modal){cosmeticPreview=null;carModal();}else if(mode==='tune')renderTune();
+  return;
+ }
+ if(t.dataset.carExtraNeon!==undefined){
+  const value=t.dataset.carExtraNeon;
+  if(value!=='off'&&!/^#[0-9a-f]{6}$/i.test(value))return;
+  if(!state.owned.includes(tuningCar))return;
+  carSave(tuningCar).neon=value;save();game?.setCarPreviewCosmetics(tuningCar);renderTune();
+  return;
+ }
  if(t.dataset.carPaintFinish!==undefined){
   const finish=t.dataset.carPaintFinish;if(!Object.hasOwn(PAINT_FINISHES,finish))return;
   const modal=t.dataset.carExtraContext==='modal',id=modal?customizedCar:tuningCar;
@@ -902,7 +948,7 @@ document.addEventListener('click',async e=>{
    if(item&&(item.premium?!(hasDriftPass()&&levelFromXP(state.lifetimeXP)>=item.level):!cosmeticUnlocked(item))){notify(item.premium?'DRIFT PASS OR LEVEL NOT UNLOCKED':'REACH DRIFT PASS LEVEL '+item.level+' TO UNLOCK');return;}
    const cs=carSave(customizedCar);cs[COSMETIC_SLOT[cosmeticPreview.type]]=cosmeticPreview.color;save();game?.setCarPreviewCosmetics(customizedCar);
    notify(cosmeticPreview.name.toUpperCase()+' EQUIPPED');cosmeticPreview=null;carModal();return;}
- if(t.dataset.tuneCar){if(!state.owned.includes(t.dataset.tuneCar))return;tuningCar=t.dataset.tuneCar;tuneTab='performance';pendingUpgrade=null;pendingVisual=null;renderPage('tune');return;}
+ if(t.dataset.tuneCar){if(!state.owned.includes(t.dataset.tuneCar))return;tuningCar=t.dataset.tuneCar;tuneTab='body';pendingUpgrade=null;pendingVisual=null;renderPage('tune');return;}
  if(t.dataset.tuneTab){tuneTab=t.dataset.tuneTab;renderTune();return;}
  if(t.id==='respawnBtn'){game?.respawn();return;}
  if(t.dataset.bind){remapping=t.dataset.bind;renderSettings();document.querySelector(`[data-bind="${remapping}"] kbd`).textContent='PRESS KEY';notify('PRESS NEW KEY • ESC TO CANCEL');return;}
@@ -1027,9 +1073,20 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('change',async e=>{if(e.target.dataset.deviceChange){chooseDevice(e.target.value);return;}if(e.target.id!=='saveFileInput')return;try{const file=e.target.files?.[0];if(!file)return;importSave(await file.text());selectedPreview=state.selected;tuningCar=state.selected;cashRefresh();applyUI();game?.setPlayerCar();game?.applyQuality();renderPage('settings');notify('SAVE BACKUP IMPORTED SUCCESSFULLY');}catch(err){notify('IMPORT FAILED: '+(err?.message||'INVALID FILE'));}finally{e.target.value='';}});
 dom.overlay.addEventListener('click',e=>{if(e.target===dom.overlay)closeModal();});
 document.addEventListener('input',e=>{
+ if(e.target.dataset.carExtraRange!==undefined){
+  const key=e.target.dataset.carExtraRange,valid=CAR_STANCE_FIELDS.some(([id])=>id===key);
+  const value=Math.round(Number(e.target.value));
+  if(!valid||!Number.isFinite(value)||value<0||value>100||!state.owned.includes(tuningCar))return;
+  const custom=carSave(tuningCar);custom[key]=value;save();
+  const output=document.getElementById('stance-value-'+key);if(output)output.textContent=value+'%';
+  game?.setCarPreviewCosmetics(tuningCar);
+  if(mode==='tune'&&showroom){const spec=CARS.find(c=>c.id===tuningCar)||getSelected();
+   showroom.mount('tuneCarMount');showroom.setCar(spec,custom);showroom.render(.016);}
+  return;
+ }
  if(e.target.dataset.carExtraColor!==undefined){
   const key=e.target.dataset.carExtraColor,value=String(e.target.value||'');
-  if(!['color','rims','caliperColor','headlightColor','smoke'].includes(key)||!/^#[0-9a-f]{6}$/i.test(value))return;
+  if(!['color','secondaryColor','roofColor','rims','caliperColor','headlightColor','taillightColor','smoke','exhaustFlameColor'].includes(key)||!/^#[0-9a-f]{6}$/i.test(value))return;
   const modal=e.target.dataset.carExtraContext==='modal',id=modal?customizedCar:tuningCar;
   if(!state.owned.includes(id))return;
   const custom=carSave(id);custom[key]=value.toLowerCase();save();
@@ -1163,11 +1220,11 @@ class DriftGame{
   this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2900;this.previewRevPopped=false;showroom?.triggerRev(2900);
   notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance,paintFinish:carSave().paintFinish,caliperColor:carSave().caliperColor,headlightColor:carSave().headlightColor});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory',getSelected());for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{...carSave()});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory',getSelected());for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
-  this.car=createCar(spec,color,{rims:carSave(spec.id).rims,neon:carSave(spec.id).neon,appearance:carSave(spec.id).appearance,paintFinish:carSave(spec.id).paintFinish,caliperColor:carSave(spec.id).caliperColor,headlightColor:carSave(spec.id).headlightColor});this.scene.add(this.car);this.preview={id:spec.id,color};this.car.position.set(this.player.x,0,this.player.z);
+  this.car=createCar(spec,color,{...carSave(spec.id)});this.scene.add(this.car);this.preview={id:spec.id,color};this.car.position.set(this.player.x,0,this.player.z);
  }
  setPlayerPaint(color){setCarPaint(this.car,color);if(this.preview)this.preview.color=color;}
  setPlayerCosmetics(){setCarCosmetics(this.car,carSave());}

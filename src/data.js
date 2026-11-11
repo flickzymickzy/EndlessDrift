@@ -70,14 +70,20 @@ export const UPGRADES = [
 ];
 // Installable body parts. Stock is always free. Purchased pieces remain permanently owned per car.
 export const BODY_PARTS=[
- {id:'spoiler',label:'REAR WING',description:'Low-profile lips, full GT wings and race aero',options:[['stock','Factory',0],['lip','Ducktail lip',500],['gt','GT wing',1250],['race','Carbon race wing',2400]]},
- {id:'skirts',label:'SIDE SKIRTS',description:'Lower profile and sculpted side aero',options:[['stock','Factory',0],['street','Street skirts',420],['aero','Wide aero skirts',1150]]},
- {id:'exhaust',label:'EXHAUST TIPS',description:'Chrome, titanium and aggressive quad tips',options:[['stock','Factory',0],['dual','Dual stainless',400],['burnt','Burnt titanium',950],['quad','Quad performance',1400]]},
- {id:'splitter',label:'FRONT SPLITTER',description:'Front lips and aggressive aero blades',options:[['stock','Factory',0],['street','Front lip',450],['race','Race splitter',1350]]},
- {id:'diffuser',label:'REAR DIFFUSER',description:'Rear underbody aero and fins',options:[['stock','Factory',0],['street','Street diffuser',550],['race','Track diffuser',1600]]},
- {id:'hood',label:'HOOD DESIGN',description:'Sculpted vent and air scoop upgrades',options:[['stock','Factory',0],['vents','Twin hood vents',650],['scoop','Performance hood scoop',1450]]},
- {id:'tint',label:'WINDOW TINT',description:'Darken the glass finish',options:[['stock','Factory',0],['smoke','Smoked glass',250],['dark','Deep black tint',600]]},
- {id:'wheels',label:'WHEEL DESIGN',description:'Different spoke and forged wheel patterns',options:[['stock','Factory',0],['mesh','Mesh alloy',700],['five','Five-spoke forged',950],['turbine','Turbine wheels',1250]]}
+ {id:'frontBumper',label:'FRONT BUMPER',description:'Street, track and wide intake front fascias',options:[['stock','Factory',0],['street','Street front bumper',700],['track','Track cooling bumper',1400],['aggressive','Extreme front bumper',2200]]},
+ {id:'rearBumper',label:'REAR BUMPER',description:'Sport, diffuser and race rear bumper shells',options:[['stock','Factory',0],['street','Street rear bumper',650],['track','Track rear bumper',1350],['diffused','Diffuser rear bumper',2100]]},
+ {id:'spoiler',label:'REAR WING',description:'Ducktail, GT, carbon race and drag aero wings',options:[['stock','Factory',0],['lip','Ducktail lip',500],['gt','GT wing',1250],['race','Carbon race wing',2400],['drag','Drag wing',3000]]},
+ {id:'skirts',label:'SIDE SKIRTS',description:'Side sill extensions and full race skirts',options:[['stock','Factory',0],['street','Street skirts',420],['aero','Wide aero skirts',1150],['race','Track skirts',1750]]},
+ {id:'exhaust',label:'EXHAUST TIPS',description:'Single, dual, burnt titanium, quad and center pipes',options:[['stock','Factory',0],['dual','Dual stainless',400],['burnt','Burnt titanium',950],['quad','Quad performance',1400],['center','Center exit race',2000]]},
+ {id:'splitter',label:'FRONT SPLITTER',description:'Lips, track blades and aggressive race splitters',options:[['stock','Factory',0],['street','Front lip',450],['track','Track splitter',1100],['race','Race splitter',1600]]},
+ {id:'diffuser',label:'REAR DIFFUSER',description:'Street, track and race venturi fins',options:[['stock','Factory',0],['street','Street diffuser',550],['track','Track diffuser',1200],['race','Race diffuser',1800]]},
+ {id:'hood',label:'HOOD DESIGN',description:'Twin vents, performance scoops and carbon vents',options:[['stock','Factory',0],['vents','Twin hood vents',650],['scoop','Performance hood scoop',1450],['carbon','Carbon vent hood',2100]]},
+ {id:'fenders',label:'FENDERS / WIDEBODY',description:'Vented, wide and extreme wheel arches',options:[['stock','Factory',0],['vented','Vented fenders',900],['wide','Widebody fenders',1800],['extreme','Extreme widebody',2800]]},
+ {id:'mirrors',label:'SIDE MIRRORS',description:'Sport and carbon mirror housings',options:[['stock','Factory',0],['sport','Sport mirrors',300],['carbon','Carbon mirrors',800]]},
+ {id:'roof',label:'ROOF ACCESSORIES',description:'Roof air scoops and aerodynamic fins',options:[['stock','Factory',0],['scoop','Roof scoop',850],['fins','Roof aero fins',1350]]},
+ {id:'lights',label:'LIGHT DESIGN',description:'Smoked lenses or distinctive LED signatures',options:[['stock','Factory',0],['smoked','Smoked light housings',500],['led','Track LED signature',1000]]},
+ {id:'tint',label:'WINDOW TINT',description:'Smoke or dark tint for the glass',options:[['stock','Factory',0],['smoke','Smoked glass',250],['dark','Deep black tint',600]]},
+ {id:'wheels',label:'WHEEL DESIGN',description:'Mesh, forged, turbine, multi-spoke and dish',options:[['stock','Factory',0],['mesh','Mesh alloy',700],['five','Five-spoke forged',950],['turbine','Turbine wheels',1250],['multi','Multi-spoke race',1500],['dish','Deep dish',1850]]}
 ];
 export const COLORS=['#fe6a4b','#fecc38','#39e8d0','#a176ff','#50a4ff','#fb6aaf','#f2f6fc','#161820','#d13e48','#37d273'];
 export const SMOKES=['#eeeeff','#79d8ff','#ff68c8','#c28dff','#73ffcb','#ffcf66','#f55656'];

@@ -14,8 +14,8 @@ export class Showroom {
     this.renderer.toneMapping=THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure=1.45;
     this.scene=new THREE.Scene();
-    this.camera=new THREE.PerspectiveCamera(40,1,.1,100);
-    this.camera.position.set(6.5,2.95,7.6);this.camera.lookAt(0,.78,0);
+    this.camera=new THREE.PerspectiveCamera(38,1,.1,100);
+    this.camera.position.set(5.0,2.7,6.3);this.camera.lookAt(0,.78,0);
     this.scene.add(new THREE.HemisphereLight(0xcce8ff,0x14202b,3.0));
     const key=new THREE.DirectionalLight(0xffffff,4);key.position.set(-7,11,9);this.scene.add(key);
     const rim=new THREE.DirectionalLight(0x59b8ff,4);rim.position.set(5,6,-7);this.scene.add(rim);
@@ -43,11 +43,11 @@ export class Showroom {
   }
   mount(elementId){const host=document.getElementById(elementId);if(host&&this.canvas.parentElement!==host)host.appendChild(this.canvas);}
   setCar(spec,custom){
-    const sig=JSON.stringify([spec.id,custom.color,custom.rims,custom.neon,custom.smoke,custom.paintFinish,custom.caliperColor,custom.headlightColor,custom.showSmoke,custom.appearance]);
+    const sig=JSON.stringify([spec.id,custom]);
     if(this.signature===sig)return;
     if(this.car){this.scene.remove(this.car);this.car.traverse(o=>{if(o.isMesh&&o.geometry&&!o.geometry.userData?.shared)o.geometry.dispose();});}
-    this.car=createCar(spec,custom.color,{rims:custom.rims,neon:custom.neon,appearance:custom.appearance,paintFinish:custom.paintFinish,caliperColor:custom.caliperColor,headlightColor:custom.headlightColor});
-    const scale=Math.min(1.18,5.0/Math.max(spec.length||4.5,3.5));this.car.scale.setScalar(scale);
+    this.car=createCar(spec,custom.color,custom);
+    const scale=Math.min(1.25,5.4/Math.max(spec.length||4.5,3.5));this.car.scale.setScalar(scale);
     this.scene.add(this.car);
     const back=-((spec.length||4.45)*scale)/2;
     for(const [i,vapor] of this.previewSmoke.entries()){
@@ -66,7 +66,13 @@ export class Showroom {
     const res=Math.min(1.6,window.devicePixelRatio||1);
     this.renderer.setPixelRatio(res);
     if(this.canvas.width!==Math.round(w*res)||this.canvas.height!==Math.round(h*res)){
-      this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();
+      this.renderer.setSize(w,h,false);
+      this.camera.aspect=w/h;
+      const narrow=w<590||w/h<1.18;
+      this.camera.fov=narrow?45:38;
+      this.camera.position.set(narrow?6.6:5.0,narrow?3.1:2.7,narrow?8.1:6.3);
+      this.camera.lookAt(0,.78,0);
+      this.camera.updateProjectionMatrix();
     }
     if(!this.dragging)this.rotation+=Math.min(.045,dt*.19);
     if(this.car){
