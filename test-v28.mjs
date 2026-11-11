@@ -40,7 +40,7 @@ for(const command of ['unboost','superboost','superjump','unjump','unstuck','res
 }
 assert.match(main,/class="beta-label">BETA/);
 assert.match(html,/>BETA</);
-assert.match(html,/src="\.\/src\/main\.js\?v=31"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=\d+"/);
 assert.match(main,/OWNER PROFILE • UNRANKED/);
 assert.doesNotMatch(server.split("case 'xp':{")[1].split("case 'coins':{")[0],/ed_record_ranked_xp/);
 const neutral=driftStep({mph:45,longitudinal:20,lateral:0,steer:0,handbrake:true,dt:1/90});

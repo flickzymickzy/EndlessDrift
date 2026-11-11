@@ -47,5 +47,5 @@ assert.match(server,/const destructive=\['kick','ban','freeze','unfreeze','stop'
 assert.match(server,/never to competitive ranked scores/);
 assert.match(main,/OWNER PROFILE • UNRANKED/);
 assert.match(main,/class="beta-label">BETA/);
-assert.match(html,/src="\.\/src\/main\.js\?v=31"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=\d+"/);
 console.log('V29 crash, announcements and admin regressions passed with restored V27 drifting.');

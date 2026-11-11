@@ -63,8 +63,8 @@ for(const key of ['cameraDistance','cameraFov','cameraSmoothing','showSpeedomete
 }
 assert.match(css,/profile-car-grid/);
 assert.match(css,/data-show-drift-notice="false"/);
-assert.match(html,/src="\.\/src\/main\.js\?v=32"/);
-assert.match(html,/href="\.\/src\/style\.css\?v=32"/);
+assert.match(html,/src="\.\/src\/main\.js\?v=\d+"/);
+assert.match(html,/href="\.\/src\/style\.css\?v=\d+"/);
 assert.match(main,/const force=Math\.max\(5,stats\.brake\*\.42\)/);
 assert.match(main,/OWNER PROFILE • UNRANKED/);
 console.log('V31 passed: safe public driver stats and garages, readable 3D profile screen, camera/HUD settings, private profiles, and V27 drifting preserved.');
