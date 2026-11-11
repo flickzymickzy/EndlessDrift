@@ -1,6 +1,7 @@
 // Public driver profiles expose ONLY approved gameplay stats and saved car cosmetics.
 // Never return the source cloud save, wallet, account ID, email, session, or purchase history.
 import {CARS,BODY_PARTS,UPGRADES,levelFromXP} from './data.js';
+import {sanitizeCarExtras} from './carCustomization.js';
 const ids=new Set(CARS.map(car=>car.id));
 const defaultCar=CARS[0];
 const whole=v=>{const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.min(Number.MAX_SAFE_INTEGER,Math.floor(n))):0;};
@@ -20,7 +21,7 @@ function publicCar(id,raw,selected){
  }
  return {id:spec.id,selected:id===selected,color:hex(custom.color,spec.color),
   rims:hex(custom.rims,'#d0d9e2'),neon:custom.neon==='off'?'off':hex(custom.neon,'off'),
-  smoke:hex(custom.smoke,'#e1e7ff'),appearance,upgrades};
+  smoke:hex(custom.smoke,'#e1e7ff'),...sanitizeCarExtras(custom),appearance,upgrades};
 }
 export function publicDriverProfile({username,createdAt,owner=false,ranked={},save={}}={}){
  const data=save&&typeof save==='object'&&!Array.isArray(save)?save:{};

@@ -10,6 +10,7 @@ import {driftStep} from './driftPhysics.js';
 import {crashMultiplier} from './penalties.js';
 import {wantedHeatRate,nextWantedLevel} from './pursuit.js';
 import {performanceStats,upgradePreview,PERFORMANCE_FIELDS,capVehicleVelocity,vehicleSpeedLimitMps} from './performance.js';
+import {PAINT_FINISHES,CAR_EXTRAS_DEFAULTS,safeCarHex} from './carCustomization.js';
 import {cloudConfigured,cloudSignUp,cloudSignIn,cloudSignInGoogle,cloudSignOut,cloudUser,cloudBoard,cloudProfile,cloudUpdateUsername,googleOAuthReturned,cloudLoadGameSave,cloudSaveGameSave,cloudAccessToken} from './cloud.js';
 import {purchased,clearPurchased,refreshPurchased,spendPurchased} from './payments.js';
 
@@ -543,6 +544,16 @@ function renderShop(){
  if(showroom&&item){previewCosmetic(car.id,{type:item.type,color:item.color,name:item.name},'shopCarMount');}
 }
 
+function extraCarColorInputs(car,context='tune'){
+ const items=[['color','Custom body paint',car.color||'#e4475c'],['rims','Custom rim color',car.rims||'#d0d9e2'],
+  ['caliperColor','Brake caliper color',car.caliperColor||CAR_EXTRAS_DEFAULTS.caliperColor],
+  ['headlightColor','Headlight LED color',car.headlightColor||CAR_EXTRAS_DEFAULTS.headlightColor],
+  ['smoke','Custom drift smoke',car.smoke||'#eeeeff']];
+ return `<div class="car-color-grid">${items.map(([key,label,color])=>`<label class="car-color-field"><span>${char(label)}</span><div><input type="color" data-car-extra-color="${key}" data-car-extra-context="${context}" value="${safeCarHex(color,'#eeeeff')}" aria-label="${char(label)}"/><small class="car-color-hex">${char(safeCarHex(color,'#ffffff'))}</small></div></label>`).join('')}</div>`;
+}
+function paintFinishChoices(car,context='tune'){
+ return `<div class="car-finish-grid">${Object.entries(PAINT_FINISHES).map(([id,finish])=>`<button type="button" class="btn ghost car-finish-choice ${car.paintFinish===id?'active':''}" data-car-paint-finish="${id}" data-car-extra-context="${context}" aria-pressed="${car.paintFinish===id}">${char(finish.label)}</button>`).join('')}</div>`;
+}
 function renderTune(){
  // A garage car can be modified even when a different one is equipped.
  if(!state.owned.includes(tuningCar))tuningCar=state.selected;
@@ -568,7 +579,7 @@ function renderTune(){
    <div class="tune-controls"><div class="tune-tabs"><button data-tune-tab="body" class="${tuneTab==='body'?'active':''}">BODY KITS</button><button data-tune-tab="performance" class="${tuneTab==='performance'?'active':''}">PERFORMANCE</button><button data-tune-tab="paint" class="${tuneTab==='paint'?'active':''}">COLORS + SETUP</button></div>
     <div class="tune-tab-pane ${tuneTab==='body'?'':'hidden'}">${appearance}${bodyCheckout}</div>
     <button class="btn ghost" data-modal="car">CUSTOMIZE RIM COLORS + PAINT</button><div class="tune-tab-pane ${tuneTab==='performance'?'':'hidden'}"><div class="upgrade-grid">${upgrades}</div>${upgradeCheckout}</div>
-    <div class="tune-tab-pane ${tuneTab==='paint'?'':'hidden'}"><div class="panel panel-pad"><h3>BODY COLOR</h3><div class="swatch-row">${colorRow(COLORS,'color')}</div><h3>DRIFT SMOKE</h3><div class="swatch-row">${colorRow(SMOKES,'smoke')}</div><h3>ALLOY FINISH</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div><h3>ENGINE SOUND</h3><div class="engine-sound-options">${[['factory','Factory'],['deep','Deep rumble'],['race','Track exhaust']].map(([id,label])=>`<button class="btn small ghost ${saveCar.engineNote===id?'sound-active':''}" data-tune-sound="${id}">${label}</button>`).join('')}</div><h3>DRIVING SETUP</h3>${[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('')}</div></div>
+    <div class="tune-tab-pane ${tuneTab==='paint'?'':'hidden'}"><div class="panel panel-pad"><h3>BODY COLOR</h3><div class="swatch-row">${colorRow(COLORS,'color')}</div><h3>DRIFT SMOKE</h3><div class="swatch-row">${colorRow(SMOKES,'smoke')}</div><h3>ALLOY FINISH</h3><div class="swatch-row">${colorRow(BASE_RIMS,'rims')}</div><h3>CUSTOM COLORS</h3><p class="muted">Custom colors are free, preview live and save per car.</p>${extraCarColorInputs(saveCar)}<h3>PAINT FINISH</h3>${paintFinishChoices(saveCar)}<h3>ENGINE SOUND</h3><div class="engine-sound-options">${[['factory','Factory'],['deep','Deep rumble'],['race','Track exhaust']].map(([id,label])=>`<button class="btn small ghost ${saveCar.engineNote===id?'sound-active':''}" data-tune-sound="${id}">${label}</button>`).join('')}</div><h3>DRIVING SETUP</h3>${[['grip','Tire grip / control'],['steering','Steering response'],['stability','Drift stability assist']].map(([key,label])=>`<div class="setting"><label>${label}<span class="range-val" id="val-${key}">${saveCar.tune[key]??50}%</span></label><input type="range" min="0" max="100" value="${saveCar.tune[key]??50}" data-tune="${key}" /></div>`).join('')}</div></div>
    </div>
   </div>`;
  mountShowroom('tuneCarMount',spec);if(pendingVisual&&showroom){const [id,variant]=pendingVisual.split('|');showroom.setCar(spec,{...saveCar,appearance:{...saveCar.appearance,[id]:variant}});showroom.render(0.016);}
@@ -629,6 +640,9 @@ function renderDriverProfileDetails(){
       <span>RIMS <i style="background:${char(selected.rims)}"></i> ${char(selected.rims)}</span>
       <span>NEON ${selected.neon==='off'?'OFF':`<i style="background:${char(selected.neon)}"></i> ${char(selected.neon)}`}</span>
       <span>SMOKE <i style="background:${char(selected.smoke)}"></i> ${char(selected.smoke)}</span>
+       <span>CALIPERS <i style="background:${char(selected.caliperColor)}"></i> ${char(selected.caliperColor)}</span>
+       <span>HEADLIGHTS <i style="background:${char(selected.headlightColor)}"></i> ${char(selected.headlightColor)}</span>
+       <span>PAINT FINISH <strong>${char(PAINT_FINISHES[selected.paintFinish]?.label||'Glossy clearcoat')}</strong></span>
      </div>
      <div class="kicker">PERFORMANCE UPGRADES</div>
      <div class="profile-chips">${upgrades.map(([id,level])=>`<span>${char(UPGRADES.find(u=>u.id===id)?.label||id)} LV ${fmt(level)}</span>`).join('')||'<span>STOCK PERFORMANCE</span>'}</div>
@@ -725,7 +739,7 @@ async function renderAccount(){
  if(mode!=='account')return;
  dom.screen.innerHTML=header('DRIVER ACCOUNT','ACCOUNT SYSTEM • OPTIONAL ONLINE SETUP','Create an account to use online features once Supabase is configured. Each driver now has a private cloud save. Guests start fresh without accessing your account.')+`
  <div class="account-layout"><div class="panel panel-pad"><div class="kicker">${cloudConfigured()?'ONLINE AUTH':'SETUP NEEDED'}</div>
- ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Only XP earned from gameplay counts toward competitive ranks.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">Rename anytime. Usernames must remain unique.</p></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
+ ${cloudConfigured()?(user?`<h3>WELCOME BACK</h3><p class="notice">Signed in as ${char(user.email||user.id)}. Only XP earned from gameplay counts toward competitive ranks.</p><div class="username-panel"><div class="kicker">YOUR PUBLIC DRIVER NAME</div><h3>${char(activeUsername||'NO USERNAME YET')}${ownerEnabled?'<span class="owner-tag">OWNER</span>':''}</h3><p class="muted">${activeUsername.startsWith('driver_')?'Choose a custom driver name for your Google account.':'Visible on the public leaderboard and your account.'}</p><form id="usernameForm" class="username-form"><label for="usernameEdit">CHOOSE / CHANGE USERNAME</label><div class="username-input-row"><input id="usernameEdit" name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="nickname" value="${char(activeUsername.startsWith('driver_')?'':activeUsername)}" placeholder="3–24 letters, numbers or _" required/><button class="btn primary" type="submit" >SAVE USERNAME</button></div></form><p class="notice">Rename anytime. Usernames must remain unique.</p><button type="button" class="btn primary" data-driver-profile="${char(activeUsername)}">VIEW MY PUBLIC PROFILE + GARAGE</button></div><button class="btn ghost" data-cloud-signout>LOG OUT</button>`:`<h3>SIGN UP OR LOG IN</h3><form id="accountForm" class="account-form"><label>USERNAME<input name="username" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" placeholder="Driver name (for sign up)"/></label><label>EMAIL<input type="email" name="email" required autocomplete="email" placeholder="driver@example.com"/></label><label>PASSWORD<input type="password" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters"/></label><div class="account-buttons"><button class="btn primary" type="submit" data-auth-action="signin">LOG IN</button><button class="btn ghost" type="submit" data-auth-action="signup">CREATE ACCOUNT</button></div></form><div class="oauth-divider"><span>OR CONTINUE WITH</span></div><button class="btn google-login" data-google-login type="button"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.27 5.48-4.8 7.18l7.73 6C44.38 38.03 46.98 31.88 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59A14.46 14.46 0 0 1 9.75 24c0-1.59.27-3.13.76-4.59l-7.98-6.2A23.85 23.85 0 0 0 0 24c0 3.87.92 7.53 2.53 10.78l8-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.92-2.13 15.89-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-8 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>CONTINUE WITH GOOGLE</span></button><p class="notice">For new email accounts, check your inbox for confirmation if enabled. Google sign-in uses your Google account and does not require a game password.</p>`):`<h3>CONNECT SUPABASE FIRST</h3><p class="notice">Open <code>cloud-config.js</code> and paste your Supabase Project URL and PUBLISHABLE key. Then run the SQL file from the <code>backend</code> folder in Supabase SQL Editor.</p><p class="notice">Do not paste database passwords or service-role keys into this website.</p>`}
  ${error?`<p class="notice">${char(error)}</p>`:''}</div><aside class="panel panel-pad"><div class="kicker">ONLINE SYSTEM STATUS</div><h3>${cloudConfigured()?'CONNECTED CONFIG':'NOT CONNECTED'}</h3><p class="notice">Earned Drift Coins, Drift Pass ownership, XP, cars, and tuning are saved with your signed-in garage. Legacy paid balances are retained where applicable. Guests do not inherit another driver's garage.</p><button class="btn ghost" data-page="leaderboard">VIEW RANKS</button>${user&&activeUsername?`<button type="button" class="btn primary" data-driver-profile="${char(activeUsername)}">VIEW MY PUBLIC PROFILE</button>`:''}</aside></div>`;
 }
 function renderSettings(){const s=state.settings;
@@ -799,6 +813,7 @@ function carModal(){
  ${section('rims','ALLOY RIMS',BASE_RIMS)}
  <div class="rim-color-custom"><label for="customRimColor">CUSTOM RIM COLOR</label><input id="customRimColor" data-rim-color type="color" value="${/^#[0-9a-f]{6}$/i.test(cs.rims)?cs.rims:'#d0d9e2'}"/><span>Choose any color • free and saved to this car</span></div>
  ${section('neon','UNDERGLOW NEONS',BASE_NEONS)}
+ <div class="car-modal-extras"><h3>ADVANCED CAR COLORS</h3><p class="muted">Customize paint, calipers, headlights and smoke for free.</p>${extraCarColorInputs(cs,'modal')}<h3>PAINT FINISH</h3>${paintFinishChoices(cs,'modal')}</div>
  <p class="notice">Cosmetics never expire or disappear when you buy cars. Locked Drift Pass rewards can be previewed now and equipped after leveling up.</p>
  <div class="modal-actions"><button class="btn" data-page="battlepass">DRIFT PASS REWARDS</button><button class="btn primary" data-close>DONE</button></div>`;
  previewCosmetic(customizedCar,preview,'cosmeticPreviewMount');
@@ -853,6 +868,14 @@ document.addEventListener('click',async e=>{
  /* Real-money coin purchases remain disabled after release. */
  if(t.dataset.cloudSignout!==undefined){try{await syncCloudSave().catch(()=>{});await cloudSignOut();setSaveOwner(null);await activateIdentity();notify('LOGGED OUT');renderAccount();}catch(e){notify(e.message);}return;}
  if(t.dataset.revCar){game?.revPreview(t.dataset.revCar);return;}
+ if(t.dataset.carPaintFinish!==undefined){
+  const finish=t.dataset.carPaintFinish;if(!Object.hasOwn(PAINT_FINISHES,finish))return;
+  const modal=t.dataset.carExtraContext==='modal',id=modal?customizedCar:tuningCar;
+  if(!state.owned.includes(id))return;
+  carSave(id).paintFinish=finish;save();game?.setCarPreviewCosmetics(id);
+  if(modal){cosmeticPreview=null;carModal();}else if(mode==='tune')renderTune();
+  return;
+ }
  if(t.dataset.tuneSound){carSave(tuningCar).engineNote=t.dataset.tuneSound;save();game?.revPreview(tuningCar);renderTune();return;}
  if(t.dataset.shopPreview){shopPreviewId=t.dataset.shopPreview;renderShop();return;}
  if(t.dataset.shopBuy){const item=COSMETIC_SHOP.find(x=>x.id===t.dataset.shopBuy);if(!item)return;if(shopOwns(item)){notify('YOU ALREADY OWN THIS COSMETIC');return;}if(!await payWithPurchasedCoins(item.price)){notify('NOT ENOUGH DRIFT COINS');return;}state.shopOwned ||= [];state.shopOwned.push(item.id);save();cashRefresh();notify(item.name.toUpperCase()+' PURCHASED');renderShop();return;}
@@ -1004,6 +1027,18 @@ document.addEventListener('submit',async e=>{
 document.addEventListener('change',async e=>{if(e.target.dataset.deviceChange){chooseDevice(e.target.value);return;}if(e.target.id!=='saveFileInput')return;try{const file=e.target.files?.[0];if(!file)return;importSave(await file.text());selectedPreview=state.selected;tuningCar=state.selected;cashRefresh();applyUI();game?.setPlayerCar();game?.applyQuality();renderPage('settings');notify('SAVE BACKUP IMPORTED SUCCESSFULLY');}catch(err){notify('IMPORT FAILED: '+(err?.message||'INVALID FILE'));}finally{e.target.value='';}});
 dom.overlay.addEventListener('click',e=>{if(e.target===dom.overlay)closeModal();});
 document.addEventListener('input',e=>{
+ if(e.target.dataset.carExtraColor!==undefined){
+  const key=e.target.dataset.carExtraColor,value=String(e.target.value||'');
+  if(!['color','rims','caliperColor','headlightColor','smoke'].includes(key)||!/^#[0-9a-f]{6}$/i.test(value))return;
+  const modal=e.target.dataset.carExtraContext==='modal',id=modal?customizedCar:tuningCar;
+  if(!state.owned.includes(id))return;
+  const custom=carSave(id);custom[key]=value.toLowerCase();save();
+  const caption=e.target.closest('.car-color-field')?.querySelector('.car-color-hex');if(caption)caption.textContent=custom[key];
+  game?.setCarPreviewCosmetics(id);
+  if(modal){cosmeticPreview=null;previewCosmetic(id,null,'cosmeticPreviewMount');}
+  else if(mode==='tune'&&showroom){const spec=CARS.find(c=>c.id===id)||getSelected();showroom.mount('tuneCarMount');showroom.setCar(spec,custom);showroom.render(.016);}
+  return;
+ }
  if(e.target.dataset.rimColor){
   const hex=String(e.target.value||'');
   if(/^#[0-9a-f]{6}$/i.test(hex)){
@@ -1128,11 +1163,11 @@ class DriftGame{
   this.previewRevStart=performance.now();this.previewRevEnd=this.previewRevStart+2900;this.previewRevPopped=false;showroom?.triggerRev(2900);
   notify('ENGINE REV • '+(CARS.find(c=>c.id===carId)?.name||'CAR').toUpperCase());
  }
- setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory',getSelected());for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
+ setPlayerCar(){if(this.car)this.scene.remove(this.car);const c=getSelected();this.car=createCar(c,carSave().color,{rims:carSave().rims,neon:carSave().neon,appearance:carSave().appearance,paintFinish:carSave().paintFinish,caliperColor:carSave().caliperColor,headlightColor:carSave().headlightColor});this.scene.add(this.car);this.preview=undefined;this.currentMorph=null;this.applyMorph(playerControlState.shape||'car');this.car.position.set(this.player.x,0,this.player.z);$('hudCar').textContent=c.name.toUpperCase();this.audio?.setCarProfile(carSave().upgrades||{},carSave().engineNote||'factory',getSelected());for(const light of this.car.userData.headlights||[])light.intensity=this.weather==='night'?110:this.weather==='fog'||this.weather==='rain'?72:29;}
  previewCar(spec,color){if(mode==='game')return;
   if(this.preview&&this.preview.id===spec.id&&this.preview.color===color)return;
   if(this.car)this.scene.remove(this.car);
-  this.car=createCar(spec,color,{rims:carSave(spec.id).rims,neon:carSave(spec.id).neon,appearance:carSave(spec.id).appearance});this.scene.add(this.car);this.preview={id:spec.id,color};this.car.position.set(this.player.x,0,this.player.z);
+  this.car=createCar(spec,color,{rims:carSave(spec.id).rims,neon:carSave(spec.id).neon,appearance:carSave(spec.id).appearance,paintFinish:carSave(spec.id).paintFinish,caliperColor:carSave(spec.id).caliperColor,headlightColor:carSave(spec.id).headlightColor});this.scene.add(this.car);this.preview={id:spec.id,color};this.car.position.set(this.player.x,0,this.player.z);
  }
  setPlayerPaint(color){setCarPaint(this.car,color);if(this.preview)this.preview.color=color;}
  setPlayerCosmetics(){setCarCosmetics(this.car,carSave());}

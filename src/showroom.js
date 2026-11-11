@@ -43,10 +43,10 @@ export class Showroom {
   }
   mount(elementId){const host=document.getElementById(elementId);if(host&&this.canvas.parentElement!==host)host.appendChild(this.canvas);}
   setCar(spec,custom){
-    const sig=JSON.stringify([spec.id,custom.color,custom.rims,custom.neon,custom.smoke,custom.showSmoke,custom.appearance]);
+    const sig=JSON.stringify([spec.id,custom.color,custom.rims,custom.neon,custom.smoke,custom.paintFinish,custom.caliperColor,custom.headlightColor,custom.showSmoke,custom.appearance]);
     if(this.signature===sig)return;
     if(this.car){this.scene.remove(this.car);this.car.traverse(o=>{if(o.isMesh&&o.geometry&&!o.geometry.userData?.shared)o.geometry.dispose();});}
-    this.car=createCar(spec,custom.color,{rims:custom.rims,neon:custom.neon,appearance:custom.appearance});
+    this.car=createCar(spec,custom.color,{rims:custom.rims,neon:custom.neon,appearance:custom.appearance,paintFinish:custom.paintFinish,caliperColor:custom.caliperColor,headlightColor:custom.headlightColor});
     const scale=Math.min(1.18,5.0/Math.max(spec.length||4.5,3.5));this.car.scale.setScalar(scale);
     this.scene.add(this.car);
     const back=-((spec.length||4.45)*scale)/2;

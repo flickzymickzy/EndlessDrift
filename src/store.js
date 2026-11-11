@@ -1,4 +1,5 @@
 import {CARS, UPGRADES, BATTLE_PASS, BODY_PARTS, levelFromXP, levelReward} from './data.js';
+import {CAR_EXTRAS_DEFAULTS,sanitizeCarExtras} from './carCustomization.js';
 const KEY='endless-drift-save-v3'; // stable across versions: existing cars and balances preserved
 const starting={driftPassOwned:false,wallet:2500,lifetimeXP:0,spent:0,bestDrift:0,drifts:0,crashes:0,escapes:0,nearMisses:0,nearMissXP:0,bestNearMiss:0,levelRewardsClaimed:0,unlockedCosmetics:[],shopOwned:[],owned:[CARS[0].id],selected:CARS[0].id,cars:{},settings:{quality:'high',units:'mph',fps:'60',steering:1,touchSize:100,touchLayout:'arrows',driftAssist:true,driftStyle:'arcade',uiScale:100,smoke:true,uiTheme:'mint',hudLayout:'classic',speedStyle:'digital',hudOpacity:92,renderScale:100,shadows:true,particles:'medium',drawDistance:'normal',trafficDensity:'normal',cameraShake:70,cameraDistance:100,cameraFov:64,cameraSmoothing:100,showSpeedometer:true,showDriftNotice:true,showControlsHint:true,showNearMissPopups:true,profileVisibility:'public',music:true,musicVolume:60,effectsVolume:65,policeRadio:true,controls:{accelerate:'KeyW',brake:'KeyS',left:'KeyA',right:'KeyD',handbrake:'Space',camera:'KeyC',recover:'KeyR',pause:'Escape'}},garageTheme:'carbon',garageDecor:'neon'};
 function copy(o){return JSON.parse(JSON.stringify(o));}
@@ -46,8 +47,8 @@ export function save(){
  }catch(e){console.warn('Save unavailable',e);return false;}
 }
 export function carSave(id=state.selected){
- if(!state.cars[id])state.cars[id]={color:CARS.find(c=>c.id===id)?.color||'#e4475c',smoke:'#eeeeff',upgrades:{},tune:{grip:50,steering:50,stability:60},rims:'#d0d9e2',neon:'off'};
- const c=state.cars[id];c.appearance ||= {};c.ownedParts ||= [];for(const part of BODY_PARTS)c.appearance[part.id] ||= 'stock';c.rims ||= '#d0d9e2';c.neon ||= 'off'; c.upgrades ||= {};c.tune ||= {grip:50,steering:50,stability:60};c.engineNote ||= 'factory';
+ if(!state.cars[id])state.cars[id]={color:CARS.find(c=>c.id===id)?.color||'#e4475c',smoke:'#eeeeff',upgrades:{},tune:{grip:50,steering:50,stability:60},rims:'#d0d9e2',neon:'off',...CAR_EXTRAS_DEFAULTS};
+ const c=state.cars[id];c.appearance ||= {};c.ownedParts ||= [];for(const part of BODY_PARTS)c.appearance[part.id] ||= 'stock';c.rims ||= '#d0d9e2';c.neon ||= 'off'; c.upgrades ||= {};c.tune ||= {grip:50,steering:50,stability:60};c.engineNote ||= 'factory';Object.assign(c,sanitizeCarExtras(c));
  for(const u of UPGRADES)c.upgrades[u.id]=Math.min(u.max,Math.max(0,Math.floor(Number(c.upgrades[u.id])||0)));
  return c;
 }

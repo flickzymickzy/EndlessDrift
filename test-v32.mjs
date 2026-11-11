@@ -1,0 +1,54 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {CARS} from './src/data.js';
+import {publicDriverProfile} from './src/publicProfile.js';
+import {PAINT_FINISHES,CAR_EXTRAS_DEFAULTS,sanitizeCarExtras} from './src/carCustomization.js';
+const main=readFileSync('./src/main.js','utf8');
+const store=readFileSync('./src/store.js','utf8');
+const car=readFileSync('./src/car.js','utf8');
+const showroom=readFileSync('./src/showroom.js','utf8');
+const css=readFileSync('./src/style.css','utf8');
+const html=readFileSync('./index.html','utf8');
+for(const file of ['src/main.js','src/car.js','src/store.js','src/publicProfile.js','src/carCustomization.js','src/showroom.js','server.js']){
+ const result=spawnSync(process.execPath,['--check',file],{encoding:'utf8'});
+ assert.equal(result.status,0,file+' syntax: '+result.stderr);
+}
+assert.deepEqual(Object.keys(PAINT_FINISHES),['gloss','satin','matte','chrome']);
+assert.deepEqual(sanitizeCarExtras({}),CAR_EXTRAS_DEFAULTS);
+assert.deepEqual(sanitizeCarExtras({paintFinish:'<img>',caliperColor:'not hex',headlightColor:'javascript:evil'}),CAR_EXTRAS_DEFAULTS);
+const custom=sanitizeCarExtras({paintFinish:'matte',caliperColor:'#AABBCC',headlightColor:'#fefefe'});
+assert.equal(custom.caliperColor,'#aabbcc');
+assert.equal(custom.paintFinish,'matte');
+assert.equal(custom.headlightColor,'#fefefe');
+const fakeSave={wallet:900000,lifetimeXP:100000,owned:[CARS[0].id],selected:CARS[0].id,cars:{
+ [CARS[0].id]:{color:'#112233',rims:'#445566',paintFinish:'chrome',caliperColor:'#cc4422',headlightColor:'#ffee88'}
+}};
+const publicProfile=publicDriverProfile({username:'Driver1',ranked:{lifetime_xp:200},save:fakeSave});
+assert.equal(publicProfile.garage[0].paintFinish,'chrome');
+assert.equal(publicProfile.garage[0].caliperColor,'#cc4422');
+assert.equal(publicProfile.garage[0].headlightColor,'#ffee88');
+assert.equal(publicProfile.wallet,undefined);
+const privateProfile=publicDriverProfile({username:'Driver1',save:{...fakeSave,settings:{profileVisibility:'private'}}});
+assert.equal(privateProfile.garage.length,0);
+assert.equal(privateProfile.stats,null);
+for(const key of ['color','rims','caliperColor','headlightColor','smoke'])assert.match(main,new RegExp("'"+key+"'"));
+assert.match(main,/extraCarColorInputs\(saveCar\)/);
+assert.match(main,/extraCarColorInputs\(cs,'modal'\)/);
+assert.match(main,/data-car-paint-finish/);
+assert.match(main,/data-driver-profile/);
+assert.match(main,/VIEW MY PUBLIC PROFILE \+ GARAGE/);
+assert.match(main,/createCar\(c,carSave\(\)\.color,\{rims:/);
+assert.match(main,/caliperColor:carSave\(\)\.caliperColor/);
+assert.match(main,/HEADLIGHTS <i/);
+assert.match(store,/Object\.assign\(c,sanitizeCarExtras\(c\)\)/);
+assert.match(car,/caliperMat=shared\.caliper\.clone/);
+assert.match(car,/headlampMat=shared\.white\.clone/);
+assert.match(car,/setCarFinish\(car,finishName\)/);
+assert.match(showroom,/custom\.caliperColor,custom\.headlightColor/);
+assert.match(css,/\.car-color-grid/);
+assert.match(html,/main\.js\?v=32/);
+assert.match(html,/style\.css\?v=32/);
+assert.match(main,/const force=Math\.max\(5,stats\.brake\*\.42\)/);
+assert.match(main,/class="beta-label">BETA/);
+console.log('V32: customizable paint finishes, calipers, headlights and public 3D profiles; privacy and V27 drifting preserved.');
